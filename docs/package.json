@@ -1,0 +1,14 @@
+{
+  "name": "@mapo/docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "docs:build": "vitepress build"
+  },
+  "devDependencies": {
+    "vitepress": "latest"
+  }
+}
