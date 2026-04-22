@@ -2,10 +2,10 @@ name: CI
 
 on:
   workflow_dispatch:
-  # Automatic triggers — uncomment when ready for CI on push/PR
+  pull_request:
+    branches: [main]
+  # Automatic trigger on push — uncomment when ready
   # push:
-  #   branches: [main]
-  # pull_request:
   #   branches: [main]
 
 jobs:
@@ -54,8 +54,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: [lint, test]
-    # When automatic triggers are enabled, restrict release to push on main only:
-    # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with:
