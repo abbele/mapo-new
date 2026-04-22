@@ -1,0 +1,15 @@
+node_modules
+dist
+.turbo
+.nuxt
+.output
+.vitepress/dist
+.vitepress/cache
+*.log
+.env
+.env.*
+!.env.example
+
+AGENTS.md
+/docs/roadmap
+/docs/DECISIONS.md
