@@ -61,7 +61,9 @@ pnpm install
 
 ## Release Flow
 
-Releases are fully automated via [multi-semantic-release](https://github.com/qiwi/multi-semantic-release) on every push to `main`. Versioning is driven by [Conventional Commits](https://www.conventionalcommits.org/) — no manual bumping required.
+Releases are powered by [multi-semantic-release](https://github.com/qiwi/multi-semantic-release). Versioning is driven by [Conventional Commits](https://www.conventionalcommits.org/) — no manual bumping required.
+
+> **Current status**: the CI pipeline runs manually (`workflow_dispatch`). Automatic triggering on push to `main` will be enabled in the future.
 
 See [docs/guide/release-process.md](docs/guide/release-process.md) for the full release documentation.
 
