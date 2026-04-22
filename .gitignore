@@ -3,8 +3,8 @@ dist
 .turbo
 .nuxt
 .output
-.vitepress/dist
-.vitepress/cache
+**/.vitepress/dist
+**/.vitepress/cache
 *.log
 .env
 .env.*
