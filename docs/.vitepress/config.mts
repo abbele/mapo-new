@@ -21,6 +21,7 @@ export default defineConfig({
           { text: 'Installation', link: '/guide/installation' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Release Process', link: '/guide/release-process' },
+          { text: 'Contributing', link: '/guide/contributing' },
         ],
       },
       {
