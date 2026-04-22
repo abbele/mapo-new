@@ -21,9 +21,6 @@
   },
   "packageManager": "pnpm@8.15.6",
   "lint-staged": {
-    "**/*.{ts,tsx,vue}": [
-      "eslint --fix"
-    ],
     "**/*.{ts,tsx,vue,json,md}": [
       "prettier --write"
     ]
@@ -33,7 +30,10 @@
       "bump": "inherit",
       "release": "inherit"
     },
-    "ignorePackages": ["@mapo/docs", "@mapo/example"]
+    "ignorePackages": [
+      "@mapo/docs",
+      "@mapo/example"
+    ]
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
@@ -46,6 +46,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "multi-semantic-release": "^3.1.0",
+    "prettier": "^3.8.3",
     "turbo": "^2.9.6",
     "typescript": "^6.0.3"
   }

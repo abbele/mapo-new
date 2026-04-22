@@ -1,0 +1,23 @@
+{
+  "name": "@mapo/utils",
+  "version": "0.0.0",
+  "description": "Mapo typed utilities: deepMerge, objectDiff, debounce, formatDate, menuHelpers",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  }
+}

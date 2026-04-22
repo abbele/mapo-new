@@ -1,0 +1,22 @@
+{
+  "name": "@mapo/routemeta",
+  "version": "0.0.0",
+  "description": "Mapo route metadata parser (post-DP-1: may be eliminated)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  }
+}

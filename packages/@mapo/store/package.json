@@ -1,0 +1,22 @@
+{
+  "name": "@mapo/store",
+  "version": "0.0.0",
+  "description": "Mapo Pinia stores: auth, media, snack, confirm, sidebar",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  }
+}
