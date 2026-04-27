@@ -73,6 +73,8 @@ push to main
 
 The `release` job only runs on `push` to `main`, never on pull requests.
 
+TODO: extend the validation stage in the future with a test matrix across multiple supported Node.js versions, Nuxt versions, and other compatibility dimensions so releases are validated against more than one environment.
+
 ---
 
 ## Scripts

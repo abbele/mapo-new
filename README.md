@@ -25,6 +25,7 @@ Mapo is a Vue 3 / Nuxt 4 admin framework for building backoffice interfaces decl
 
 ```bash
 pnpm install
+pnpm build
 ```
 
 ## Scripts

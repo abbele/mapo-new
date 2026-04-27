@@ -11,8 +11,8 @@
     "docs:build": "turbo run docs:build",
     "dev:example": "pnpm --filter @mapomodule/example dev",
     "prepare": "husky",
-    "release": "pnpm build && multi-semantic-release",
-    "release:dry": "pnpm build && multi-semantic-release --dry-run",
+    "release": "pnpm build && multi-semantic-release --extends $PWD/.releaserc.release.json",
+    "release:dry": "pnpm build && multi-semantic-release --dry-run --extends $PWD/.releaserc.dryrun.json",
     "publish:packages": "pnpm -r --filter './packages/**' publish --access public --no-git-checks"
   },
   "engines": {

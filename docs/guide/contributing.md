@@ -72,4 +72,7 @@ lint & typecheck → test → release
 ```
 
 The `release` job only runs on push to `main` after both previous jobs pass.
+
+TODO: in a future iteration, expand the pipeline test stage with a matrix covering multiple supported Node.js versions, Nuxt versions, and other relevant compatibility targets instead of a single runtime combination.
+
 See [Release Process](./release-process.md) for full details.
