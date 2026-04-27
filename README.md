@@ -4,17 +4,17 @@ Mapo is a Vue 3 / Nuxt 4 admin framework for building backoffice interfaces decl
 
 ## Packages
 
-| Package              | Description                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------- |
-| `@mapo/core`         | API layer (`CrudRepository`), auth composables, HTTP interceptors, Nuxt middleware     |
-| `@mapo/store`        | Pinia stores: auth, media, snack, confirm, sidebar                                     |
-| `@mapo/form`         | Declarative typed form engine and field components                                     |
-| `@mapo/uikit`        | UI components: Sidebar, Topbar, List, Detail, Media, Menu                              |
-| `@mapo/utils`        | Typed utilities: `deepMerge`, `objectDiff`, `debounce`, `formatDate`, `buildRouteTree` |
-| `@mapo/integrations` | Adapter loader with formal TypeScript interface                                        |
-| `@mapo/i18n`         | `@nuxtjs/i18n` v9 wrapper with base translations                                       |
-| `@mapo/routemeta`    | Placeholder — eliminated after DP-1 (see `docs/DECISIONS.md`)                          |
-| `mapomodule`         | Meta-package: installs all `@mapo/*` modules with a single `installModule` call        |
+| Package                    | Description                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| `@mapomodule/core`         | API layer (`CrudRepository`), auth composables, HTTP interceptors, Nuxt middleware     |
+| `@mapomodule/store`        | Pinia stores: auth, media, snack, confirm, sidebar                                     |
+| `@mapomodule/form`         | Declarative typed form engine and field components                                     |
+| `@mapomodule/uikit`        | UI components: Sidebar, Topbar, List, Detail, Media, Menu                              |
+| `@mapomodule/utils`        | Typed utilities: `deepMerge`, `objectDiff`, `debounce`, `formatDate`, `buildRouteTree` |
+| `@mapomodule/integrations` | Adapter loader with formal TypeScript interface                                        |
+| `@mapomodule/i18n`         | `@nuxtjs/i18n` v9 wrapper with base translations                                       |
+| `@mapomodule/routemeta`    | Placeholder — eliminated after DP-1 (see `docs/DECISIONS.md`)                          |
+| `mapomodule`               | Meta-package: installs all `@mapomodule/*` modules with a single `installModule` call  |
 
 ## Requirements
 
@@ -70,7 +70,7 @@ See [docs/guide/release-process.md](docs/guide/release-process.md) for the full 
 ## Monorepo Structure
 
 ```
-packages/@mapo/       individual @mapo/* packages
+packages/@mapomodule/       individual @mapomodule/* packages
 packages/mapomodule/  meta-package
 apps/example/         Nuxt 4 demo and test app
 docs/                 VitePress documentation site

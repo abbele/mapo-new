@@ -43,10 +43,10 @@ wip: stuff                                  ✘
 pnpm test
 
 # Single package
-pnpm --filter @mapo/utils test
+pnpm --filter @mapomodule/utils test
 
 # Watch mode (during development)
-pnpm --filter @mapo/utils exec vitest
+pnpm --filter @mapomodule/utils exec vitest
 ```
 
 ---
@@ -58,7 +58,7 @@ pnpm --filter @mapo/utils exec vitest
 pnpm build
 
 # Single package
-pnpm --filter @mapo/utils build
+pnpm --filter @mapomodule/utils build
 ```
 
 ---

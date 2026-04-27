@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/example",
+  "name": "@mapomodule/example",
   "type": "module",
   "private": true,
   "scripts": {

@@ -1,7 +1,7 @@
 {
   "name": "mapomodule",
   "version": "0.0.0",
-  "description": "Mapo meta-package: registers and re-exports all @mapo/* modules",
+  "description": "Mapo meta-package: registers and re-exports all @mapomodule/* modules",
   "type": "module",
   "exports": {
     ".": {
@@ -20,13 +20,13 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@mapo/core": "workspace:*",
-    "@mapo/store": "workspace:*",
-    "@mapo/utils": "workspace:*",
-    "@mapo/integrations": "workspace:*",
-    "@mapo/routemeta": "workspace:*",
-    "@mapo/form": "workspace:*",
-    "@mapo/uikit": "workspace:*",
-    "@mapo/i18n": "workspace:*"
+    "@mapomodule/core": "workspace:*",
+    "@mapomodule/store": "workspace:*",
+    "@mapomodule/utils": "workspace:*",
+    "@mapomodule/integrations": "workspace:*",
+    "@mapomodule/routemeta": "workspace:*",
+    "@mapomodule/form": "workspace:*",
+    "@mapomodule/uikit": "workspace:*",
+    "@mapomodule/i18n": "workspace:*"
   }
 }

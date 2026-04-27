@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/store",
+  "name": "@mapomodule/store",
   "version": "0.0.0",
   "description": "Mapo Pinia stores: auth, media, snack, confirm, sidebar",
   "type": "module",

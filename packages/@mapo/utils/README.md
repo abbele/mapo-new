@@ -1,6 +1,6 @@
-# @mapo/utils
+# @mapomodule/utils
 
-Typed utility helpers shared across all `@mapo/*` packages.
+Typed utility helpers shared across all `@mapomodule/*` packages.
 
 ## Utilities
 
@@ -18,7 +18,7 @@ Typed utility helpers shared across all `@mapo/*` packages.
 ## Installation
 
 ```bash
-pnpm add @mapo/utils
+pnpm add @mapomodule/utils
 ```
 
 ---

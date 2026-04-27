@@ -1,1 +1,1 @@
-// @mapo/i18n — placeholder
+// @mapomodule/i18n — placeholder

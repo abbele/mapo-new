@@ -34,15 +34,15 @@ The `type` determines the version bump:
 
 `multi-semantic-release` analyzes commits for each package independently. Only packages with relevant commits since their last release are versioned and published.
 
-For example, a `feat(form):` commit triggers a release only for `@mapo/form` — not for `@mapo/core`, `@mapo/store`, or any other unrelated package.
+For example, a `feat(form):` commit triggers a release only for `@mapomodule/form` — not for `@mapomodule/core`, `@mapomodule/store`, or any other unrelated package.
 
 ### 3. Cascade Bumping
 
-`mapomodule` (the meta-package) depends on all `@mapo/*` packages via `workspace:*`. When any dependency receives a release, `mapomodule` is automatically bumped using the `inherit` strategy — it inherits the highest bump level among its updated dependencies.
+`mapomodule` (the meta-package) depends on all `@mapomodule/*` packages via `workspace:*`. When any dependency receives a release, `mapomodule` is automatically bumped using the `inherit` strategy — it inherits the highest bump level among its updated dependencies.
 
 ```
 feat(core): add new composable
-  → @mapo/core: minor bump (0.1.0 → 0.2.0)
+  → @mapomodule/core: minor bump (0.1.0 → 0.2.0)
   → mapomodule: minor bump (0.1.0 → 0.2.0)  ← cascaded
 ```
 
@@ -66,7 +66,7 @@ push to main
                     ├── Determine version bumps
                     ├── Update CHANGELOG.md per package
                     ├── Bump version in package.json
-                    ├── Create Git tag  (e.g. @mapo/core@0.2.0)
+                    ├── Create Git tag  (e.g. @mapomodule/core@0.2.0)
                     ├── Create GitHub Release with notes
                     └── Publish to npm  (@semantic-release/npm)
 ```
@@ -116,9 +116,9 @@ Two secrets must be configured in the GitHub repository (`Settings → Secrets a
 
 ## Scoped Packages and npm Access
 
-All `@mapo/*` packages and `mapomodule` are published with `--access public` since they live under a scoped namespace. This is configured in `.releaserc.json` via `@semantic-release/npm`.
+All `@mapomodule/*` packages and `mapomodule` are published with `--access public` since they live under a scoped namespace. This is configured in `.releaserc.json` via `@semantic-release/npm`.
 
-Private packages (`@mapo/docs`, `@mapo/example`) have `"private": true` in their `package.json` and are automatically skipped by `@semantic-release/npm` — they are never published to npm.
+Private packages (`@mapomodule/docs`, `@mapomodule/example`) have `"private": true` in their `package.json` and are automatically skipped by `@semantic-release/npm` — they are never published to npm.
 
 ---
 
@@ -133,8 +133,8 @@ Each package gets its own `CHANGELOG.md` at the package root, generated and upda
 `multi-semantic-release` creates one tag per released package using the format:
 
 ```
-@mapo/core@0.2.0
-@mapo/form@1.0.0
+@mapomodule/core@0.2.0
+@mapomodule/form@1.0.0
 mapomodule@0.2.0
 ```
 

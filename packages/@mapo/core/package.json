@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/core",
+  "name": "@mapomodule/core",
   "version": "0.0.0",
   "description": "Mapo core: API layer, auth, composables, middleware",
   "type": "module",

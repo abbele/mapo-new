@@ -1,15 +1,15 @@
 {
   "name": "mapo-monorepo",
   "private": true,
-  "description": "Monorepo for @mapo/* packages and mapomodule",
+  "description": "Monorepo for @mapomodule/* packages and mapomodule",
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "docs:dev": "pnpm --filter @mapo/docs dev",
+    "docs:dev": "pnpm --filter @mapomodule/docs dev",
     "docs:build": "turbo run docs:build",
-    "dev:example": "pnpm --filter @mapo/example dev",
+    "dev:example": "pnpm --filter @mapomodule/example dev",
     "prepare": "husky",
     "release": "pnpm build && multi-semantic-release",
     "release:dry": "pnpm build && multi-semantic-release --dry-run",
@@ -22,10 +22,10 @@
   "packageManager": "pnpm@8.15.6",
   "lint-staged": {
     "**/*.{ts,tsx,vue,json,md}": [
-      "prettier --write"
+      "pnpm exec prettier --write"
     ],
     "**/*.{ts,tsx,vue}": [
-      "vitest related --run"
+      "pnpm exec vitest related --run"
     ]
   },
   "multiSemanticRelease": {
@@ -34,8 +34,8 @@
       "release": "inherit"
     },
     "ignorePackages": [
-      "@mapo/docs",
-      "@mapo/example"
+      "@mapomodule/docs",
+      "@mapomodule/example"
     ]
   },
   "devDependencies": {

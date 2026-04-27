@@ -1,1 +1,1 @@
-// @mapo/integrations — placeholder
+// @mapomodule/integrations — placeholder
