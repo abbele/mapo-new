@@ -1,1 +1,1 @@
-// @mapo/store — placeholder
+// @mapomodule/store — placeholder

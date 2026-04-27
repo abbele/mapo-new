@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/integrations",
+  "name": "@mapomodule/integrations",
   "version": "0.0.0",
   "description": "Mapo adapter loader with formal TypeScript interface",
   "type": "module",

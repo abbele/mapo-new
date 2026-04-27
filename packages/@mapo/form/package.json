@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/form",
+  "name": "@mapomodule/form",
   "version": "0.0.0",
   "description": "Mapo declarative typed form engine and field components",
   "type": "module",
@@ -18,6 +18,6 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   }
 }

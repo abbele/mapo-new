@@ -1,1 +1,1 @@
-// @mapo/uikit — placeholder
+// @mapomodule/uikit — placeholder

@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/i18n",
+  "name": "@mapomodule/i18n",
   "version": "0.0.0",
   "description": "Mapo i18n wrapper: @nuxtjs/i18n v9 + base translations",
   "type": "module",

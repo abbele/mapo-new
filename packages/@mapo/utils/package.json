@@ -1,5 +1,5 @@
 {
-  "name": "@mapo/utils",
+  "name": "@mapomodule/utils",
   "version": "0.0.0",
   "description": "Mapo typed utilities: deepMerge, objectDiff, debounce, formatDate, menuHelpers",
   "type": "module",
@@ -19,5 +19,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"
+  },
+  "devDependencies": {
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4"
   }
 }

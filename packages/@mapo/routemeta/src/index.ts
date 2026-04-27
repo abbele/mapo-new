@@ -1,1 +1,1 @@
-// @mapo/routemeta — placeholder
+// @mapomodule/routemeta — placeholder

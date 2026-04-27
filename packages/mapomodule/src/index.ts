@@ -1,1 +1,2 @@
-export * from "@mapo/core";
+export * from "@mapomodule/core";
+export * from "@mapomodule/utils";

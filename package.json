@@ -1,18 +1,18 @@
 {
   "name": "mapo-monorepo",
   "private": true,
-  "description": "Monorepo for @mapo/* packages and mapomodule",
+  "description": "Monorepo for @mapomodule/* packages and mapomodule",
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "docs:dev": "pnpm --filter @mapo/docs dev",
+    "docs:dev": "pnpm --filter @mapomodule/docs dev",
     "docs:build": "turbo run docs:build",
-    "dev:example": "pnpm --filter @mapo/example dev",
+    "dev:example": "pnpm --filter @mapomodule/example dev",
     "prepare": "husky",
-    "release": "pnpm build && multi-semantic-release",
-    "release:dry": "pnpm build && multi-semantic-release --dry-run",
+    "release": "pnpm build && multi-semantic-release --extends $PWD/.releaserc.release.json",
+    "release:dry": "pnpm build && multi-semantic-release --dry-run --extends $PWD/.releaserc.dryrun.json",
     "publish:packages": "pnpm -r --filter './packages/**' publish --access public --no-git-checks"
   },
   "engines": {
@@ -22,7 +22,10 @@
   "packageManager": "pnpm@8.15.6",
   "lint-staged": {
     "**/*.{ts,tsx,vue,json,md}": [
-      "prettier --write"
+      "pnpm exec prettier --write"
+    ],
+    "**/*.{ts,tsx,vue}": [
+      "pnpm exec vitest related --run"
     ]
   },
   "multiSemanticRelease": {
@@ -31,23 +34,28 @@
       "release": "inherit"
     },
     "ignorePackages": [
-      "@mapo/docs",
-      "@mapo/example"
+      "@mapomodule/docs",
+      "@mapomodule/example"
     ]
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
+    "@eslint/js": "^10.0.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.6",
     "@semantic-release/npm": "^13.1.5",
+    "eslint": "^10.2.1",
+    "eslint-plugin-vue": "^10.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "multi-semantic-release": "^3.1.0",
     "prettier": "^3.8.3",
     "turbo": "^2.9.6",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^4.1.5"
   }
 }
