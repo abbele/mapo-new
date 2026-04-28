@@ -5,7 +5,7 @@ import {
   MAPO_AUTH_LOGIN_PATH,
   MAPO_AUTH_LOGOUT_PATH,
   MAPO_SESSION_COOKIE,
-} from "../../../constants";
+} from "../../constants";
 
 export interface RequestCookieResult {
   cookieHeader: string;

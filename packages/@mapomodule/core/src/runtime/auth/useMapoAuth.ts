@@ -2,25 +2,19 @@ import { useNuxtApp, navigateTo, useCookie, useRuntimeConfig } from "nuxt/app";
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 import { CoreCookieEnum } from "../types";
 import type { Credentials } from "../types";
-import type { MapoOptions } from "../../types";
-import { MAPO_DEFAULTS } from "../../types";
 
-export function useMapoAuth(
-  options?: Pick<MapoOptions, "authLoginUrl" | "userInfoApi" | "logoutUrl">,
-) {
-  const runtimeConfig = useRuntimeConfig().public
-    .mapoCore as Required<MapoOptions>;
-  const authLoginUrl =
-    options?.authLoginUrl ??
-    runtimeConfig.authLoginUrl ??
-    MAPO_DEFAULTS.authLoginUrl;
-  const userInfoApi =
-    options?.userInfoApi ??
-    runtimeConfig.userInfoApi ??
-    MAPO_DEFAULTS.userInfoApi;
-  const logoutUrl =
-    options?.logoutUrl ?? runtimeConfig.logoutUrl ?? MAPO_DEFAULTS.logoutUrl;
-  const loginUrl = runtimeConfig.loginUrl ?? MAPO_DEFAULTS.loginUrl;
+type AuthOverrides = {
+  authLoginUrl?: string;
+  userInfoApi?: string;
+  logoutUrl?: string;
+};
+
+export function useMapoAuth(options?: AuthOverrides) {
+  const rc = useRuntimeConfig().public.mapoCore as Record<string, string>;
+  const authLoginUrl = options?.authLoginUrl ?? rc.authLoginUrl;
+  const userInfoApi = options?.userInfoApi ?? rc.userInfoApi;
+  const logoutUrl = options?.logoutUrl ?? rc.logoutUrl;
+  const loginUrl = rc.loginUrl;
 
   const { $mapoFetch } = useNuxtApp();
   const authStore = useAuthStore();

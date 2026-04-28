@@ -6,16 +6,14 @@ import {
 } from "nuxt/app";
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
-import { MAPO_DEFAULTS } from "../../types";
-import type { MapoOptions } from "../../types";
 
 export default defineNuxtPlugin({
   name: "mapo-core:fetch",
   enforce: "pre",
   setup() {
-    const rc = useRuntimeConfig().public.mapoCore as Required<MapoOptions>;
-    const logoutUrl = rc.logoutUrl ?? MAPO_DEFAULTS.logoutUrl;
-    const loginUrl = rc.loginUrl ?? MAPO_DEFAULTS.loginUrl;
+    const rc = useRuntimeConfig().public.mapoCore as Record<string, string>;
+    const logoutUrl = rc.logoutUrl;
+    const loginUrl = rc.loginUrl;
 
     const handle = (status: number, requestUrl: string) => {
       if (status === 401 && !requestUrl.includes(logoutUrl)) {

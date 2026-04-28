@@ -16,7 +16,7 @@ import {
   processResponseCookies,
 } from "../utils/cookieSync";
 import type { CamomillaRuntimeConfig } from "../../../types";
-import { CAMOMILLA_AUTH_PATHS } from "../../../constants";
+import { CAMOMILLA_AUTH_PATHS } from "../../constants";
 
 const SKIP_REQUEST_HEADERS = new Set([
   "host",

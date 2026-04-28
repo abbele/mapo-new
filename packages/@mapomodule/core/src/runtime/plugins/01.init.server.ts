@@ -10,7 +10,6 @@ import type { Pinia } from "pinia";
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 import { useSidebarStore } from "@mapomodule/store/runtime/stores/sidebar";
 import type { MapoUser } from "@mapomodule/store";
-import { MAPO_DEFAULTS } from "../../types";
 import { CoreCookieEnum } from "../types";
 
 export default defineNuxtPlugin({
@@ -19,7 +18,7 @@ export default defineNuxtPlugin({
     const runtimeConfig = useRuntimeConfig().public.mapoCore as
       | Record<string, string>
       | undefined;
-    const userInfoApi = runtimeConfig?.userInfoApi ?? MAPO_DEFAULTS.userInfoApi;
+    const userInfoApi = runtimeConfig?.userInfoApi ?? "/api/profiles/me/";
 
     const pinia = nuxtApp.$pinia as Pinia;
     setActivePinia(pinia);

@@ -8,7 +8,7 @@ import {
   MAPO_AUTH_LOGIN_PATH,
   MAPO_AUTH_LOGOUT_PATH,
   MAPO_USER_INFO_PATH,
-} from "../../../constants";
+} from "../../constants";
 
 export function buildDefaultRewrites(base: string): CamomillaPathRewrite {
   const b = base
