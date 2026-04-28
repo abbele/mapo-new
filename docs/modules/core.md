@@ -33,7 +33,7 @@ In practice, prefer `mapomodule` as the single entry point — it installs `@map
 | `logoutUrl`    | `string` | `/api/auth/logout`  | Endpoint called by `useMapoAuth().logout()`                       |
 | `loginUrl`     | `string` | `/login`            | Page route the auth middleware redirects unauthenticated users to |
 
-> When installed via the [`mapomodule`](../../packages/mapomodule/) meta-package, configure these options under `mapo:` instead of `mapoCore:`. The defaults are exported as `MAPO_DEFAULTS` from `@mapomodule/core`.
+> When installed via the `mapomodule` meta-package, configure these options under `mapo:` instead of `mapoCore:`. The defaults are exported as `MAPO_DEFAULTS` from `@mapomodule/core`.
 
 ## Auto-imports
 
