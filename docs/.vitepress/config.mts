@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: process.env.BASE_URL ?? '/',
   title: 'Mapo',
   description: 'Mapo v2 — Vue 3 / Nuxt 4 admin framework',
 
