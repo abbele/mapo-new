@@ -26,11 +26,14 @@ In practice, prefer `mapomodule` as the single entry point — it installs `@map
 
 ## Options
 
-| Option         | Type     | Default             | Description                                    |
-| -------------- | -------- | ------------------- | ---------------------------------------------- |
-| `authLoginUrl` | `string` | `/api/auth/login`   | Endpoint called by `useMapoAuth().login()`     |
-| `userInfoApi`  | `string` | `/api/profiles/me/` | Endpoint to fetch the logged-in user's profile |
-| `logoutUrl`    | `string` | `/api/auth/logout`  | Endpoint called by `useMapoAuth().logout()`    |
+| Option         | Type     | Default             | Description                                                       |
+| -------------- | -------- | ------------------- | ----------------------------------------------------------------- |
+| `authLoginUrl` | `string` | `/api/auth/login`   | Endpoint called by `useMapoAuth().login()`                        |
+| `userInfoApi`  | `string` | `/api/profiles/me/` | Endpoint to fetch the logged-in user's profile                    |
+| `logoutUrl`    | `string` | `/api/auth/logout`  | Endpoint called by `useMapoAuth().logout()`                       |
+| `loginUrl`     | `string` | `/login`            | Page route the auth middleware redirects unauthenticated users to |
+
+> When installed via the [`mapomodule`](../../packages/mapomodule/) meta-package, configure these options under `mapo:` instead of `mapoCore:`. The defaults are exported as `MAPO_DEFAULTS` from `@mapomodule/core`.
 
 ## Auto-imports
 

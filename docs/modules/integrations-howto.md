@@ -193,8 +193,8 @@ Once your integration proxy is in place, `@mapomodule/core` works without modifi
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ["@mapomodule/core", "./my-backend-integration"],
-  mapoCore: {
+  modules: ["mapomodule", "./my-backend-integration"],
+  mapo: {
     authLoginUrl: "/api/auth/login", // rewritten by your proxy
     userInfoApi: "/api/profiles/me/", // rewritten by your proxy
     logoutUrl: "/api/auth/logout", // rewritten by your proxy

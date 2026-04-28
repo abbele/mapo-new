@@ -128,8 +128,8 @@ camomilla: {
 ```ts
 // nuxt.config.ts — full example
 export default defineNuxtConfig({
-  modules: ["@mapomodule/core", "mapo-integrations-camomilla"],
-  mapoCore: {
+  modules: ["mapomodule", "mapo-integrations-camomilla"],
+  mapo: {
     authLoginUrl: "/api/auth/login",
     userInfoApi: "/api/profiles/me/",
     logoutUrl: "/api/auth/logout",

@@ -80,38 +80,6 @@ The `$mapoFetch` plugin (`00.fetch.ts`) is registered by `@mapomodule/core/src/m
 
 ---
 
-## `mapomodule` does not yet forward its `mapo` config to `@mapomodule/core`
-
-**Affects**: Users who use `mapomodule` as the entry point
-
-**Status**: Partial gap
-
-`mapomodule` exposes `configKey: 'mapo'` but its `setup()` currently ignores `_options`. The `mapoCore` config key (from `@mapomodule/core`) is still the authoritative source for `authLoginUrl`, `userInfoApi`, and `logoutUrl`.
-
-This means if you configure:
-
-```ts
-// nuxt.config.ts
-mapo: {
-  authLoginUrl: "/my/login";
-} // ← currently ignored by mapomodule
-mapoCore: {
-  authLoginUrl: "/my/login";
-} // ← this one works
-```
-
-**TODO**: In `mapomodule/src/module.ts`, forward the `mapo` config to `@mapomodule/core` when installing it:
-
-```ts
-async setup(options) {
-  if (!hasNuxtModule('@mapomodule/core')) {
-    await installModule('@mapomodule/core', options)
-  }
-}
-```
-
----
-
 ## Auth store has no loading/pending state
 
 **Affects**: SSR hydration, login transitions

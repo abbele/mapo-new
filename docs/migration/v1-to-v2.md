@@ -217,7 +217,7 @@ mapo: {
 // v2 — nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['mapomodule', 'mapo-integrations-camomilla'],
-  mapoCore: {
+  mapo: {
     authLoginUrl: '/api/auth/login',
     userInfoApi: '/api/profiles/me/',
     logoutUrl: '/api/auth/logout',
