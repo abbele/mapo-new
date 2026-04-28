@@ -6,7 +6,7 @@ export default defineNuxtConfig({
 
   css: ["~/assets/css/main.css"],
 
-  mapoCore: {
+  mapo: {
     authLoginUrl: "/api/auth/login",
     userInfoApi: "/api/profiles/me/",
     logoutUrl: "/api/auth/logout",
