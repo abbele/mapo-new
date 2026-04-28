@@ -9,7 +9,9 @@ dist
 .env
 .env.*
 !.env.example
+.vscode/
 
 AGENTS.md
+TESTING.md
 /docs/roadmap
 /docs/DECISIONS.md
