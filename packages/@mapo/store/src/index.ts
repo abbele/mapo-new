@@ -1,1 +1,0 @@
-// @mapomodule/store — placeholder
