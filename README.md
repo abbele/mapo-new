@@ -71,7 +71,7 @@ See [docs/guide/release-process.md](docs/guide/release-process.md) for the full 
 ## Monorepo Structure
 
 ```
-packages/@mapomodule/       individual @mapomodule/* packages
+packages/@mapomodule/ individual @mapomodule/* packages
 packages/mapomodule/  meta-package
 apps/example/         Nuxt 4 demo and test app
 docs/                 VitePress documentation site
