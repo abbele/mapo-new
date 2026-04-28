@@ -10,6 +10,10 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "mapo-integrations-camomilla": "workspace:*",
+    "@mapomodule/core": "workspace:*",
+    "@mapomodule/store": "workspace:*",
+    "@nuxt/ui": "^4.6.1",
     "mapomodule": "workspace:*",
     "nuxt": "^4.4.2",
     "vue": "^3.5.32",

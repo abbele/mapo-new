@@ -10,8 +10,8 @@ hero:
       text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: Release Process
-      link: /guide/release-process
+      text: Architecture & Flows
+      link: /guide/architecture-flows
     - theme: alt
       text: View on GitHub
       link: https://github.com/lotrekagency/mapo
