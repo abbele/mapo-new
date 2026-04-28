@@ -3,7 +3,6 @@ import { applyMultipartPolicy } from "./multipart";
 import { useMapoFetch } from "../utils/useMapoFetch";
 import { MultipartPolicyEnum } from "../types";
 import type {
-  ListParams,
   PaginatedResponse,
   CrudConfig,
   CrudOptions,

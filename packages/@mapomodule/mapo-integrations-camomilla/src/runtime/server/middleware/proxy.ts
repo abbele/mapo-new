@@ -71,7 +71,9 @@ export default defineEventHandler(async (event) => {
       requestHeaders["x-forwarded-host"] = referer.host;
       requestHeaders["x-forwarded-proto"] = referer.protocol.replace(/:$/, "");
     }
-  } catch {}
+  } catch {
+    /* invalid referer URL — skip forwarding */
+  }
 
   // Forward any extra headers configured by the user
   for (const header of forwardedHeaders) {
