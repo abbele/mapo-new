@@ -1,7 +1,7 @@
 {
   "name": "@mapomodule/utils",
   "version": "0.0.0",
-  "description": "Mapo typed utilities: deepMerge, objectDiff, debounce, formatDate, menuHelpers",
+  "description": "Mapo typed utilities",
   "type": "module",
   "exports": {
     ".": {
