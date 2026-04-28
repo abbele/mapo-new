@@ -6,3 +6,4 @@ export { debounce } from "./debounce.js";
 export { slotNamespace } from "./slotNamespace.js";
 export { buildRouteTree } from "./menuHelpers.js";
 export type { MenuNode } from "./menuHelpers.js";
+export { normalizeEndpoint } from "./normalizeEndpoint.js";

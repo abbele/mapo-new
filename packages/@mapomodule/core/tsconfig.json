@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "paths": {
+      "@mapomodule/store": ["./node_modules/@mapomodule/store/src/index.ts"],
+      "@mapomodule/store/runtime/stores/*": [
+        "./node_modules/@mapomodule/store/src/runtime/stores/*.ts"
+      ],
+      "@mapomodule/store/runtime/*": [
+        "./node_modules/@mapomodule/store/src/runtime/*.ts"
+      ],
+      "@mapomodule/utils": ["./node_modules/@mapomodule/utils/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

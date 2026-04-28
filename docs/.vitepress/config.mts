@@ -9,6 +9,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Modules', link: '/modules/core' },
+      { text: 'Integrations', link: '/modules/camomilla' },
       { text: 'Components', link: '/components/' },
       { text: 'Migration', link: '/migration/v1-to-v2' },
     ],
@@ -20,6 +21,8 @@ export default defineConfig({
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Installation', link: '/guide/installation' },
           { text: 'Configuration', link: '/guide/configuration' },
+          { text: 'Architecture & Flows', link: '/guide/architecture-flows' },
+          { text: 'Known Limitations', link: '/guide/known-limitations' },
           { text: 'Release Process', link: '/guide/release-process' },
           { text: 'Contributing', link: '/guide/contributing' },
         ],
@@ -31,10 +34,15 @@ export default defineConfig({
           { text: 'Store', link: '/modules/store' },
           { text: 'Form', link: '/modules/form' },
           { text: 'UI Kit', link: '/modules/uikit' },
-          { text: 'Integrations', link: '/modules/integrations' },
           { text: 'i18n', link: '/modules/i18n' },
-          { text: 'Route Meta', link: '/modules/routemeta' },
           { text: 'Utils', link: '/modules/utils' },
+        ],
+      },
+      {
+        text: 'Backend Integrations',
+        items: [
+          { text: 'Camomilla CMS', link: '/modules/camomilla' },
+          { text: 'Writing your own', link: '/modules/integrations-howto' },
         ],
       },
       {
