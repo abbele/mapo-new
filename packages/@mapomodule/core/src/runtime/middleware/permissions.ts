@@ -1,9 +1,11 @@
 import { defineNuxtRouteMiddleware, createError } from "nuxt/app";
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 
+type RoutePermissions = { model: string } | string[];
+
 export default defineNuxtRouteMiddleware((to) => {
   const auth = useAuthStore();
-  const perms = to.meta.permissions;
+  const perms = to.meta.permissions as RoutePermissions | undefined;
   if (!perms) return;
   if (auth.info?.is_superuser) {
     if (!Array.isArray(perms)) {

@@ -3,7 +3,7 @@ import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 
 export default defineNuxtRouteMiddleware((to) => {
   const auth = useAuthStore();
-  const required = to.meta.roles;
+  const required = to.meta.roles as string[] | undefined;
   if (!required?.length) return;
   if (auth.info?.is_superuser) return;
   const userGroups = auth.info?.groups ?? [];

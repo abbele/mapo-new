@@ -110,15 +110,14 @@ export default defineNuxtModule<MapoUikitOptions>({
     // Without this, in monorepo setups pnpm may hoist @iconify-json/lucide to the
     // workspace root and @nuxt/icon fails to detect it as a local package.
     nuxt.hook("modules:done", () => {
-      // @ts-expect-error — icon options typed by @nuxt/icon augmentation at app build time
-      nuxt.options.icon ??= {};
-      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
-      nuxt.options.icon.serverBundle ??= {};
-      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
-      const existing: string[] =
-        nuxt.options.icon.serverBundle.collections ?? [];
-      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
-      nuxt.options.icon.serverBundle.collections = Array.from(
+      // icon options are typed by @nuxt/icon's NuxtOptions augmentation at app build time.
+      // Cast to any to avoid TS errors in the uikit package which doesn't depend on @nuxt/icon directly.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const iconOpts = nuxt.options as any;
+      iconOpts.icon ??= {};
+      iconOpts.icon.serverBundle ??= {};
+      const existing: string[] = iconOpts.icon.serverBundle.collections ?? [];
+      iconOpts.icon.serverBundle.collections = Array.from(
         new Set([...existing, "lucide"]),
       );
     });
@@ -130,10 +129,13 @@ export default defineNuxtModule<MapoUikitOptions>({
       const overrideDir = resolve(nuxt.options.srcDir, "mapooverride");
       if (!existsSync(overrideDir)) return;
       for (const component of components) {
-        const overridePath = resolve(overrideDir, `${component.name}.vue`);
+        // Component type from @nuxt/schema doesn't expose name/filePath/shortPath directly
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const c = component as any;
+        const overridePath = resolve(overrideDir, `${c.name}.vue`);
         if (existsSync(overridePath)) {
-          component.filePath = overridePath;
-          component.shortPath = `mapooverride/${component.name}.vue`;
+          c.filePath = overridePath;
+          c.shortPath = `mapooverride/${c.name}.vue`;
         }
       }
     });

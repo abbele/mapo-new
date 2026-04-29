@@ -23,7 +23,7 @@ export function useCanAccessRoute(meta: RouteMeta): boolean {
     const required = meta.roles;
     if (required?.length && !auth.info?.is_superuser) {
       const userGroups = auth.info?.groups ?? [];
-      if (!required.some((r) => userGroups.includes(r))) return false;
+      if (!required.some((r: string) => userGroups.includes(r))) return false;
     }
   }
 
