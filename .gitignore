@@ -13,5 +13,11 @@ dist
 
 AGENTS.md
 TESTING.md
+CLAUDE.md
 /docs/roadmap
 /docs/DECISIONS.md
+
+.claude/
+.mcp.json
+.gitmodules
+legacy/
