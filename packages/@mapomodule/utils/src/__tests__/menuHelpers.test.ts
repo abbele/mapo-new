@@ -54,14 +54,16 @@ describe("buildRouteTree", () => {
     expect(buildRouteTree(routes)).toHaveLength(1);
   });
 
-  it("sets default icon from label initial", () => {
+  it("uses default icon when none provided", () => {
     const routes = [makeRoute("/about", { label: "About" })];
-    expect(buildRouteTree(routes)[0].icon).toBe("mdi-alpha-a-box-outline");
+    expect(buildRouteTree(routes)[0].icon).toBe("i-lucide-circle-dot");
   });
 
   it("uses explicit icon when provided", () => {
-    const routes = [makeRoute("/home", { label: "Home", icon: "mdi-home" })];
-    expect(buildRouteTree(routes)[0].icon).toBe("mdi-home");
+    const routes = [
+      makeRoute("/home", { label: "Home", icon: "i-lucide-home" }),
+    ];
+    expect(buildRouteTree(routes)[0].icon).toBe("i-lucide-home");
   });
 
   it("marks sidebarFooter nodes", () => {

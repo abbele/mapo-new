@@ -1,41 +1,50 @@
-import type { RouteRecordNormalized } from "vue-router";
+import type { RouteRecordNormalized, RouteMeta } from "vue-router";
 
 export interface MenuNode {
   link: string;
   label: string;
   icon: string;
   children: MenuNode[];
-  meta: Record<string, unknown>;
+  meta: RouteMeta;
   sidebarFooter: boolean;
+}
+
+/** Return the maximum nesting depth of a MenuNode tree (root = depth 1). */
+export function calcMaxMenuNestDepth(nodes: MenuNode[], depth = 1): number {
+  if (!nodes.length) return depth - 1;
+  let max = depth;
+  for (const node of nodes) {
+    if (node.children.length) {
+      const child = calcMaxMenuNestDepth(node.children, depth + 1);
+      if (child > max) max = child;
+    }
+  }
+  return max;
 }
 
 export function buildRouteTree(routes: RouteRecordNormalized[]): MenuNode[] {
   const nodeMap = new Map<string, MenuNode>();
 
   for (const route of routes) {
-    const meta = (route.meta ?? {}) as Record<string, unknown>;
-    if (!meta.label) continue;
-    const label = meta.label as string;
+    const { label, icon, hidden, sidebarFooter } = route.meta ?? {};
+    if (!label || hidden) continue;
     nodeMap.set(route.path, {
       link: route.path,
       label,
-      icon:
-        (meta.icon as string) ??
-        `mdi-alpha-${label[0].toLowerCase()}-box-outline`,
+      icon: icon ?? "i-lucide-circle-dot",
       children: [],
-      meta,
-      sidebarFooter: Boolean(meta.sidebarFooter),
+      meta: route.meta ?? {},
+      sidebarFooter: Boolean(sidebarFooter),
     });
   }
 
   const roots: MenuNode[] = [];
   for (const route of routes) {
-    const meta = (route.meta ?? {}) as Record<string, unknown>;
-    if (!meta.label) continue;
+    const { label, parent } = route.meta ?? {};
+    if (!label) continue;
     const node = nodeMap.get(route.path)!;
-    const parentPath = meta.parent as string | undefined;
-    if (parentPath && nodeMap.has(parentPath)) {
-      nodeMap.get(parentPath)!.children.push(node);
+    if (parent && nodeMap.has(parent)) {
+      nodeMap.get(parent)!.children.push(node);
     } else {
       roots.push(node);
     }
