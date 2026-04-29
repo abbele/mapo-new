@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Explicitly scan uikit Vue sources so Tailwind v4 generates their utility classes
+   even when the package is resolved through node_modules symlinks. */
+@source "../components/**/*.vue";
+@source "../layouts/**/*.vue";
+@source "../pages/**/*.vue";
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  /* Extend height chain through #__nuxt and the UApp wrapper div */
+  #__nuxt,
+  #__nuxt > * {
+    height: 100%;
+  }
+}
