@@ -112,12 +112,12 @@ export default defineNuxtModule<MapoUikitOptions>({
     nuxt.hook("modules:done", () => {
       // @ts-expect-error — icon options typed by @nuxt/icon augmentation at app build time
       nuxt.options.icon ??= {};
-      // @ts-expect-error
+      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
       nuxt.options.icon.serverBundle ??= {};
-      // @ts-expect-error
+      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
       const existing: string[] =
         nuxt.options.icon.serverBundle.collections ?? [];
-      // @ts-expect-error
+      // @ts-expect-error — icon.serverBundle typed by @nuxt/icon augmentation at app build time
       nuxt.options.icon.serverBundle.collections = Array.from(
         new Set([...existing, "lucide"]),
       );
