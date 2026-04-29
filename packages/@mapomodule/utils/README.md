@@ -22,6 +22,12 @@ Typed utility helpers shared across all `@mapomodule/*` packages.
 pnpm add @mapomodule/utils
 ```
 
+## Dev workflow
+
+```bash
+pnpm dev:utils   # from monorepo root — tsc --watch
+```
+
 ---
 
 > The helpers in this package are ported from the Mapo v1 legacy codebase. As v2 development progresses, individual helpers may be added, removed, or replaced — and the package itself may be dissolved if its contents are better placed elsewhere.

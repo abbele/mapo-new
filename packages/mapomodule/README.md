@@ -1,54 +1,54 @@
 # mapomodule
 
-The Mapo meta-module: a single Nuxt module that registers the entire Mapo stack with one entry in your `nuxt.config.ts`.
+The Mapo meta-module: a single Nuxt module that registers the entire Mapo stack with one entry in `nuxt.config.ts`.
 
 ## Installation
 
 ```bash
-pnpm add mapomodule
+pnpm add mapomodule @nuxt/ui
 ```
 
 ```ts
-// nuxt.config.ts
+// nuxt.config.ts — @nuxt/ui MUST come before mapomodule
 export default defineNuxtConfig({
-  modules: ["mapomodule"],
+  modules: ["@nuxt/ui", "mapomodule"],
 
   mapo: {
-    // optional — falls back to MAPO_DEFAULTS
     authLoginUrl: "/api/auth/login",
     userInfoApi: "/api/profiles/me/",
     logoutUrl: "/api/auth/logout",
     loginUrl: "/login",
+
+    uikit: {
+      css: "~/assets/css/theme.css", // optional CSS token override
+      ui: { button: { defaultVariants: { color: "primary" } } }, // optional Nuxt UI defaults
+    },
   },
 });
 ```
 
+All options are optional and fall back to `MAPO_DEFAULTS`.
+
 ## What it installs
 
-Currently:
+| Package             | Status                                      |
+| ------------------- | ------------------------------------------- |
+| `@mapomodule/store` | ✅ Pinia stores                             |
+| `@mapomodule/core`  | ✅ Service layer (forwards `mapo` config)   |
+| `@mapomodule/uikit` | ✅ UI shell + theming + MapoOverride system |
+| `@mapomodule/form`  | 🔲 Planned                                  |
+| `@mapomodule/i18n`  | 🔲 Planned                                  |
 
-- [`@mapomodule/store`](../@mapomodule/store) — Pinia stores
-- [`@mapomodule/core`](../@mapomodule/core) — service layer (forwards your `mapo` config to it)
+## Dev workflow
 
-Reserved (placeholders, will be installed once implemented):
+```bash
+# watch mode — rebuilds dist/ on src/ changes
+pnpm dev:mapomodule   # from monorepo root
+```
 
-- `@mapomodule/form`
-- `@mapomodule/uikit`
-- `@mapomodule/i18n`
-- `@mapomodule/routemeta`
+## Reference
 
-## Why a meta-module
-
-So consumers don't have to:
-
-- list every `@mapomodule/*` package as a dependency,
-- add each one to `modules[]`,
-- learn each module's `configKey` (`mapoCore`, etc.).
-
-You configure once under `mapo` and get the whole stack.
-
-## Configuration forwarding
-
-The module accepts `MapoOptions` from `@mapomodule/core` under its `configKey: 'mapo'` and forwards them to `installModule('@mapomodule/core', options)`. Any option valid in `@mapomodule/core` is valid here.
-
-> **Note**: `installModule` is currently used as the integration mechanism. Nuxt has flagged it as deprecated; we track this in [docs/guide/known-limitations](../../docs/guide/known-limitations.md).
+- [`@mapomodule/core`](../@mapomodule/core/) — CRUD, auth, middleware
+- [`@mapomodule/store`](../@mapomodule/store/) — Pinia stores
+- [`@mapomodule/uikit`](../@mapomodule/uikit/) — UI shell, theming, MapoOverride
+- [docs/modules/core](../../docs/modules/core.md) — full config reference

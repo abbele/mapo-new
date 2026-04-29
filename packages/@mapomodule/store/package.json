@@ -8,13 +8,15 @@
       "import": "./dist/module.mjs"
     },
     "./runtime/*": {
-      "import": "./dist/runtime/*.js"
+      "import": "./dist/runtime/*.js",
+      "default": "./src/runtime/*"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
+    "dev": "nuxt-module-build build --stub --watch",
     "build": "nuxt-module-build build",
     "prepare": "nuxt-module-build build --stub",
     "dev:prepare": "nuxt-module-build build --stub",

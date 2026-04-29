@@ -1,21 +1,20 @@
 # Mapo
 
-Mapo is a Vue 3 / Nuxt 4 admin framework for building backoffice interfaces declaratively. It provides a CRUD engine, a typed form system, media management, authentication, and a composable UI kit — all as individual packages that can be used together or independently.
+Mapo is a Vue 3 / Nuxt 4 admin framework for building backoffice interfaces declaratively. It provides a CRUD engine, authentication, a composable UI kit with full theming support, and a component override system — all as individual packages that can be used together or independently.
 
 ## Packages
 
 ### Core packages
 
-| Package                 | Description                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `@mapomodule/core`      | API layer (`CrudRepository`), auth composables, HTTP interceptors, Nuxt middleware     |
-| `@mapomodule/store`     | Pinia stores: auth, snack, confirm, sidebar + `usePermissions` composable              |
-| `@mapomodule/form`      | Declarative typed form engine and field components                                     |
-| `@mapomodule/uikit`     | UI components: Sidebar, Topbar, List, Detail, Media, Menu                              |
-| `@mapomodule/i18n`      | `@nuxtjs/i18n` v9 wrapper with base translations                                       |
-| `@mapomodule/utils`     | Typed utilities: `deepMerge`, `objectDiff`, `debounce`, `formatDate`, `buildRouteTree` |
-| `@mapomodule/routemeta` | Route metadata parser                                                                  |
-| `mapomodule`            | Meta-package: installs all `@mapomodule/*` modules with a single registration          |
+| Package             | Description                                                                   |
+| ------------------- | ----------------------------------------------------------------------------- |
+| `@mapomodule/core`  | API layer (`useCrud`), auth composables, HTTP interceptors, Nuxt middleware   |
+| `@mapomodule/store` | Pinia stores: auth, snack, confirm, sidebar + `usePermissions` composable     |
+| `@mapomodule/uikit` | UI shell: Sidebar, Topbar, Login, layout, theming, MapoOverride system        |
+| `@mapomodule/utils` | Typed utilities: `deepMerge`, `objectDiff`, `debounce`, `buildRouteTree`, …   |
+| `@mapomodule/form`  | _(planned)_ Declarative typed form engine and field components                |
+| `@mapomodule/i18n`  | _(planned)_ `@nuxtjs/i18n` v9 wrapper with base translations                  |
+| `mapomodule`        | Meta-package: installs all `@mapomodule/*` modules with a single registration |
 
 ### Backend integrations
 
@@ -37,12 +36,37 @@ pnpm build
 
 ## Scripts
 
-### Development
+### Apps
 
-| Script             | Description                                       |
-| ------------------ | ------------------------------------------------- |
-| `pnpm dev:example` | Start the Nuxt 4 example app dev server           |
-| `pnpm docs:dev`    | Start the VitePress documentation site dev server |
+| Script                   | Port | Description                                                                   |
+| ------------------------ | ---- | ----------------------------------------------------------------------------- |
+| `pnpm dev:example`       | 3000 | Core feature demo (login, CRUD, permissions, snackbar, sidebar)               |
+| `pnpm dev:example-theme` | 3001 | Theming & override demo (CSS tokens, Nuxt UI config, MapoOverride, dark mode) |
+| `pnpm docs:dev`          | —    | VitePress documentation site                                                  |
+
+### Package development
+
+Run a watcher on a single package so `dist/` stays in sync during development:
+
+| Script                | Package                              |
+| --------------------- | ------------------------------------ |
+| `pnpm dev:uikit`      | `@mapomodule/uikit`                  |
+| `pnpm dev:core`       | `@mapomodule/core`                   |
+| `pnpm dev:store`      | `@mapomodule/store`                  |
+| `pnpm dev:utils`      | `@mapomodule/utils`                  |
+| `pnpm dev:mapomodule` | `mapomodule`                         |
+| `pnpm dev:camomilla`  | `mapo-integrations-camomilla`        |
+| `pnpm dev:packages`   | All packages in parallel (Turborepo) |
+
+Typical workflow — two terminals:
+
+```bash
+# terminal 1: watch the package you're editing
+pnpm dev:uikit
+
+# terminal 2: run the demo app
+pnpm dev:example-theme
+```
 
 ### Build
 
@@ -55,9 +79,9 @@ pnpm build
 
 | Script           | Description                                      |
 | ---------------- | ------------------------------------------------ |
-| `pnpm lint`      | Run ESLint across all packages via Turborepo     |
+| `pnpm lint`      | Run ESLint across all packages                   |
 | `pnpm typecheck` | Run TypeScript type checking across all packages |
-| `pnpm test`      | Run Vitest unit tests and Cypress E2E tests      |
+| `pnpm test`      | Run Vitest unit tests                            |
 
 ### Release
 
@@ -71,15 +95,15 @@ pnpm build
 
 Releases are powered by [multi-semantic-release](https://github.com/qiwi/multi-semantic-release). Versioning is driven by [Conventional Commits](https://www.conventionalcommits.org/) — no manual bumping required.
 
-> **Current status**: the CI pipeline runs manually (`workflow_dispatch`). Automatic triggering on push to `main` will be enabled in the future.
-
-See [docs/guide/release-process.md](docs/guide/release-process.md) for the full release documentation.
+See [docs/guide/release-process.md](docs/guide/release-process.md) for the full documentation.
 
 ## Monorepo Structure
 
 ```
-packages/@mapomodule/ individual @mapomodule/* packages
-packages/mapomodule/  meta-package
-apps/example/         Nuxt 4 demo and test app
-docs/                 VitePress documentation site
+packages/@mapomodule/   individual @mapomodule/* packages
+packages/mapomodule/    meta-package
+apps/example/           core feature demo app
+apps/example-theme/     theming & override demo app
+docs/                   VitePress documentation site
+legacy/                 git submodules: mapo-v1 and mapo-v1-middleware (read-only reference)
 ```

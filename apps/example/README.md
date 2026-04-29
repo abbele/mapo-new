@@ -1,75 +1,45 @@
-# Nuxt Minimal Starter
+# @mapomodule/example
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Core feature demo app for Mapo v2. Exercises authentication, CRUD, multipart upload, permissions, snackbar, confirm dialog, and sidebar persistence against a real backend.
 
-## Setup
+## Prerequisites
 
-Make sure to install dependencies:
+A running [Camomilla CMS](https://github.com/lotrekagency/camomilla) instance (or any compatible Django REST backend) at `http://localhost:8000`.
+
+## Run
+
+From the monorepo root:
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+pnpm dev:example        # http://localhost:3000
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Or from this directory:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## What's demonstrated
 
-Build the application for production:
+| Page           | Feature                                                               |
+| -------------- | --------------------------------------------------------------------- |
+| `/login`       | `useMapoAuth().login()`, redirect after auth                          |
+| `/authexample` | `meta.permissions` with `{ model }` format, `pagePermissions` display |
+| `/settings`    | `meta.sidebarFooter` — page appears in sidebar footer                 |
 
-```bash
-# npm
-npm run build
+## Configuration
 
-# pnpm
-pnpm build
+Edit `nuxt.config.ts` to point `camomilla.server` at your backend:
 
-# yarn
-yarn build
-
-# bun
-bun run build
+```ts
+camomilla: {
+  server: "http://localhost:8000",
+  syncCamomillaSession: false,
+},
 ```
 
-Locally preview production build:
+## See also
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- [`apps/example-theme/`](../example-theme/) — theming & MapoOverride demo (no backend needed)

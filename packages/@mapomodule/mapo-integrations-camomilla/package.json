@@ -12,6 +12,7 @@
     "dist"
   ],
   "scripts": {
+    "dev": "nuxt-module-build build --stub --watch",
     "build": "nuxt-module-build build",
     "prepare": "nuxt-module-build build --stub",
     "dev:prepare": "nuxt-module-build build --stub",

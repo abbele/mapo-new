@@ -29,6 +29,12 @@ The module installs `@pinia/nuxt` automatically if not already present.
 | `useSidebarStore`  | Sidebar `drawer` / `mini` / `clipped` state with cookie persistence |
 | `usePermissions()` | Selectors over the auth store: `canView`, `canAdd`, `hasRole`, etc. |
 
+## Dev workflow
+
+```bash
+pnpm dev:store   # from monorepo root — watch mode
+```
+
 ## Reference
 
 See [docs/modules/store](../../../docs/modules/store.md) for the full API.
