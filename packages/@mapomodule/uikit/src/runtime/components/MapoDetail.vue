@@ -95,17 +95,12 @@ const emit = defineEmits<{
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 
+// Polyfill for structuredClone
 const deepClone = (obj: unknown): unknown => {
-  // toRaw is required: structuredClone cannot clone Vue reactive proxies
-  const raw = toRaw(obj as object);
   if (typeof globalThis !== "undefined" && "structuredClone" in globalThis) {
-    try {
-      return structuredClone(raw);
-    } catch {
-      /* fall through to JSON */
-    }
+    return (globalThis as any).structuredClone(obj);
   }
-  return JSON.parse(JSON.stringify(raw));
+  return JSON.parse(JSON.stringify(obj));
 };
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -516,7 +511,10 @@ defineSlots<{
 
   <div v-else>
     <!-- Draft banner -->
-    <slot name="draft-banner" v-bind="slotBindings">
+    <slot
+      name="draft-banner"
+      v-bind="slotBindings"
+    >
       <Transition name="slide-down">
         <UAlert
           v-if="draftBanner"
@@ -528,7 +526,11 @@ defineSlots<{
           description="You have a local draft that was not saved. Do you want to restore it or discard it?"
         >
           <template #actions>
-            <UButton size="xs" color="warning" @click="draftBanner?.restore()">
+            <UButton
+              size="xs"
+              color="warning"
+              @click="draftBanner?.restore()"
+            >
               Restore draft
             </UButton>
             <UButton
