@@ -11,6 +11,7 @@
     "docs:build": "turbo run docs:build",
     "dev:example": "pnpm --filter @mapomodule/example dev",
     "dev:example-theme": "pnpm --filter @mapomodule/example-theme dev",
+    "dev:example-form": "pnpm --filter @mapomodule/example-custom-form dev",
     "dev:core": "pnpm --filter @mapomodule/core dev",
     "dev:store": "pnpm --filter @mapomodule/store dev",
     "dev:uikit": "pnpm --filter @mapomodule/uikit dev",
