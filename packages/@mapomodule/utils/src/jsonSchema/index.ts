@@ -16,4 +16,3 @@ export {
   hasConditionals,
 } from "./conditionals.js";
 export { resolveSchema, extractDefs, getDefaultForSchema } from "./resolve.js";
-export { resolveSchema, extractDefs, getDefaultForSchema } from "./resolve.js";

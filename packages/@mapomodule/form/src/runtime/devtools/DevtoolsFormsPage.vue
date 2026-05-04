@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { FieldRegistry } from "../types/index.js";
+// @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
+import { definePageMeta, useNuxtApp, useRuntimeConfig } from "#imports";
+import { computed } from "vue";
 
 definePageMeta({ layout: false });
 
@@ -40,7 +43,7 @@ const builtInTypes = new Set([
   "repeater",
 ]);
 const userMappings = computed(() =>
-  registeredTypes.value.filter((t) => !builtInTypes.has(t)),
+  registeredTypes.value.filter((t: string) => !builtInTypes.has(t)),
 );
 
 const globalDebounce = computed(() => config?.debounce || 300);

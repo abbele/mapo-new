@@ -3,16 +3,21 @@ import {
   ref,
   computed,
   useSlots,
-  watch,
   onMounted,
   onBeforeUnmount,
+  type VNode,
 } from "vue";
-import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { objectDiff } from "@mapomodule/utils";
-import type {
-  FieldDescriptor,
-  FieldRegistry,
-} from "@mapomodule/form/runtime/types/index.js";
+// @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
+import {
+  useRouter,
+  onBeforeRouteLeave,
+  useCrud,
+  useSnackStore,
+  useConfirmStore,
+  useNuxtApp,
+} from "#imports";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +34,7 @@ const props = withDefaults(
     /** Translation language codes (e.g. ['it', 'en']). */
     languages?: string[];
     /** Human readable model name shown in the page title. */
-    modelName?: string;
+    modelName?: string | null;
     /** Sidebar column span (1–11 in a 12-col grid). */
     sidebarCols?: number;
     /** Keep sidebar sticky while scrolling. */
@@ -39,7 +44,7 @@ const props = withDefaults(
     /** Force read-only mode. */
     readonly?: boolean;
     /** Field registry. Falls back to $mapoFormRegistry if omitted. */
-    registry?: FieldRegistry;
+    registry?: FieldRegistry | null;
   }>(),
   {
     sidebarFields: () => [],
@@ -48,6 +53,8 @@ const props = withDefaults(
     sticky: true,
     usePatch: true,
     readonly: false,
+    modelName: null,
+    registry: null,
   },
 );
 
@@ -55,6 +62,17 @@ const emit = defineEmits<{
   (e: "saved", model: T): void;
   (e: "deleted"): void;
 }>();
+
+// ─── Utilities ──────────────────────────────────────────────────────────────
+
+// Polyfill for structuredClone
+const deepClone = (obj: unknown): unknown => {
+  if (typeof globalThis !== "undefined" && "structuredClone" in globalThis) {
+    // @ts-expect-error — structuredClone exists at runtime but TS doesn't know it
+    return (globalThis as any).structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+};
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -69,7 +87,7 @@ const confirm = useConfirmStore();
 const crud = useCrud<T>(props.endpoint);
 
 const isNew = computed(() => String(props.id) === "new");
-const model = ref<T>({} as T) as Ref<T>;
+const model = ref<T>({} as T);
 const backup = ref<T | null>(null);
 const errors = ref<Record<string, string[]>>({});
 const isLoading = ref(false);
@@ -119,7 +137,7 @@ async function fetchModel() {
   isLoading.value = true;
   try {
     model.value = await crud.detail(props.id);
-    backup.value = structuredClone(model.value);
+    backup.value = deepClone(model.value) as T;
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response
       ?.status;
@@ -154,15 +172,16 @@ async function save(andBack = false) {
       );
     }
     Object.assign(model.value, result);
-    backup.value = structuredClone(model.value);
+    backup.value = deepClone(model.value) as T;
     snack.open({
       message: isNew.value ? "Created successfully" : "Saved successfully",
       color: "success",
     });
     emit("saved", model.value);
-    if (isNew.value) {
+    if (isNew.value && result && "id" in result) {
+      const id = (result as unknown as { id: string | number }).id;
       await router.replace({
-        params: { id: (result as { id: string | number }).id },
+        params: { id },
       });
     }
     if (andBack) back();
@@ -201,7 +220,7 @@ async function deleteItem() {
   isDeleting.value = true;
   try {
     await crud.delete(model.value.id as string | number);
-    backup.value = structuredClone(model.value); // clear dirty so guard doesn't fire
+    backup.value = deepClone(model.value) as T; // clear dirty so guard doesn't fire
     snack.open({ message: "Deleted successfully", color: "success" });
     emit("deleted");
     back();
@@ -229,25 +248,39 @@ async function guardUnsaved(): Promise<boolean> {
   });
 }
 
-onBeforeRouteLeave(async (_to, _from, next) => {
-  const ok = await guardUnsaved();
-  next(ok);
-});
+onBeforeRouteLeave(
+  (_to: unknown, _from: unknown, next: (ok: boolean) => void) => {
+    guardUnsaved().then((ok) => next(ok));
+  },
+);
 
-function preventWindowClose(e: BeforeUnloadEvent) {
-  if (isDirty.value) {
+// @ts-expect-error — Event is a global type not defined in node environments
+function preventWindowClose(e: Event) {
+  if (isDirty.value && typeof globalThis !== "undefined") {
     e.preventDefault();
-    e.returnValue = "";
+    if ("returnValue" in e) {
+      // @ts-expect-error — returnValue is specific to BeforeUnloadEvent
+      (e as any).returnValue = "";
+    }
   }
 }
 
 onMounted(() => {
-  window.addEventListener("beforeunload", preventWindowClose);
+  if (typeof globalThis !== "undefined" && "addEventListener" in globalThis) {
+    // @ts-expect-error — addEventListener exists at runtime
+    (globalThis as any).addEventListener("beforeunload", preventWindowClose);
+  }
   fetchModel();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("beforeunload", preventWindowClose);
+  if (
+    typeof globalThis !== "undefined" &&
+    "removeEventListener" in globalThis
+  ) {
+    // @ts-expect-error — removeEventListener exists at runtime
+    (globalThis as any).removeEventListener("beforeunload", preventWindowClose);
+  }
 });
 
 // ─── Slot bindings ───────────────────────────────────────────────────────────
@@ -290,31 +323,31 @@ type SlotBindings = {
 
 defineSlots<{
   /** Page title area. Receives full slot bindings. */
-  title(props: SlotBindings): any;
+  title(props: SlotBindings): VNode[];
   /** Replaces the language switcher in the main column. */
-  "body-lang"(props: SlotBindings): any;
+  "body-lang"(props: SlotBindings): VNode[];
   /** Extra content above the main form. */
-  "body-top"(props: SlotBindings): any;
+  "body-top"(props: SlotBindings): VNode[];
   /** Replaces the entire main form. */
-  body(props: SlotBindings): any;
+  body(props: SlotBindings): VNode[];
   /** Extra content below the main form. */
-  "body-bottom"(props: SlotBindings): any;
+  "body-bottom"(props: SlotBindings): VNode[];
   /** Replaces the entire sidebar action card (save/delete/back buttons). */
-  "side-buttons"(props: SlotBindings): any;
+  "side-buttons"(props: SlotBindings): VNode[];
   /** Override just the Save button. */
-  "button-save"(props: SlotBindings): any;
+  "button-save"(props: SlotBindings): VNode[];
   /** Override just the Save & continue button. */
-  "button-savecontinue"(props: SlotBindings): any;
+  "button-savecontinue"(props: SlotBindings): VNode[];
   /** Override just the Back button. */
-  "button-back"(props: SlotBindings): any;
+  "button-back"(props: SlotBindings): VNode[];
   /** Override just the Delete button. */
-  "button-delete"(props: SlotBindings): any;
+  "button-delete"(props: SlotBindings): VNode[];
   /** Extra content at the top of the sidebar (below action buttons). */
-  "side-top"(props: SlotBindings): any;
+  "side-top"(props: SlotBindings): VNode[];
   /** Extra content at the bottom of the sidebar. */
-  "side-bottom"(props: SlotBindings): any;
+  "side-bottom"(props: SlotBindings): VNode[];
   /** Per-field form slot. Slot name: `field.{field.key}`. */
-  [K: `field.${string}`]: (props: { model: T; currentLang: string }) => any;
+  [K: `field.${string}`]: (props: { model: T; currentLang: string }) => VNode[];
 }>();
 </script>
 
