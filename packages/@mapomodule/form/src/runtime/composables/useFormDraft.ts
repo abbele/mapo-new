@@ -1,0 +1,89 @@
+import { watch, onMounted, onUnmounted, type Ref } from "vue";
+import { debounce } from "@mapomodule/utils";
+
+interface DraftEntry<T> {
+  model: T;
+  savedAt: number;
+}
+
+/** Options for draft persistence and restoration. */
+export interface UseFormDraftOptions<T> {
+  model: Ref<T>;
+  isDirty: Ref<boolean>;
+  /**
+   * Unique draft key. It is prefixed with `mapo:draft:`.
+   * Example: `article:42` becomes `mapo:draft:article:42`, and `article:new` is used for new records.
+   */
+  key: string;
+  /** Milliseconds between debounced writes to localStorage. Default: `2000`. */
+  debounce?: number;
+  /** TTL in milliseconds before the draft is discarded. Default: `86_400_000` (24h). */
+  ttl?: number;
+  /**
+   * Called on mount when a valid, non-expired draft exists.
+   * Show a notification here and decide whether to restore it.
+   */
+  onRestore?: (draft: T, savedAt: Date) => void;
+}
+
+/**
+ * Persists form drafts to localStorage and restores them when available.
+ */
+export function useFormDraft<T>(options: UseFormDraftOptions<T>) {
+  const storageKey = `mapo:draft:${options.key}`;
+  const ttl = options.ttl ?? 86_400_000;
+  const canUseStorage = typeof localStorage !== "undefined";
+
+  const debouncedSave = debounce(() => {
+    if (!canUseStorage) return;
+    if (!options.isDirty.value) return;
+    const entry: DraftEntry<T> = {
+      model: options.model.value,
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(entry));
+    } catch {
+      // quota exceeded — silently ignore
+    }
+  }, options.debounce ?? 2000);
+
+  const stopWatch = watch(options.model, debouncedSave, { deep: true });
+
+  onMounted(() => {
+    const draft = getDraft();
+    if (!draft) return;
+    options.onRestore?.(draft.model, new Date(draft.savedAt));
+  });
+
+  onUnmounted(() => {
+    stopWatch();
+  });
+
+  function getDraft(): DraftEntry<T> | null {
+    if (!canUseStorage) return null;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      const entry = JSON.parse(raw) as DraftEntry<T>;
+      if (Date.now() - entry.savedAt > ttl) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+      return entry;
+    } catch {
+      return null;
+    }
+  }
+
+  function clearDraft() {
+    if (!canUseStorage) return;
+    localStorage.removeItem(storageKey);
+  }
+
+  function hasDraft(): boolean {
+    return getDraft() !== null;
+  }
+
+  return { clearDraft, getDraft, hasDraft };
+}
