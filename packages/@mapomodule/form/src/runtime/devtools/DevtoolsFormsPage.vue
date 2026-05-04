@@ -177,7 +177,9 @@ function isUserType(type: string): boolean {
                 :key="type"
                 class="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors"
               >
-                <td class="px-4 py-2 text-gray-600">{{ i + 1 }}</td>
+                <td class="px-4 py-2 text-gray-600">
+                  {{ i + 1 }}
+                </td>
                 <td class="px-4 py-2">
                   <span
                     class="px-1.5 py-0.5 rounded text-xs"

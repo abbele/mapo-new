@@ -67,6 +67,8 @@ if (import.meta.dev) {
     <p v-if="parseError" class="mt-1 text-xs text-yellow-700">
       Invalid JSON — changes are not applied until the value becomes parseable.
     </p>
-    <p v-for="err in errors" :key="err" class="mt-1 text-red-500">{{ err }}</p>
+    <p v-for="err in errors" :key="err" class="mt-1 text-red-500">
+      {{ err }}
+    </p>
   </div>
 </template>

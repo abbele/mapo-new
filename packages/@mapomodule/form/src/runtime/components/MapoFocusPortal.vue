@@ -121,7 +121,9 @@ function onUpdate(val: Record<string, unknown>) {
             >
             to return to the form
           </p>
-          <UButton variant="ghost" color="neutral" @click="exit">Close</UButton>
+          <UButton variant="ghost" color="neutral" @click="exit">
+            Close
+          </UButton>
         </div>
       </div>
     </Transition>
