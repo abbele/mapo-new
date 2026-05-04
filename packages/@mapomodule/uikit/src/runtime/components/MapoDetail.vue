@@ -68,7 +68,6 @@ const emit = defineEmits<{
 // Polyfill for structuredClone
 const deepClone = (obj: unknown): unknown => {
   if (typeof globalThis !== "undefined" && "structuredClone" in globalThis) {
-    // @ts-expect-error — structuredClone exists at runtime but TS doesn't know it
     return (globalThis as any).structuredClone(obj);
   }
   return JSON.parse(JSON.stringify(obj));
@@ -254,12 +253,10 @@ onBeforeRouteLeave(
   },
 );
 
-// @ts-expect-error — Event is a global type not defined in node environments
 function preventWindowClose(e: Event) {
   if (isDirty.value && typeof globalThis !== "undefined") {
     e.preventDefault();
     if ("returnValue" in e) {
-      // @ts-expect-error — returnValue is specific to BeforeUnloadEvent
       (e as any).returnValue = "";
     }
   }
@@ -267,7 +264,6 @@ function preventWindowClose(e: Event) {
 
 onMounted(() => {
   if (typeof globalThis !== "undefined" && "addEventListener" in globalThis) {
-    // @ts-expect-error — addEventListener exists at runtime
     (globalThis as any).addEventListener("beforeunload", preventWindowClose);
   }
   fetchModel();
@@ -278,7 +274,6 @@ onBeforeUnmount(() => {
     typeof globalThis !== "undefined" &&
     "removeEventListener" in globalThis
   ) {
-    // @ts-expect-error — removeEventListener exists at runtime
     (globalThis as any).removeEventListener("beforeunload", preventWindowClose);
   }
 });
