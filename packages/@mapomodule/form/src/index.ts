@@ -21,8 +21,8 @@ export {
   lessThan,
   matches,
 } from "./runtime/composables/useProgressiveDisclosure.js";
+export { KnownFieldType } from "./runtime/types/index.js";
 export type {
-  KnownFieldType,
   FieldType,
   FieldAccessor,
   FieldDescriptor,
