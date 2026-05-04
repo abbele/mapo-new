@@ -60,21 +60,42 @@ Current implementation status of all Mapo v2 features relative to the legacy v1 
 
 These features existed in Mapo v1 and are planned for v2 but have not been built yet.
 
-### List Engine
+### List Engine ✅
 
 Paginated, filterable, sortable data table.
 
-**v1 had:** `MapoList` with `ListTable`, `ListFilters`, `ListActions`, `ListQuickEdit` sub-components. Server-side pagination, search, select-all across pages, bulk actions, drag-reorder, slot namespacing on every region.
+**v2 implementation** (`@mapomodule/uikit`):
 
-**v2 target:** Rewritten as a typed, headless-optional composable (`useList`) + `MapoList` component built on Nuxt UI's `UTable`. See roadmap Phase 4.
+- `<MapoList>` shell composing `<MapoListHead>`, `<MapoListFilters>`, `<MapoListActions>`, `<MapoListTabs>`, `<MapoListTable>`, `<MapoListQuickEdit>`
+- Server-side pagination, search, ordering — filters are passed as request params (no query-string concatenation)
+- Row selection keyed by primary key (`lookup`) — paging or sorting does not move selections
+- Drag reorder uses `crud.updateOrder` (one server call, no parallel `PATCH` storm)
+- Quick-edit modal driven by the same `FieldDescriptor[]` as `<MapoDetail>` — no bespoke dialog code
+- Column slots: `cell.<key>`, `head.<key>`, `expand.<key>`; tabbed status filter via `meta.tabs`
 
-### Detail / Form Engine
+### Detail / Form Engine ✅
 
 Record creation and editing with declarative field configuration.
 
 **v1 had:** `MapoDetail` with `Form` + `FormField`, declarative `fields` config, `usePatch` differential saves, multilingual field sync, unsaved-changes guard, responsive main + sidebar layout.
 
-**v2 target:** Typed `fields` config (replaces `defaults.js`), JSON Schema optional, built on Nuxt UI form primitives. See roadmap Phase 3–4.
+**v2 — form engine** (`@mapomodule/form`):
+
+- `FieldDescriptor<T>` TS-strict discriminated union; `FieldRegistry` (mapping/attrs/accessor) configurable via `nuxt.config.mapoForm`
+- `defineFormField(type, entry, opts)` typed helper for registering custom field components with collision detection
+- `<MapoForm>` and `<MapoDetail>` auto-inject the global `$mapoFormRegistry` — the `:registry` prop is optional
+- `useMapoForm()` headless composable: dirty state, diff/patch, `validateClient`, per-field debounce, i18n (`translatable` + `synci18n` + automatic `initLang`)
+- `<MapoForm>`, `<MapoFormField>`, `<MapoFormGroup>` (expanded by config), `<MapoFormTabs>` (per-tab error badge), `<MapoUnknownField>` (fail-soft fallback)
+- Full slot system: `field.<key>`, `field.<key>.label`, `.append`, `.prepend`, `.hint`, `.before`, `.after`
+- Field library: every base type via NUI direct mapping plus `MapoDateField`, `MapoTimeField`, `MapoDateTimeField` (with `tz: 'naive' \| 'utc'` strategy), `MapoFksField` (debounced remote autocomplete), `MapoRepeater` (drag-and-drop, undo, templates, contextual mini-card collapse, focus mode), `MapoSeoPreview` (live SERP), `MapoWygEditor` (Tiptap v2 with safe `Link` validator and HTML sanitizer), `MapoMapField` (Leaflet SSR-safe via dynamic import)
+- `useFormFromSchema(schema, options)`: generates `FieldDescriptor[]` from JSON Schema (Pydantic / DRF), with `if/then/else` → `visible()`, plus `exclude` and `overrides`. Cycle-safe `$ref` resolution.
+
+**v2 — MapoDetail** (`@mapomodule/uikit`):
+
+- `<MapoDetail>` shell: two-column layout (main + sticky sidebar), CRUD lifecycle (fetch/save/delete) through `useCrud`, differential PATCH, unsaved-changes guard (`onBeforeRouteLeave` + `window.beforeunload`), 400 error handling with field-level errors, integrated snack/confirm
+- `<MapoDetailLangSwitch>`: language tabs with per-language error badge, syncs the `?lang=` query param
+- Slots: `title`, `body`, `body.lang`, `body.top`, `body.bottom`, `side.buttons`, `side.top`, `side.bottom`, `button.save`, `button.savecontinue`, `button.back`, `button.delete`
+- Every slot receives `{ model, errors, currentLang, isNew, isLoading, isSaving, isDeleting, isDirty, save, deleteItem, back }`
 
 ### Media Manager
 
@@ -123,19 +144,19 @@ Replacing any Mapo component with a custom one via naming convention.
 | `MapoDropArea` 🔲     | Generic drag-and-drop zone — shared by Form fields and Media Manager |
 | `MapoPagePreview` 🔲  | Page/template preview panel                                          |
 
-### Form Fields Library (`@mapomodule/form` — Phase 5)
+### Form Fields Library (`@mapomodule/form`)
 
-| Field                                                      | Notes                                                    |
-| ---------------------------------------------------------- | -------------------------------------------------------- |
-| `MapoDateField` / `MapoDateTimeField` / `MapoTimeField` 🔲 | Nuxt UI `<UInputDate>` / `<UInputTime>` wrappers         |
-| `MapoColorField` 🔲                                        | Color picker                                             |
-| `MapoFileField` 🔲                                         | File upload via `MapoDropArea`                           |
-| `MapoFksField` 🔲                                          | Foreign key select with server-side search via `useCrud` |
-| `MapoMapField` 🔲                                          | Leaflet map picker (lazy-load, `<ClientOnly>`)           |
-| `MapoRepeater` 🔲                                          | Repeatable field group (array of sub-objects)            |
-| `MapoSeoPreview` 🔲                                        | Google SERP preview mock                                 |
-| `MapoWygEditor` 🔲                                         | Rich text editor — Tiptap v2 (decided in DP-3)           |
-| `MapoMediaField` / `MapoEnhancedMediaField` 🔲             | Media picker integrating `MapoMediaManagerDialog`        |
+| Field                                                               | Status | Notes                                                                                                                    |
+| ------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| text / textarea / number / boolean / switch / color / file / slider | ✅     | NUI direct mapping — no Mapo wrapper needed                                                                              |
+| select                                                              | ✅     | `USelectMenu` with `value-key` / `label-key` via registry                                                                |
+| `MapoDateField` / `MapoTimeField` / `MapoDateTimeField`             | ✅     | ISO ↔ `@internationalized/date`; `datetime` accepts `tz: 'naive' \| 'utc'`                                               |
+| `MapoFksField` (fks / m2m)                                          | ✅     | `USelectMenu` + debounced remote fetch, removable M2M chips                                                              |
+| `MapoRepeater`                                                      | ✅     | Drag-and-drop (`vue-draggable-plus`), stable item UIDs, undo stack, templates, contextual mini-card collapse, focus mode |
+| `MapoSeoPreview`                                                    | ✅     | 60 / 155 char counters, live SERP preview                                                                                |
+| `MapoWygEditor`                                                     | ✅     | Tiptap v2, custom toolbar, safe `Link` validator + HTML sanitizer, extensions via `attrs.extensions`                     |
+| `MapoMapField`                                                      | ✅     | Leaflet SSR-safe via `ClientOnly` + dynamic import                                                                       |
+| `MapoMediaField` / `MapoEnhancedMediaField`                         | 🔲     | Depends on Phase 6 (Media Manager)                                                                                       |
 
 ### `usePatch<T>` composable (Phase 3)
 
