@@ -99,11 +99,11 @@ function onUpdate(val: Record<string, unknown>) {
           <div class="mx-auto max-w-3xl px-6 py-8">
             <MapoForm
               :model-value="localModel"
-              :fields="focusTarget.fields"
-              :errors="focusTarget.errors.value"
-              :languages="focusTarget.languages"
+              :fields="focusTarget.fields as any"
+              :errors="focusTarget.errors.value as any"
+              :languages="focusTarget.languages as any"
               :current-lang="focusTarget.currentLang"
-              :registry="focusTarget.registry"
+              :registry="focusTarget.registry as any"
               @update:model-value="onUpdate"
             />
           </div>
