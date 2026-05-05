@@ -48,6 +48,7 @@ export default defineConfig({
           { text: 'Feedback (Snack & Confirm)', link: '/uikit/feedback' },
           { text: 'List', link: '/uikit/list' },
           { text: 'Detail', link: '/uikit/detail' },
+          { text: 'Component API', link: '/uikit/api' },
         ],
       },
       {
@@ -68,6 +69,7 @@ export default defineConfig({
           { text: 'From JSON Schema', link: '/uikit/form/schema-to-form' },
           { text: 'useMapoForm() — reference', link: '/uikit/form/composable' },
           { text: 'Devtools panel', link: '/uikit/form/devtools' },
+          { text: 'Component API', link: '/uikit/form/api' },
         ],
       },
       {
@@ -77,6 +79,7 @@ export default defineConfig({
           { text: 'Core', link: '/modules/core' },
           { text: 'Store', link: '/modules/store' },
           { text: 'Utils', link: '/modules/utils' },
+          { text: 'Composable & Function API', link: '/modules/api' },
         ],
       },
       {

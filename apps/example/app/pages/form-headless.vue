@@ -4,6 +4,7 @@ import { ref } from "vue";
 definePageMeta({
   label: "Form Headless",
   icon: "i-lucide-cpu",
+  layout: "mapo-default",
 });
 
 // useMapoForm senza <MapoForm> — layout completamente custom
@@ -104,7 +105,7 @@ async function save() {
           }}</code>
         </div>
       </div>
-      <UButton :loading="form.isLoading.value" @click="save">Salva</UButton>
+      <UButton :loading="form.isLoading.value" @click="save"> Salva </UButton>
     </div>
   </div>
 </template>

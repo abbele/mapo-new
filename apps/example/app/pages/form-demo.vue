@@ -5,6 +5,7 @@ import type { FieldDescriptor } from "@mapomodule/form";
 definePageMeta({
   label: "Form Demo",
   icon: "i-lucide-layout-list",
+  layout: "mapo-default",
 });
 
 // ─── Modello articolo (stato locale — nessun backend) ────────────────────────
