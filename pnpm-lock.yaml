@@ -107,9 +107,6 @@ importers:
       '@mdi/font':
         specifier: ^7.4.47
         version: 7.4.47
-      mapo-integrations-camomilla:
-        specifier: workspace:*
-        version: link:../../packages/@mapomodule/mapo-integrations-camomilla
       nuxt:
         specifier: ^4.4.2
         version: 4.4.2(@babel/core@7.29.0)(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(eslint@10.2.1)(typescript@6.0.3)(vite@7.3.2)
