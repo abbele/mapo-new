@@ -14,6 +14,7 @@ export default defineConfig({
     logo: { src: '/logo.svg', alt: 'Mapo' },
 
     nav: [
+      { text: 'How-to', link: '/howto/' },
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'UIKit', link: '/uikit/' },
       { text: 'Modules', link: '/modules/core' },
@@ -22,6 +23,22 @@ export default defineConfig({
     ],
 
     sidebar: [
+      {
+        text: 'How-to Recipes',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/howto/' },
+          { text: 'First admin page', link: '/howto/first-admin-page' },
+          { text: 'CRUD list view', link: '/howto/crud-list' },
+          { text: 'CRUD detail / form', link: '/howto/crud-detail' },
+          { text: 'Auth & permissions', link: '/howto/auth-permissions' },
+          { text: 'Feedback: toasts & dialogs', link: '/howto/feedback' },
+          { text: 'Theming & customization', link: '/howto/theming' },
+          { text: 'Standalone form', link: '/howto/form-standalone' },
+          { text: 'Advanced form patterns', link: '/howto/form-advanced' },
+          { text: 'Custom backend integration', link: '/howto/backend-integration' },
+        ],
+      },
       {
         text: 'Guide',
         collapsed: false,

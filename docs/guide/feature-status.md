@@ -43,6 +43,8 @@ Current implementation status of all Mapo v2 features relative to the legacy v1 
 | `MapoConfirmDialog`        | Bridges `useConfirmStore` to non-dismissible `<UModal>`                                                                              |
 | `MapoRootComponents`       | Mounts SnackBar + ConfirmDialog globally                                                                                             |
 | `MapoThemeToggle`          | Dark/light toggle via `useColorMode()` — drop-in for any slot                                                                        |
+| `MapoLogoutButton`         | Standalone logout button — props: `variant`, `color`, `size`, `iconOnly`; slot for custom label                                      |
+| `MapoSidebarProfile`       | User profile row for the sidebar footer — reads from `useAuthStore`, calls `useMapoAuth().logout()`; supports `mini` prop            |
 | Theming via CSS            | Custom CSS file injected after base via `uikit.css` option                                                                           |
 | Nuxt UI defaults override  | Component config via `uikit.ui` option                                                                                               |
 | Component override system  | Place `MapoXxx.vue` in `app/mapooverride/` to swap any component at build time                                                       |
@@ -86,17 +88,18 @@ Current implementation status of all Mapo v2 features relative to the legacy v1 
 
 ### Form fields library (`@mapomodule/form`)
 
-| Field                                                               | Status | Notes                                                                                                                    |
-| ------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
-| text / textarea / number / boolean / switch / color / file / slider | ✅     | NUI direct mapping via thin wrappers (`NuiInput`, `NuiTextarea`, `NuiCheckbox`, `NuiSwitch`, `NuiSlider`)                |
-| select                                                              | ✅     | `USelectMenu` with `value-key` / `label-key` via registry                                                                |
-| `MapoDateField` / `MapoTimeField` / `MapoDateTimeField`             | ✅     | ISO ↔ `@internationalized/date`; `datetime` accepts `tz: 'naive' \| 'utc'`                                               |
-| `MapoFksField` (fks / m2m)                                          | ✅     | `USelectMenu` + debounced remote fetch, removable M2M chips                                                              |
-| `MapoRepeater`                                                      | ✅     | Drag-and-drop (`vue-draggable-plus`), stable item UIDs, undo stack, templates, contextual mini-card collapse, focus mode |
-| `MapoSeoPreview`                                                    | ✅     | 60 / 155 char counters, live SERP preview                                                                                |
-| `MapoWygEditor`                                                     | ✅     | Tiptap v2, custom toolbar, safe `Link` validator + HTML sanitizer, extensions via `attrs.extensions`                     |
-| `MapoMapField`                                                      | ✅     | Leaflet SSR-safe via `ClientOnly` + dynamic import (`MapoMapFieldClient`)                                                |
-| `MapoMediaField` / `MapoEnhancedMediaField`                         | 🔲     | Depends on Phase 6 (Media Manager)                                                                                       |
+| Field                                                        | Status | Notes                                                                                                                    |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| text / textarea / number / boolean / switch / color / slider | ✅     | NUI direct mapping via thin wrappers (`NuiInput`, `NuiTextarea`, `NuiCheckbox`, `NuiSwitch`, `NuiSlider`)                |
+| file                                                         | ✅     | `MapoFileField` with current-file preview, image thumbnail, and remove button                                            |
+| select                                                       | ✅     | `USelectMenu` with `value-key` / `label-key` via registry                                                                |
+| `MapoDateField` / `MapoTimeField` / `MapoDateTimeField`      | ✅     | ISO ↔ `@internationalized/date`; `datetime` accepts `tz: 'naive' \| 'utc'`                                               |
+| `MapoFksField` (fks / m2m)                                   | ✅     | `USelectMenu` + debounced remote fetch, removable M2M chips                                                              |
+| `MapoRepeater`                                               | ✅     | Drag-and-drop (`vue-draggable-plus`), stable item UIDs, undo stack, templates, contextual mini-card collapse, focus mode |
+| `MapoSeoPreview`                                             | ✅     | 60 / 155 char counters, live SERP preview                                                                                |
+| `MapoWygEditor`                                              | ✅     | Tiptap v2, custom toolbar, safe `Link` validator + HTML sanitizer, extensions via `attrs.extensions`                     |
+| `MapoMapField`                                               | ✅     | Leaflet SSR-safe via `ClientOnly` + dynamic import (`MapoMapFieldClient`)                                                |
+| `MapoMediaField` / `MapoEnhancedMediaField`                  | 🔲     | Depends on Phase 6 (Media Manager)                                                                                       |
 
 ---
 
@@ -128,14 +131,15 @@ Multi-language content switching and UI translation.
 
 **v2 target:** `@mapomodule/i18n` module using `@nuxtjs/i18n` v9. See roadmap Phase 7.
 
-### Standalone UIKit components (planned — Phase 7)
+### Standalone UIKit components
 
-| Component             | Description                                                          |
-| --------------------- | -------------------------------------------------------------------- |
-| `MapoLogoutButton` 🔲 | Reusable logout button wrapping `useMapoAuth().logout()`             |
-| `MapoLangSwitcher` 🔲 | UI language selector (standalone, separate from full i18n)           |
-| `MapoDropArea` 🔲     | Generic drag-and-drop zone — shared by Form fields and Media Manager |
-| `MapoPagePreview` 🔲  | Page/template preview panel                                          |
+| Component             | Status | Description                                                          |
+| --------------------- | ------ | -------------------------------------------------------------------- |
+| `MapoLogoutButton`    | ✅     | Reusable logout button wrapping `useMapoAuth().logout()`             |
+| `MapoSidebarProfile`  | ✅     | User profile row (avatar + username + logout) for the sidebar footer |
+| `MapoLangSwitcher` 🔲 | 🔲     | UI language selector (depends on `@mapomodule/i18n` — Phase 7)       |
+| `MapoDropArea` 🔲     | 🔲     | Generic drag-and-drop zone — shared by Form fields and Media Manager |
+| `MapoPagePreview` 🔲  | 🔲     | Page/template preview panel                                          |
 
 ### `useMediaStore` (Phase 6)
 
