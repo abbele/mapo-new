@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watchEffect } from "vue";
 import type { RepeaterDescriptor } from "../../types/index.js";
 import { injectMapoForm } from "../../composables/useMapoForm.js";
 import MapoRepeaterItem from "./MapoRepeaterItem.vue";
@@ -33,8 +33,8 @@ function emitItems(newItems: Record<string, unknown>[]) {
   emit("update:modelValue", [...newItems]);
 }
 
-// Stable per-item UID: guarantees persistent :key values across reorder/duplicate.
-// Without this, Vue may reuse instances on the wrong item after splice/swap operations.
+// Stable per-item UID: guarantees persistent :key values across reorder/duplicate
+// AND identity-based selection that survives reordering and deletions.
 const itemUids = new WeakMap<object, string>();
 let _uidSeq = 0;
 function uidFor(item: Record<string, unknown>): string {
@@ -67,7 +67,14 @@ const templateKeys = computed(() =>
   templates.value ? Object.keys(templates.value) : [],
 );
 const hasTemplates = computed(() => templateKeys.value.length > 0);
-const selectedTemplate = ref(templateKeys.value[0] ?? "");
+const selectedTemplate = ref<string>("");
+
+// Async-safe: when templates load after mount, auto-pick the first one.
+watchEffect(() => {
+  if (!selectedTemplate.value && templateKeys.value[0]) {
+    selectedTemplate.value = templateKeys.value[0];
+  }
+});
 
 function fieldsForItem(item: Record<string, unknown>) {
   if (!templates.value) return props.descriptor.fields;
@@ -88,6 +95,31 @@ const canDelete = computed(
     (!attrs.value.minItems || items.value.length > attrs.value.minItems),
 );
 
+// Helper: how many additional items can still be added.
+function remainingSlots(): number {
+  if (!attrs.value.maxItems) return Number.POSITIVE_INFINITY;
+  return Math.max(0, attrs.value.maxItems - items.value.length);
+}
+
+// Helper: the lower bound on items.length given minItems.
+function minBound(): number {
+  return attrs.value.minItems ?? 0;
+}
+
+async function askConfirm(
+  message: string,
+  title = "Confirm",
+): Promise<boolean> {
+  try {
+    // @ts-expect-error — Nuxt auto-import, available when @mapomodule/store is installed
+    return await useConfirmStore().ask({ title, message });
+  } catch {
+    return typeof globalThis.confirm === "function"
+      ? globalThis.confirm(message)
+      : false;
+  }
+}
+
 function addItem() {
   if (!canAdd.value) return;
   pushUndo();
@@ -100,16 +132,10 @@ function addItem() {
 async function deleteItem(index: number) {
   if (!canDelete.value) return;
   if (attrs.value.confirmDelete !== false) {
-    let confirmed: boolean;
-    try {
-      // @ts-expect-error — Nuxt auto-import, available when @mapomodule/store is installed
-      confirmed = await useConfirmStore().ask({
-        title: "Delete item",
-        message: "Are you sure you want to delete this item?",
-      });
-    } catch {
-      confirmed = window.confirm("Are you sure you want to delete this item?");
-    }
+    const confirmed = await askConfirm(
+      "Are you sure you want to delete this item?",
+      "Delete item",
+    );
     if (!confirmed) return;
   }
   pushUndo();
@@ -119,6 +145,7 @@ async function deleteItem(index: number) {
 }
 
 function duplicateItem(index: number) {
+  if (remainingSlots() < 1) return;
   pushUndo();
   const copy = { ...items.value[index] };
   const next = [...items.value];
@@ -173,88 +200,121 @@ function expandAll() {
 
 // ─── Drag & drop (SSR-safe via ClientOnly) ───────────────────────────────────
 
-function onDragEnd(evt: { oldIndex: number; newIndex: number }) {
-  if (evt.oldIndex === evt.newIndex) return;
+function onDragStart() {
   pushUndo();
-  const next = [...items.value];
-  const [item] = next.splice(evt.oldIndex, 1);
-  next.splice(evt.newIndex, 0, item);
-  emitItems(next);
 }
 
 // ─── Bulk actions ────────────────────────────────────────────────────────────
 
 const selectionMode = ref(false);
-const selectedIndices = ref<Set<number>>(new Set());
-const lastSelected = ref<number | null>(null);
+// Identity-based selection: survives reorder, delete, undo.
+const selectedUids = ref<Set<string>>(new Set());
+const anchorUid = ref<string | null>(null);
 
 function toggleSelectionMode() {
   selectionMode.value = !selectionMode.value;
   if (!selectionMode.value) {
-    selectedIndices.value.clear();
-    lastSelected.value = null;
+    selectedUids.value = new Set();
+    anchorUid.value = null;
+    // Auto-collapse all when leaving selection mode for tidiness.
+    collapseVersion.value++;
+  } else {
+    // Auto-collapse all when entering selection mode so the user sees the whole list.
+    globalExpanded.value = false;
+    collapseVersion.value++;
   }
 }
 
-function toggleSelect(index: number) {
-  const next = new Set(selectedIndices.value);
-  if (next.has(index)) {
-    next.delete(index);
-  } else {
-    next.add(index);
+function isSelected(uid: string): boolean {
+  return selectedUids.value.has(uid);
+}
+
+function toggleSelect(uid: string, withShift = false) {
+  if (withShift && anchorUid.value && anchorUid.value !== uid) {
+    // Range select between anchor and current.
+    const uids = items.value.map(uidFor);
+    const a = uids.indexOf(anchorUid.value);
+    const b = uids.indexOf(uid);
+    if (a !== -1 && b !== -1) {
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      const next = new Set(selectedUids.value);
+      for (let i = lo; i <= hi; i++) next.add(uids[i]);
+      selectedUids.value = next;
+      return;
+    }
   }
-  selectedIndices.value = next;
-  lastSelected.value = index;
+  const next = new Set(selectedUids.value);
+  if (next.has(uid)) next.delete(uid);
+  else next.add(uid);
+  selectedUids.value = next;
+  anchorUid.value = uid;
 }
 
 function selectAll() {
-  selectedIndices.value = new Set(items.value.map((_, i) => i));
+  selectedUids.value = new Set(items.value.map(uidFor));
 }
 
 function clearSelection() {
-  selectedIndices.value = new Set();
+  selectedUids.value = new Set();
+  anchorUid.value = null;
+}
+
+// Resolve current selection to the array of items, in current order.
+function selectedItems(): Record<string, unknown>[] {
+  return items.value.filter((i) => selectedUids.value.has(uidFor(i)));
 }
 
 async function bulkDelete() {
-  if (!canDelete.value || selectedIndices.value.size === 0) return;
-  const confirmed = window.confirm(
-    `Delete ${selectedIndices.value.size} selected items?`,
+  const count = selectedUids.value.size;
+  if (count === 0) return;
+  // Enforce minItems: would deletion drop below the lower bound?
+  if (items.value.length - count < minBound()) {
+    await askConfirm(
+      `Cannot delete: at least ${minBound()} items must remain.`,
+      "Action blocked",
+    );
+    return;
+  }
+  const confirmed = await askConfirm(
+    `Delete ${count} selected items?`,
+    "Delete items",
   );
   if (!confirmed) return;
   pushUndo();
-  const indicesToRemove = new Set(selectedIndices.value);
-  emitItems(items.value.filter((_, i) => !indicesToRemove.has(i)));
-  selectedIndices.value = new Set();
+  emitItems(items.value.filter((i) => !selectedUids.value.has(uidFor(i))));
+  clearSelection();
 }
 
 function bulkDuplicate() {
-  if (selectedIndices.value.size === 0) return;
+  const count = selectedUids.value.size;
+  if (count === 0) return;
+  // Cap by maxItems.
+  const slots = remainingSlots();
+  if (slots <= 0) return;
+  const toDup = selectedItems().slice(0, slots);
   pushUndo();
-  const sorted = [...selectedIndices.value].sort((a, b) => a - b);
+  // Insert each copy right after its original. Walk from the end so indices stay valid.
   const next = [...items.value];
-  // Insert copies in reverse order so indices do not shift.
-  let offset = 0;
-  for (const idx of sorted) {
-    const insertAt = idx + 1 + offset;
-    next.splice(insertAt, 0, { ...items.value[idx] });
-    offset++;
+  const dupSet = new Set(toDup.map(uidFor));
+  for (let i = next.length - 1; i >= 0; i--) {
+    if (dupSet.has(uidFor(next[i]))) {
+      next.splice(i + 1, 0, { ...next[i] });
+    }
   }
   emitItems(next);
-  selectedIndices.value = new Set();
+  clearSelection();
 }
 
 function bulkMoveToTop() {
-  if (selectedIndices.value.size === 0) return;
+  if (selectedUids.value.size === 0) return;
   pushUndo();
-  const sorted = [...selectedIndices.value].sort((a, b) => a - b);
-  const selected = sorted.map((i) => items.value[i]);
-  const rest = items.value.filter((_, i) => !selectedIndices.value.has(i));
+  const selected = items.value.filter((i) => selectedUids.value.has(uidFor(i)));
+  const rest = items.value.filter((i) => !selectedUids.value.has(uidFor(i)));
   emitItems([...selected, ...rest]);
-  selectedIndices.value = new Set();
 }
 
-const hasSelection = computed(() => selectedIndices.value.size > 0);
-const selectionCount = computed(() => selectedIndices.value.size);
+const hasSelection = computed(() => selectedUids.value.size > 0);
+const selectionCount = computed(() => selectedUids.value.size);
 
 // ─── Errors ──────────────────────────────────────────────────────────────────
 
@@ -351,10 +411,15 @@ const errorPrefix = (index: number) =>
             variant="outline"
             color="neutral"
             icon="i-lucide-copy"
-            :disabled="!canAdd"
+            :disabled="remainingSlots() <= 0"
+            :title="
+              remainingSlots() < selectionCount
+                ? `Only ${remainingSlots()} of ${selectionCount} can be duplicated (maxItems reached)`
+                : 'Duplicate selected'
+            "
             @click="bulkDuplicate"
           >
-            Duplicate ({{ selectionCount }})
+            Duplicate ({{ Math.min(selectionCount, remainingSlots()) }})
           </UButton>
           <UButton
             size="xs"
@@ -373,23 +438,25 @@ const errorPrefix = (index: number) =>
             :disabled="!canDelete"
             @click="bulkDelete"
           >
-            Elimina ({{ selectionCount }})
+            Delete ({{ selectionCount }})
           </UButton>
         </div>
       </div>
     </Transition>
 
-    <!-- ── Lista items con drag&drop (ClientOnly per SSR) ─────────────────── -->
+    <!-- ── Item list with drag&drop (ClientOnly for SSR) ───────────────────── -->
     <ClientOnly>
       <VueDraggable
-        :model-value="items"
+        v-model="items"
         handle=".drag-handle"
         animation="150"
-        @end="onDragEnd"
+        :disabled="readonly || selectionMode"
+        @start="onDragStart"
       >
         <MapoRepeaterItem
           v-for="(item, index) in items"
           :key="`${uidFor(item)}-${collapseVersion}`"
+          :uid="uidFor(item)"
           :item="item"
           :fields="fieldsForItem(item)"
           :index="index"
@@ -404,7 +471,7 @@ const errorPrefix = (index: number) =>
           :allow-duplicate="attrs.allowDuplicate"
           :repeater-descriptor="descriptor"
           :total-items="items.length"
-          :selected="selectedIndices.has(index)"
+          :selected="isSelected(uidFor(item))"
           :selection-mode="selectionMode"
           @update:item="updateItem(index, $event)"
           @delete="deleteItem(index)"
@@ -412,15 +479,16 @@ const errorPrefix = (index: number) =>
           @move-up="moveUp(index)"
           @move-down="moveDown(index)"
           @move-to="moveTo(index, $event)"
-          @toggle-select="toggleSelect(index)"
+          @toggle-select="toggleSelect(uidFor(item), $event)"
         />
       </VueDraggable>
 
-      <!-- Fallback SSR: lista senza drag -->
+      <!-- SSR fallback: list without drag -->
       <template #fallback>
         <MapoRepeaterItem
           v-for="(item, index) in items"
           :key="`${uidFor(item)}-${collapseVersion}`"
+          :uid="uidFor(item)"
           :item="item"
           :fields="fieldsForItem(item)"
           :index="index"
@@ -435,7 +503,7 @@ const errorPrefix = (index: number) =>
           :allow-duplicate="attrs.allowDuplicate"
           :repeater-descriptor="descriptor"
           :total-items="items.length"
-          :selected="selectedIndices.has(index)"
+          :selected="isSelected(uidFor(item))"
           :selection-mode="selectionMode"
           @update:item="updateItem(index, $event)"
           @delete="deleteItem(index)"
@@ -443,17 +511,17 @@ const errorPrefix = (index: number) =>
           @move-up="moveUp(index)"
           @move-down="moveDown(index)"
           @move-to="moveTo(index, $event)"
-          @toggle-select="toggleSelect(index)"
+          @toggle-select="toggleSelect(uidFor(item), $event)"
         />
       </template>
     </ClientOnly>
 
-    <!-- ── Stato vuoto ─────────────────────────────────────────────────────── -->
+    <!-- ── Empty state ─────────────────────────────────────────────────────── -->
     <div
       v-if="items.length === 0"
       class="rounded border border-dashed border-gray-300 py-8 text-center text-sm text-gray-400"
     >
-      Nessun elemento. Clicca "Aggiungi" per iniziare.
+      No items. Click "Add" to start.
     </div>
   </div>
 </template>

@@ -44,7 +44,9 @@
     },
     "ignorePackages": [
       "@mapomodule/docs",
-      "@mapomodule/example"
+      "@mapomodule/example",
+      "@mapomodule/example-theme",
+      "@mapomodule/example-custom-form"
     ]
   },
   "devDependencies": {

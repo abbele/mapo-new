@@ -13,6 +13,8 @@ import { useFocusMode } from "../../composables/useFocusMode.js";
 import MapoFormField from "../MapoFormField.vue";
 
 const props = defineProps<{
+  /** Stable identity-based UID assigned by the parent repeater. */
+  uid?: string;
   item: Record<string, unknown>;
   fields: FieldDescriptor[];
   index: number;
@@ -42,8 +44,14 @@ const emit = defineEmits<{
   "move-up": [];
   "move-down": [];
   "move-to": [index: number];
-  "toggle-select": [];
+  /** Emits `true` when the user held Shift to request a range selection. */
+  "toggle-select": [withShift: boolean];
 }>();
+
+/** Toggle selection from a click event, propagating the shift modifier. */
+function toggleSelectFromEvent(e: MouseEvent) {
+  emit("toggle-select", e.shiftKey === true);
+}
 
 // ─── Local state ─────────────────────────────────────────────────────────────
 
@@ -168,17 +176,17 @@ function enterFocusMode() {
     <div
       v-if="isCompressed && miniCard"
       class="flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-gray-50"
-      @click="expanded = true"
+      @click="selectionMode ? toggleSelectFromEvent($event) : (expanded = true)"
     >
-      <!-- Checkbox selezione bulk -->
+      <!-- Bulk selection checkbox -->
       <UCheckbox
         v-if="selectionMode"
         :model-value="selected"
-        @update:model-value="$emit('toggle-select')"
+        @update:model-value="emit('toggle-select', false)"
         @click.stop
       />
 
-      <!-- Thumbnail opzionale -->
+      <!-- Optional thumbnail -->
       <img
         v-if="miniCard.thumbnail"
         :src="miniCard.thumbnail"
@@ -193,10 +201,12 @@ function enterFocusMode() {
         :class="statusColorClass"
       />
 
-      <!-- Drag handle -->
+      <!-- Drag handle (mousedown.stop prevents the parent click handler from firing on drag start) -->
       <UIcon
         name="i-lucide-grip-vertical"
         class="drag-handle h-4 w-4 shrink-0 cursor-grab text-gray-300 active:cursor-grabbing"
+        @mousedown.stop
+        @click.stop
       />
 
       <!-- Contenuto testuale -->
@@ -230,25 +240,36 @@ function enterFocusMode() {
     </div>
 
     <!-- ── Item header (expanded mode) ─────────────────────────────────────── -->
-    <div v-else class="flex items-center gap-2 bg-gray-50 px-3 py-2">
+    <div
+      v-else
+      class="flex items-center gap-2 bg-gray-50 px-3 py-2"
+      :class="selectionMode ? 'cursor-pointer hover:bg-gray-100' : ''"
+      @click="selectionMode && toggleSelectFromEvent($event)"
+    >
       <!-- Bulk selection checkbox -->
       <UCheckbox
         v-if="selectionMode"
         :model-value="selected"
-        @update:model-value="$emit('toggle-select')"
+        @update:model-value="emit('toggle-select', false)"
+        @click.stop
       />
 
-      <!-- Drag handle -->
+      <!-- Drag handle (mousedown.stop avoids triggering row-click selection on drag start) -->
       <UIcon
         name="i-lucide-grip-vertical"
         class="drag-handle h-4 w-4 cursor-grab text-gray-400 active:cursor-grabbing"
+        @mousedown.stop
+        @click.stop
       />
 
-      <!-- Collapsed label / error badge -->
+      <!-- Collapsed label / error badge. In selection mode the row click handles selection,
+           so this button only toggles expansion when not selecting. -->
       <button
         type="button"
         class="flex flex-1 items-center gap-2 text-left text-sm font-medium text-gray-700"
-        @click="expanded = !expanded"
+        @click.stop="
+          selectionMode ? toggleSelectFromEvent($event) : (expanded = !expanded)
+        "
       >
         <span class="truncate">{{ label }}</span>
         <UBadge v-if="hasErrors" color="error" variant="soft" size="xs">
@@ -256,8 +277,9 @@ function enterFocusMode() {
         </UBadge>
       </button>
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-1">
+      <!-- Action buttons. All buttons stop propagation so the row-click selection handler
+           does not also toggle selection when the user clicks an action. -->
+      <div class="flex items-center gap-1" @click.stop>
         <slot name="actions" />
 
         <!-- Focus mode -->
