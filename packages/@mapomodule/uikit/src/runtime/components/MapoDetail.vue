@@ -101,7 +101,12 @@ const isDirty = computed(
 );
 const mainCols = computed(() => 12 - props.sidebarCols);
 const sidebarStyle = computed(() =>
-  props.sticky ? { position: "sticky" as const, top: "64px" } : {},
+  props.sticky
+    ? {
+        position: "sticky" as const,
+        top: "var(--mapo-topbar-height, 64px)",
+      }
+    : {},
 );
 
 // Tailwind v4 requires static class strings — dynamic template literals are not scanned by the CSS scanner.

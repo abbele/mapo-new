@@ -14,7 +14,7 @@ export const defaultRegistry: FieldRegistry = {
     switch: () => import("../components/fields/nui/NuiSwitch.vue"),
     slider: () => import("../components/fields/nui/NuiSlider.vue"),
     color: () => import("../components/fields/nui/NuiInput.vue"),
-    file: () => import("../components/fields/nui/NuiInput.vue"),
+    file: () => import("../components/fields/MapoFileField.vue"),
 
     // ─── Nuxt UI with specific config ────────────────────────────────────────
     select: () => import("../components/fields/nui/NuiSelectMenu.vue"),
@@ -42,9 +42,6 @@ export const defaultRegistry: FieldRegistry = {
     },
     color: {
       type: "color",
-    },
-    file: {
-      type: "file",
     },
     select: {
       // NUI SelectMenu defaults labelKey to 'label' — omit to use the default.

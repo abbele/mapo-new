@@ -45,6 +45,12 @@
     height: 100%;
   }
 
+  :root {
+    /* Height of the topbar — used by MapoDetail sticky sidebar positioning.
+       Override in the consuming app if the topbar height differs from the default. */
+    --mapo-topbar-height: 56px;
+  }
+
   /* Extend height chain through #__nuxt and the UApp wrapper div */
   #__nuxt,
   #__nuxt > * {
