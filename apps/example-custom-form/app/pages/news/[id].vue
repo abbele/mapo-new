@@ -1,17 +1,4 @@
 <script setup lang="ts">
-/**
- * News detail/edit — entirely Vuetify, with the Mapo headless form engine.
- *
- * Pattern:
- *   - useCrud<News>() handles fetch / patch / create
- *   - useMapoForm() owns the model state, dirty tracking, validation, patch diff
- *   - <MapoFormField> resolves each descriptor through $mapoFormRegistry,
- *     which has been swapped to Vuetify wrappers in plugins/mapo-vuetify-registry.ts
- *
- * No Tailwind, no Nuxt UI, no @mapomodule/uikit components. Just Vuetify
- * around the bare form primitives.
- */
-
 import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
 
 definePageMeta({ middleware: ["auth"] });

@@ -62,10 +62,8 @@ const ssrHeaders = import.meta.server
   ? useRequestHeaders(["cookie"])
   : undefined;
 
-// Camomilla can return either a paginated envelope { count, results } or a
-// flat array depending on the endpoint configuration. Handle both.
 const { data, pending, error, refresh } = await useAsyncData<
-  Paginated<NewsItem> | NewsItem[]
+  Paginated<NewsItem>
 >(
   "news-list",
   () =>
@@ -73,26 +71,8 @@ const { data, pending, error, refresh } = await useAsyncData<
   { watch: [query] },
 );
 
-const allItems = computed<NewsItem[]>(() => {
-  const d = data.value;
-  if (!d) return [];
-  if (Array.isArray(d)) return d;
-  return d.results ?? [];
-});
-const isPaginated = computed(
-  () => data.value && !Array.isArray(data.value) && "count" in data.value,
-);
-
-// When the backend doesn't paginate, do it client-side so the table still works.
-const items = computed<NewsItem[]>(() => {
-  if (isPaginated.value) return allItems.value;
-  const start = (page.value - 1) * itemsPerPage.value;
-  return allItems.value.slice(start, start + itemsPerPage.value);
-});
-const total = computed(() => {
-  if (isPaginated.value) return (data.value as Paginated<NewsItem>).count;
-  return allItems.value.length;
-});
+const items = computed<NewsItem[]>(() => data.value?.results ?? []);
+const total = computed(() => data.value?.count ?? 0);
 </script>
 
 <template>
@@ -140,11 +120,6 @@ const total = computed(() => {
       </v-row>
     </v-card-text>
   </v-card>
-
-  <v-alert type="info" variant="tonal" class="mb-3" density="compact">
-    debug — total: {{ total }} · items.length: {{ items.length }} · keys:
-    {{ data ? Object.keys(data).join(",") : "no data" }}
-  </v-alert>
 
   <v-card>
     <v-data-table-server

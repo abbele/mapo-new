@@ -15,7 +15,6 @@
     "@mapomodule/store": "workspace:*",
     "@mapomodule/utils": "workspace:*",
     "@mdi/font": "^7.4.47",
-    "mapo-integrations-camomilla": "workspace:*",
     "nuxt": "^4.4.2",
     "vue": "^3.5.32",
     "vuetify": "^3.7.0",
