@@ -4,6 +4,7 @@ import { ref } from "vue";
 definePageMeta({
   label: "Form da Schema",
   icon: "i-lucide-braces",
+  layout: "mapo-default",
 });
 
 // Schema stile DRF-spectacular / Pydantic — normalmente arriva dal backend
@@ -121,9 +122,9 @@ const form = useMapoForm({
     <MapoForm v-model="model" :fields="fields" :errors="{}" />
 
     <UCard>
-      <template #header
-        ><span class="text-sm font-medium">Model corrente</span></template
-      >
+      <template #header>
+        <span class="text-sm font-medium">Model corrente</span>
+      </template>
       <pre class="text-xs">{{ JSON.stringify(model, null, 2) }}</pre>
     </UCard>
   </div>
