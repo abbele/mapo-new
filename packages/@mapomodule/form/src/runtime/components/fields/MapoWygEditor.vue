@@ -219,6 +219,22 @@ onBeforeUnmount(() => editor.value?.destroy());
         icon="i-lucide-redo"
         @click="editor.chain().focus().redo().run()"
       />
+
+      <USeparator orientation="vertical" class="mx-1 h-5" />
+
+      <!-- Insert Image — enabled in Phase 6 when Media Manager is available -->
+      <UTooltip
+        text="Insert image (requires Media Manager — Phase 6)"
+        :delay-open="300"
+      >
+        <UButton
+          size="xs"
+          variant="ghost"
+          color="neutral"
+          icon="i-lucide-image"
+          disabled
+        />
+      </UTooltip>
     </div>
 
     <!-- Contenuto editor -->

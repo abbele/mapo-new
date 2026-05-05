@@ -10,19 +10,19 @@ Full-page CRUD detail view with sidebar, language switcher, and save/delete acti
 
 ### Props
 
-| Prop            | Type                    | Default        | Description                                                   |
-| --------------- | ----------------------- | -------------- | ------------------------------------------------------------- |
-| `endpoint`      | `string`                | — **required** | REST endpoint passed to `useCrud`.                            |
-| `id`            | `string \| number`      | — **required** | Record ID. Pass `'new'` to create.                            |
-| `fields`        | `FieldDescriptor<T>[]`  | — **required** | Fields for the main body form.                                |
-| `sidebarFields` | `FieldDescriptor<T>[]`  | `[]`           | Fields rendered in the sidebar form.                          |
-| `languages`     | `string[]`              | `[]`           | Translation language codes (e.g. `['it', 'en']`).             |
-| `modelName`     | `string \| null`        | `null`         | Human-readable model name shown in the page title.            |
-| `sidebarCols`   | `number`                | `4`            | Sidebar column span (1–11 in a 12-col grid).                  |
-| `sticky`        | `boolean`               | `true`         | Keep sidebar sticky while scrolling.                          |
-| `usePatch`      | `boolean`               | `true`         | Send `PATCH` (diff only) on update instead of `PUT`.          |
-| `readonly`      | `boolean`               | `false`        | Force read-only mode globally.                                |
-| `registry`      | `FieldRegistry \| null` | `null`         | Field registry. Falls back to `$mapoFormRegistry` if omitted. |
+| Prop            | Type                    | Default        | Description                                                                                                     |
+| --------------- | ----------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `endpoint`      | `string`                | — **required** | REST endpoint passed to `useCrud`.                                                                              |
+| `id`            | `string \| number`      | — **required** | Record ID. Pass `'new'` to create.                                                                              |
+| `fields`        | `FieldDescriptor<T>[]`  | — **required** | Fields for the main body form.                                                                                  |
+| `sidebarFields` | `FieldDescriptor<T>[]`  | `[]`           | Fields rendered in the sidebar form.                                                                            |
+| `languages`     | `string[]`              | `[]`           | Translation language codes (e.g. `['it', 'en']`).                                                               |
+| `modelName`     | `string \| null`        | `null`         | Human-readable model name shown in the page title.                                                              |
+| `sidebarCols`   | `number`                | `4`            | Sidebar column span (1–11 in a 12-col grid).                                                                    |
+| `sticky`        | `boolean`               | `true`         | Keep sidebar sticky while scrolling. Offset controlled by `--mapo-topbar-height` CSS variable (default `56px`). |
+| `usePatch`      | `boolean`               | `true`         | Send `PATCH` (diff only) on update instead of `PUT`.                                                            |
+| `readonly`      | `boolean`               | `false`        | Force read-only mode globally.                                                                                  |
+| `registry`      | `FieldRegistry \| null` | `null`         | Field registry. Falls back to `$mapoFormRegistry` if omitted.                                                   |
 
 ### Emits
 
@@ -388,6 +388,43 @@ Dark / light theme toggle button (pending design decision — UI only, no persis
 ### Props / Emits / Slots
 
 None.
+
+---
+
+## MapoLogoutButton
+
+Standalone logout button that calls `useMapoAuth().logout()`. Drop it anywhere in the layout.
+
+### Props
+
+| Prop       | Type                                                  | Default     | Description                          |
+| ---------- | ----------------------------------------------------- | ----------- | ------------------------------------ |
+| `variant`  | `'solid' \| 'outline' \| 'soft' \| 'ghost' \| 'link'` | `'ghost'`   | Nuxt UI button variant.              |
+| `color`    | `string`                                              | `'neutral'` | Nuxt UI button color.                |
+| `size`     | `'xs' \| 'sm' \| 'md' \| 'lg' \| 'xl'`                | `'sm'`      | Nuxt UI button size.                 |
+| `iconOnly` | `boolean`                                             | `false`     | Render only the icon, no label text. |
+
+### Slots
+
+| Slot      | Description                                             |
+| --------- | ------------------------------------------------------- |
+| `default` | Label text. Default: `Logout`. Ignored when `iconOnly`. |
+
+---
+
+## MapoSidebarProfile
+
+User profile row for the sidebar footer. Shows avatar, username, and a logout button. In mini mode shows only the avatar with a tooltip.
+
+### Props
+
+| Prop   | Type      | Default | Description                                                   |
+| ------ | --------- | ------- | ------------------------------------------------------------- |
+| `mini` | `boolean` | `false` | Compact (icon-only) mode, used when the sidebar is collapsed. |
+
+### Props / Emits / Slots
+
+No emits or slots — reads from `useAuthStore` and calls `useMapoAuth().logout()` directly.
 
 ---
 

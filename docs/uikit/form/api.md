@@ -183,6 +183,26 @@ SEO metadata editor with live SERP preview.
 
 ---
 
+### MapoFileField
+
+File upload field with current-file preview, remove button, and optional image thumbnail. Replaces the plain `<input type="file">` used for the `'file'` registry type.
+
+| Prop         | Type             | Description                               |
+| ------------ | ---------------- | ----------------------------------------- |
+| `modelValue` | `unknown`        | A `File` object, a URL string, or `null`. |
+| `descriptor` | `FileDescriptor` | Field configuration.                      |
+
+#### `descriptor.attrs`
+
+| Key       | Type     | Default | Description                                                           |
+| --------- | -------- | ------- | --------------------------------------------------------------------- |
+| `accept`  | `string` | —       | MIME type filter forwarded to the `<input>` (e.g. `'image/*'`).       |
+| `maxSize` | `number` | —       | Maximum file size in bytes (UI hint only — not enforced client-side). |
+
+When `modelValue` is a URL string ending in an image extension (`.jpg`, `.png`, `.webp`, etc.) a thumbnail is shown alongside the filename.
+
+---
+
 ### MapoWygEditor
 
 WYSIWYG rich-text editor powered by TipTap. Output is sanitized HTML.
@@ -191,6 +211,8 @@ WYSIWYG rich-text editor powered by TipTap. Output is sanitized HTML.
 | ------------ | ------------------ | -------------------- |
 | `modelValue` | `unknown`          | HTML string.         |
 | `descriptor` | `EditorDescriptor` | Field configuration. |
+
+The toolbar includes a disabled **Insert Image** button (placeholder for Phase 6 — Media Manager). It becomes active once `MapoMediaManagerDialog` is available.
 
 ---
 
@@ -245,17 +267,18 @@ Dynamic list field with drag-and-drop reordering, bulk selection, duplication, a
 
 #### `descriptor.attrs`
 
-| Key                 | Type                                                         | Default | Description                                                      |
-| ------------------- | ------------------------------------------------------------ | ------- | ---------------------------------------------------------------- |
-| `templates`         | `Record<string, FieldDescriptor[]>`                          | —       | Named field templates (one per item type).                       |
-| `previewLabel`      | `(item) => string`                                           | —       | Callback to generate an item's collapsed preview label.          |
-| `defaultExpanded`   | `boolean`                                                    | `false` | Start all items expanded.                                        |
-| `allowDuplicate`    | `boolean`                                                    | `true`  | Show the Duplicate action on each item.                          |
-| `minItems`          | `number`                                                     | —       | Minimum number of items (validated on submit).                   |
-| `maxItems`          | `number`                                                     | —       | Maximum number of items (Add button hidden when reached).        |
-| `confirmDelete`     | `boolean`                                                    | `true`  | Show a confirmation dialog before deleting an item.              |
-| `miniCard`          | `(item, idx) => { title, subtitle, thumbnail, statusColor }` | —       | Config for the compressed mini-card view.                        |
-| `compressThreshold` | `number`                                                     | `3`     | Number of items above which the list switches to mini-card view. |
+| Key                 | Type                                                         | Default | Description                                                                  |
+| ------------------- | ------------------------------------------------------------ | ------- | ---------------------------------------------------------------------------- |
+| `templates`         | `Record<string, FieldDescriptor[]>`                          | —       | Named field templates (one per item type).                                   |
+| `previewLabel`      | `(item) => string`                                           | —       | Callback to generate an item's collapsed preview label.                      |
+| `defaultExpanded`   | `boolean`                                                    | `false` | Start all items expanded.                                                    |
+| `allowDuplicate`    | `boolean`                                                    | `true`  | Show the Duplicate action on each item.                                      |
+| `showPositionField` | `boolean`                                                    | `false` | Show a numeric position input in each item's header for explicit reordering. |
+| `minItems`          | `number`                                                     | —       | Minimum number of items (validated on submit).                               |
+| `maxItems`          | `number`                                                     | —       | Maximum number of items (Add button hidden when reached).                    |
+| `confirmDelete`     | `boolean`                                                    | `true`  | Show a confirmation dialog before deleting an item.                          |
+| `miniCard`          | `(item, idx) => { title, subtitle, thumbnail, statusColor }` | —       | Config for the compressed mini-card view.                                    |
+| `compressThreshold` | `number`                                                     | `3`     | Number of items above which the list switches to mini-card view.             |
 
 ---
 

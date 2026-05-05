@@ -282,6 +282,33 @@ function enterFocusMode() {
       <div class="flex items-center gap-1" @click.stop>
         <slot name="actions" />
 
+        <!-- Numeric position field (enabled via repeaterDescriptor.attrs.showPositionField) -->
+        <template
+          v-if="repeaterDescriptor?.attrs?.showPositionField && !readonly"
+        >
+          <UInput
+            :model-value="index + 1"
+            type="number"
+            :min="1"
+            :max="totalItems"
+            size="xs"
+            class="w-14 text-center"
+            title="Position"
+            @change="
+              $emit(
+                'move-to',
+                Math.max(
+                  0,
+                  Math.min(
+                    totalItems! - 1,
+                    Number(($event.target as HTMLInputElement).value) - 1,
+                  ),
+                ),
+              )
+            "
+          />
+        </template>
+
         <!-- Focus mode -->
         <UButton
           size="xs"
