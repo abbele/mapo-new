@@ -138,6 +138,24 @@ importers:
         specifier: ^5.0.6
         version: 5.0.6(vue@3.5.33)
 
+  apps/example-e2e:
+    dependencies:
+      '@nuxt/ui':
+        specifier: ^4.7.0
+        version: 4.7.1(@tiptap/extensions@3.22.5)(@tiptap/y-tiptap@3.0.3)(embla-carousel@8.6.0)(tailwindcss@4.2.4)(typescript@6.0.3)(vite@7.3.2)(vue-router@5.0.6)(vue@3.5.33)(yjs@13.6.30)
+      mapomodule:
+        specifier: workspace:*
+        version: link:../../packages/mapomodule
+      nuxt:
+        specifier: ^4.4.4
+        version: 4.4.4(@babel/core@7.29.0)(@types/node@25.6.0)(eslint@10.2.1)(typescript@6.0.3)(vite@7.3.2)
+      vue:
+        specifier: ^3.5.33
+        version: 3.5.33(typescript@6.0.3)
+      vue-router:
+        specifier: ^5.0.6
+        version: 5.0.6(vue@3.5.33)
+
   apps/example-theme:
     dependencies:
       '@iconify-json/lucide':

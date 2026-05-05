@@ -20,7 +20,11 @@ const { logout } = useMapoAuth();
       class="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-default/60 transition-colors cursor-default"
       :class="mini ? 'justify-center' : ''"
     >
-      <UTooltip v-if="mini" :text="auth.username ?? 'User'" side="right">
+      <UTooltip
+        v-if="mini"
+        :text="auth.username ?? 'User'"
+        side="right"
+      >
         <UAvatar
           :alt="auth.username ?? 'User'"
           size="xs"
@@ -29,7 +33,11 @@ const { logout } = useMapoAuth();
         />
       </UTooltip>
       <template v-else>
-        <UAvatar :alt="auth.username ?? 'User'" size="xs" class="shrink-0" />
+        <UAvatar
+          :alt="auth.username ?? 'User'"
+          size="xs"
+          class="shrink-0"
+        />
         <span class="flex-1 text-xs truncate text-muted font-medium">{{
           auth.username
         }}</span>
@@ -50,8 +58,14 @@ const { logout } = useMapoAuth();
       class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-muted hover:bg-default/60 transition-colors"
       :class="{ 'justify-center': mini }"
     >
-      <UIcon name="i-lucide-log-in" class="size-4 shrink-0" />
-      <span v-if="!mini" class="text-xs font-medium">Sign in</span>
+      <UIcon
+        name="i-lucide-log-in"
+        class="size-4 shrink-0"
+      />
+      <span
+        v-if="!mini"
+        class="text-xs font-medium"
+      >Sign in</span>
     </NuxtLink>
   </template>
 </template>
