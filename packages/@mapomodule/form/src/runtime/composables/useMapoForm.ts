@@ -210,7 +210,9 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
     const val = getFieldValue(descriptor);
     return (
       checkRequired(descriptor, val) ??
-      descriptor.validate?.(val, { model: model.value }) ??
+      descriptor.validate?.(val as T[keyof T & string] | null | undefined, {
+        model: model.value,
+      }) ??
       null
     );
   }
@@ -228,7 +230,9 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
       const val = getFieldValue(descriptor);
       const err =
         checkRequired(descriptor, val) ??
-        descriptor.validate?.(val, { model: model.value }) ??
+        descriptor.validate?.(val as T[keyof T & string] | null | undefined, {
+          model: model.value,
+        }) ??
         null;
       if (err) errs[descriptor.key as string] = err;
     }

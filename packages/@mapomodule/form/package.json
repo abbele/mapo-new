@@ -16,7 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "nuxt-module-build build",
+    "build": "nuxt-module-build build && tsc -p tsconfig.build-types.json",
     "dev": "nuxt-module-build build --stub --watch",
     "prepare": "nuxt-module-build build --stub",
     "dev:prepare": "nuxt-module-build build --stub",

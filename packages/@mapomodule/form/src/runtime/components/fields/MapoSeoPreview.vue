@@ -64,6 +64,7 @@ const displayUrl = computed(() => value.value.permalink || requestUrl.host);
           :readonly="readonly"
           :disabled="disabled"
           placeholder="https://example.com/slug"
+          class="w-full"
           @update:model-value="update('permalink', $event as string)"
         />
       </div>
@@ -78,6 +79,7 @@ const displayUrl = computed(() => value.value.permalink || requestUrl.host);
           :readonly="readonly"
           :disabled="disabled"
           placeholder="Page title..."
+          class="w-full"
           @update:model-value="update('title', $event as string)"
         />
       </div>
@@ -95,6 +97,7 @@ const displayUrl = computed(() => value.value.permalink || requestUrl.host);
           :readonly="readonly"
           :disabled="disabled"
           placeholder="Page description..."
+          class="w-full"
           @update:model-value="update('description', $event as string)"
         />
       </div>

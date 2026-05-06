@@ -44,8 +44,8 @@ export const defaultRegistry: FieldRegistry = {
       type: "color",
     },
     select: {
-      // NUI SelectMenu defaults labelKey to 'label' — omit to use the default.
-      // valueKey: 'value' stores the raw value instead of the full object.
+      // NUI v3 uses `labelKey`/`valueKey`; descriptor uses `{ text, value }` convention.
+      labelKey: "text",
       valueKey: "value",
     },
     fks: {

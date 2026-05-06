@@ -36,7 +36,7 @@ watch(isOpen, (open) => {
 const localModel = ref<Record<string, unknown>>({});
 
 watch(
-  () => focusTarget.value?.model.value,
+  () => focusTarget.value?.model,
   (val) => {
     if (val) localModel.value = { ...val };
   },
