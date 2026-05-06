@@ -73,6 +73,17 @@ describe("buildRouteTree", () => {
     expect(buildRouteTree(routes)[0].sidebarFooter).toBe(true);
   });
 
+  it("nests children when parent is specified without leading slash", () => {
+    const routes = [
+      makeRoute("/users", { label: "Users" }),
+      makeRoute("/users/new", { label: "New User", parent: "users" }),
+    ];
+    const tree = buildRouteTree(routes);
+    expect(tree).toHaveLength(1);
+    expect(tree[0].children).toHaveLength(1);
+    expect(tree[0].children[0].label).toBe("New User");
+  });
+
   it("returns empty array for empty input", () => {
     expect(buildRouteTree([])).toEqual([]);
   });
