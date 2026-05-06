@@ -266,7 +266,7 @@ Quick-edit reuses the same field descriptors as `<MapoDetail>` — no separate d
 
 <!-- v2 -->
 <script setup lang="ts">
-import type { FieldDescriptor } from "@mapomodule/form";
+import type { FieldDescriptor } from "@mapomodule/form/types";
 
 const fields: FieldDescriptor<Article>[] = [
   { key: "title", type: "text", required: true, tab: "content" },

@@ -5,10 +5,40 @@
 - Node.js >= 20
 - pnpm >= 8
 
+## Initial setup
+
 ```bash
 pnpm install
 pnpm build
 ```
+
+`pnpm build` runs a full production build of all packages (via Turborepo). This is required once after cloning so that downstream packages can resolve each other.
+
+## Dev setup (after initial build)
+
+When working on packages locally, switch them to **stub mode** instead of rebuilding after every change:
+
+```bash
+# Stub all packages at once (from monorepo root)
+pnpm dev:packages
+
+# Or stub a single package
+pnpm --filter @mapomodule/store dev:prepare
+```
+
+Stub mode replaces `dist/` with files that re-export directly from `src/`. This gives you:
+
+- Instant type resolution in the IDE (no empty `.d.ts` files)
+- No need to rebuild after every source change
+
+After stubbing, regenerate the Nuxt app's auto-import types:
+
+```bash
+cd apps/example-e2e   # or whichever app you're using
+pnpm nuxt prepare
+```
+
+> **Note:** if you accidentally run `pnpm build` on a package during development, re-run `dev:prepare` on it and then `nuxt prepare` on the app — the production build produces empty `.d.ts` stubs that break IDE type resolution.
 
 ---
 

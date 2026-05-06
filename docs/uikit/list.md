@@ -12,7 +12,7 @@ import type {
   ActionDescriptor,
   ListTabItem,
 } from "@mapomodule/uikit";
-import type { FieldDescriptor } from "@mapomodule/form";
+import type { FieldDescriptor } from "@mapomodule/form/types";
 
 interface News {
   id: number;
