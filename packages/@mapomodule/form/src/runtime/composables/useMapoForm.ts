@@ -18,7 +18,7 @@ import { resolveFieldAccessor } from "../types/index.js";
 import { useCurrentLang } from "./useCurrentLang.js";
 
 /** Options accepted by `useMapoForm()`. */
-export interface UseMapoFormOptions<T extends Record<string, unknown>> {
+export interface UseMapoFormOptions<T extends object> {
   model: Ref<T>;
   fields: MaybeRef<FieldDescriptor<T>[]>;
   errors?: Ref<Record<string, string[]>>;
@@ -31,7 +31,7 @@ export interface UseMapoFormOptions<T extends Record<string, unknown>> {
 }
 
 /** Reactive context shared with child form fields via provide/inject. */
-export interface MapoFormContext<T extends Record<string, unknown>> {
+export interface MapoFormContext<T extends object> {
   model: Ref<T>;
   fields: MaybeRef<FieldDescriptor<T>[]>;
   errors: Ref<Record<string, string[]>>;
@@ -66,14 +66,12 @@ function safeClone<X>(v: X): X {
 export const FORM_KEY = Symbol("mapoForm");
 
 /** Provides the current form context to descendant field components. */
-export function provideMapoForm<T extends Record<string, unknown>>(
-  ctx: MapoFormContext<T>,
-) {
+export function provideMapoForm<T extends object>(ctx: MapoFormContext<T>) {
   provide(FORM_KEY, ctx);
 }
 
 /** Injects the nearest form context, if present. */
-export function injectMapoForm<T extends Record<string, unknown>>() {
+export function injectMapoForm<T extends object>() {
   return inject<MapoFormContext<T>>(FORM_KEY);
 }
 
@@ -81,9 +79,7 @@ export function injectMapoForm<T extends Record<string, unknown>>() {
  * Creates the core reactive state and helpers for a Mapo form.
  * Handles dirty tracking, field accessors, sync validation, and submit flows.
  */
-export function useMapoForm<T extends Record<string, unknown>>(
-  options: UseMapoFormOptions<T>,
-) {
+export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
   const {
     model,
     fields,
@@ -196,12 +192,27 @@ export function useMapoForm<T extends Record<string, unknown>>(
       : raw;
   }
 
+  function checkRequired(
+    descriptor: FieldDescriptor<T>,
+    val: unknown,
+  ): string | null {
+    if (!descriptor.required) return null;
+    if (val === null || val === undefined || val === "")
+      return "This field is required.";
+    return null;
+  }
+
   function getClientError(descriptor: FieldDescriptor<T>): string | null {
-    if (!descriptor.validate) return null;
+    if (!descriptor.required && !descriptor.validate) return null;
     // "No-anxiety" gate: the error appears only after blur or submit, never on mount.
-    if (!isTouched(descriptor.key as string)) return null;
+    // Bypassed when immediate=true so errors show from the very first render.
+    if (!immediate && !isTouched(descriptor.key as string)) return null;
     const val = getFieldValue(descriptor);
-    return descriptor.validate(val, { model: model.value });
+    return (
+      checkRequired(descriptor, val) ??
+      descriptor.validate?.(val, { model: model.value }) ??
+      null
+    );
   }
 
   function validateClient(): {
@@ -213,9 +224,12 @@ export function useMapoForm<T extends Record<string, unknown>>(
     const errs: Record<string, string> = {};
     const fs = toValue(fields);
     for (const descriptor of fs) {
-      if (!descriptor.validate) continue;
+      if (!descriptor.required && !descriptor.validate) continue;
       const val = getFieldValue(descriptor);
-      const err = descriptor.validate(val, { model: model.value });
+      const err =
+        checkRequired(descriptor, val) ??
+        descriptor.validate?.(val, { model: model.value }) ??
+        null;
       if (err) errs[descriptor.key as string] = err;
     }
     clientErrors.value = errs;
@@ -301,6 +315,10 @@ export function useMapoForm<T extends Record<string, unknown>>(
     return getClientError(keyOrDescriptor);
   }
 
+  // Automatically provide context so descendant MapoForm components can
+  // inherit submitted/readonly state without an explicit provideContext() call.
+  provideMapoForm(ctx);
+
   return {
     state: computed(() => ({
       model: model.value,
@@ -323,7 +341,5 @@ export function useMapoForm<T extends Record<string, unknown>>(
     getPatch,
     submit,
     ctx,
-    /** Exposes the context via provide() for child field components. */
-    provideContext: () => provideMapoForm(ctx),
   };
 }

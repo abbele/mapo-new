@@ -2,6 +2,7 @@ import {
   defineNuxtModule,
   addComponent,
   addPlugin,
+  addTypeTemplate,
   createResolver,
   addImports,
   extendPages,
@@ -45,6 +46,27 @@ export default defineNuxtModule<MapoFormOptions>({
     // Plugin: create and inject the global field registry
     addPlugin(resolver.resolve("./runtime/plugins/form-registry"));
 
+    // Augment NuxtApp with $mapoFormRegistry so consumers get type-safe access.
+    // nuxt-module-builder leaves runtime/*.d.ts empty, so InjectionType cannot
+    // infer the plugin's provide shape — we inject the declaration explicitly.
+    addTypeTemplate({
+      filename: "types/mapo-form-registry.d.ts",
+      getContents: () => `
+import type { FieldRegistry } from '@mapomodule/form/types';
+declare module '#app' {
+  interface NuxtApp {
+    $mapoFormRegistry: FieldRegistry;
+  }
+}
+declare module 'vue' {
+  interface ComponentCustomProperties {
+    $mapoFormRegistry: FieldRegistry;
+  }
+}
+export {};
+`,
+    });
+
     // Devtools tab + route (development only)
     if (nuxt.options.dev) {
       // The route is registered inside the consumer app so the page can call useNuxtApp() normally.
@@ -57,8 +79,8 @@ export default defineNuxtModule<MapoFormOptions>({
       });
 
       // Registra il tab via hook nativo di Nuxt DevTools (no dipendenza @nuxt/devtools-kit)
-      nuxt.hook(
-        // @ts-expect-error — devtools:customTabs non è in NuxtHooks typings
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (nuxt as any).hook(
         "devtools:customTabs",
         (tabs: Array<Record<string, unknown>>) => {
           tabs.push({

@@ -1,9 +1,9 @@
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends object">
 import { computed, useSlots, watchEffect } from "vue";
 import type { Ref } from "vue";
 import { useNuxtApp } from "#app";
 import type { FieldDescriptor, FieldRegistry } from "../types/index.js";
-import { useMapoForm } from "../composables/useMapoForm.js";
+import { useMapoForm, injectMapoForm } from "../composables/useMapoForm.js";
 import { provideCurrentLang } from "../composables/useCurrentLang.js";
 import MapoFormField from "./MapoFormField.vue";
 import MapoFormGroup from "./MapoFormGroup.vue";
@@ -31,6 +31,7 @@ const props = withDefaults(
     currentLang: "",
     readonly: false,
     immediate: false,
+    registry: undefined,
   },
 );
 
@@ -79,10 +80,13 @@ const form = useMapoForm({
   registry: injectedRegistry.value,
 });
 
+// If a parent useMapoForm called provideContext(), inherit its submitted state
+// so that form.submit() on the parent automatically shows errors in this MapoForm.
+const parentCtx = injectMapoForm();
 watchEffect(() => {
   form.readonly.value = props.readonly;
+  if (parentCtx) form.ctx.submitted.value = parentCtx.submitted.value;
 });
-form.provideContext();
 
 defineExpose({
   submit: form.submit,
