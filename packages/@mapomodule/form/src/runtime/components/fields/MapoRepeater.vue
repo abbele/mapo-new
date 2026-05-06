@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watchEffect } from "vue";
+import { VueDraggable } from "vue-draggable-plus";
 import type { RepeaterDescriptor } from "../../types/index.js";
 import { injectMapoForm } from "../../composables/useMapoForm.js";
 import MapoRepeaterItem from "./MapoRepeaterItem.vue";
@@ -449,7 +450,7 @@ const errorPrefix = (index: number) =>
       <VueDraggable
         v-model="items"
         handle=".drag-handle"
-        animation="150"
+        :animation="150"
         :disabled="readonly || selectionMode"
         @start="onDragStart"
       >

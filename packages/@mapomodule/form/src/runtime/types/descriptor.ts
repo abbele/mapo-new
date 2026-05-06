@@ -66,14 +66,23 @@ interface FieldBase<T> {
   /**
    * Synchronous client-side validation.
    * Return `null` if the value is valid, or an error message string otherwise.
+   * The first argument is the current field value, typed as the union of all
+   * model values (plus `null` / `undefined`) so TypeScript can contextually type
+   * the callback parameter without falling back to implicit `any`.
    */
-  validate?: (val: unknown, ctx: { model: T }) => string | null;
+  validate?: (
+    val: T[keyof T & string] | null | undefined,
+    ctx: { model: T },
+  ) => string | null;
   /**
    * Asynchronous validation (e.g. uniqueness check, server-side rule).
    * Runs debounced after every value change.
    * Return `null` if valid, or an error message string otherwise.
    */
-  validateAsync?: (val: unknown, ctx: { model: T }) => Promise<string | null>;
+  validateAsync?: (
+    val: T[keyof T & string] | null | undefined,
+    ctx: { model: T },
+  ) => Promise<string | null>;
   /** Debounce delay in milliseconds for `validateAsync`. Default: `600`. */
   validateAsyncDebounce?: number;
   /** Custom get/set accessor. Overrides the registry-level accessor for this field. */

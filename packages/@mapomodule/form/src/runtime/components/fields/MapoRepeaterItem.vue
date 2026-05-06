@@ -70,6 +70,18 @@ watch(
   },
 );
 
+// MapoFormField mutates model.value in-place (setNestedValueMutating) rather than
+// calling emit. Without this watcher the parent repeater never sees those mutations,
+// so its items array stays stale — causing data loss when the key changes on
+// collapse/expand (remount) or when addItem reads the stale array.
+watch(
+  localModel,
+  (val) => {
+    emit("update:item", val);
+  },
+  { deep: true },
+);
+
 // Propagate changes back to the parent repeater.
 function setFieldValue(key: string, val: unknown) {
   localModel.value = { ...localModel.value, [key]: val };
@@ -153,9 +165,12 @@ function enterFocusMode() {
   focusMode.enter({
     descriptor: props.repeaterDescriptor as FieldDescriptor,
     fields: props.fields,
-    model: localModel,
+    model: { ...localModel.value },
     errors: itemErrors,
-    onUpdate: (val) => emit("update:item", val),
+    onUpdate: (val) => {
+      localModel.value = { ...val };
+      emit("update:item", localModel.value);
+    },
     registry: props.registry,
     languages: props.languages,
     currentLang: props.currentLang,

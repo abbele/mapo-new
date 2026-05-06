@@ -14,8 +14,12 @@ export interface FocusTarget {
   descriptor: FieldDescriptor;
   /** Fields for the focused item, resolved from the template when needed. */
   fields: FieldDescriptor[];
-  /** Reactive model of the item. */
-  model: Ref<Record<string, unknown>>;
+  /**
+   * Initial snapshot of the item model at the time the portal was opened.
+   * Stored as a plain object (not a Ref) to avoid Vue's auto-unwrap behaviour
+   * when placed inside Nuxt's useState reactive container.
+   */
+  model: Record<string, unknown>;
   /** Errors for this item (already filtered). */
   errors: Ref<Record<string, string[]>>;
   /** Callback invoked when the item model is updated. */
