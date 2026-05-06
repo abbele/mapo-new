@@ -83,4 +83,13 @@ export default tseslint.config(
       'no-undef': 'off',
     },
   },
+  {
+    // Vue 3 dynamic slot syntax (#['slot.name']) uses [ and ] in attribute position,
+    // which the HTML parser flags as unexpected. Allow it project-wide since dot-notation
+    // slot names (field.key, field.key.subslot) are used throughout MapoForm.
+    files: ['**/*.vue'],
+    rules: {
+      'vue/no-parsing-error': ['error', { 'unexpected-character-in-attribute-name': false }],
+    },
+  },
 )
