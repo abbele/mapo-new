@@ -264,7 +264,7 @@ async function save() {
 Generate `FieldDescriptor[]` automatically from a Pydantic or DRF schema:
 
 ```ts
-import { useFormFromSchema } from "@mapomodule/form";
+import { useFormFromSchema } from "@mapomodule/form/types";
 
 // Fetch the schema from your backend
 const schema = await $fetch("/api/articles/schema/");
@@ -303,7 +303,7 @@ Register a custom Vue component as a new field type via a Nuxt plugin:
 
 ```ts
 // plugins/my-fields.ts
-import { defineFormField } from "@mapomodule/form";
+import { defineFormField } from "@mapomodule/form/types";
 import MyColorPickerField from "~/components/fields/MyColorPickerField.vue";
 
 export default defineNuxtPlugin(() => {

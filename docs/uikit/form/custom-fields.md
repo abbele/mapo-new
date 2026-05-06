@@ -20,7 +20,7 @@ Nothing else. Idiomatic Vue.
 ```vue
 <!-- components/admin/VideoCutField.vue -->
 <script setup lang="ts">
-import type { FieldDescriptor } from "@mapomodule/form";
+import type { FieldDescriptor } from "@mapomodule/form/types";
 
 interface VideoCut {
   url: string;

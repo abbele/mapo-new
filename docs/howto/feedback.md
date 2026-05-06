@@ -52,9 +52,12 @@ async function save() {
 ### API
 
 ```ts
-snack.show(message, type?, duration?)   // show a toast
-snack.dismiss()                          // clear the current toast
-snack.current                            // SnackMessage | null
+snack.show(message, type?, duration?)   // add a toast to the queue
+snack.dismiss()                          // remove the last toast
+snack.dismiss(id)                        // remove a specific toast by id
+snack.dismissAll()                       // clear all active toasts
+snack.messages                           // SnackMessage[] — full queue
+snack.current                            // SnackMessage | null — last message (getter)
 ```
 
 | Param      | Type                                          | Default  |

@@ -5,7 +5,7 @@
 ## TL;DR
 
 ```ts
-import { useFormFromSchema } from "@mapomodule/form";
+import { useFormFromSchema } from "@mapomodule/form/types";
 
 const schema = await $fetch("/api/schema/");
 
