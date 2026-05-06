@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import type { Ref } from "vue";
 import type {
   ListColumn,
   FilterDescriptor,

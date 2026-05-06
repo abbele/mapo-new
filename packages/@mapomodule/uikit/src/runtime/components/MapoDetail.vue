@@ -148,7 +148,7 @@ async function fetchModel() {
       ?.status;
     const detail = (err as { response?: { data?: { detail?: string } } })
       ?.response?.data?.detail;
-    snack.open({ message: detail ?? "Failed to load item", color: "error" });
+    snack.show(detail ?? "Failed to load item", "error");
     if (status === 404) router.back();
   } finally {
     isLoading.value = false;
@@ -178,10 +178,10 @@ async function save(andBack = false) {
     }
     Object.assign(model.value, result);
     backup.value = deepClone(model.value) as T;
-    snack.open({
-      message: isNew.value ? "Created successfully" : "Saved successfully",
-      color: "success",
-    });
+    snack.show(
+      isNew.value ? "Created successfully" : "Saved successfully",
+      "success",
+    );
     emit("saved", model.value);
     if (isNew.value && result && "id" in result) {
       const id = (result as unknown as { id: string | number }).id;
@@ -201,7 +201,7 @@ async function save(andBack = false) {
       errors.value = response.data as Record<string, string[]>;
     }
     const detail = (response?.data as { detail?: string })?.detail;
-    snack.open({ message: detail ?? "Failed to save", color: "error" });
+    snack.show(detail ?? "Failed to save", "error");
   } finally {
     isSaving.value = false;
   }
@@ -226,13 +226,13 @@ async function deleteItem() {
   try {
     await crud.delete(model.value.id as string | number);
     backup.value = deepClone(model.value) as T; // clear dirty so guard doesn't fire
-    snack.open({ message: "Deleted successfully", color: "success" });
+    snack.show("Deleted successfully", "success");
     emit("deleted");
     back();
   } catch (err: unknown) {
     const detail = (err as { response?: { data?: { detail?: string } } })
       ?.response?.data?.detail;
-    snack.open({ message: detail ?? "Failed to delete", color: "error" });
+    snack.show(detail ?? "Failed to delete", "error");
   } finally {
     isDeleting.value = false;
   }

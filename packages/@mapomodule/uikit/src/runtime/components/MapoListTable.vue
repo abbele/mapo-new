@@ -1,8 +1,12 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed, watch, h, resolveComponent, useSlots } from "vue";
+import type { Ref } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { SortingState, PaginationState } from "@tanstack/vue-table";
 import type { ListColumn } from "../types/list.js";
+import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
+import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
+import { useCrud } from "@mapomodule/core/runtime/api/crud";
 import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
 import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
 
