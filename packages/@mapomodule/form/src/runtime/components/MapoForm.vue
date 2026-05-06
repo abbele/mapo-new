@@ -168,18 +168,27 @@ const tabList = computed<TabEntry[]>(() => [...grouped.value.values()]);
   <div class="mapo-form space-y-5">
     <!-- All field slots (field.<key>, field.<key>.append, .prepend, .label, …)
          are forwarded generically to inner layers (Tabs → Group → Field). -->
-    <MapoFormTabs v-if="hasTabs" :tabs="tabList">
+    <MapoFormTabs
+      v-if="hasTabs"
+      :tabs="tabList"
+    >
       <template
         v-for="slotName in fieldSlotNames"
         :key="slotName"
         #[slotName]="slotProps"
       >
-        <slot :name="slotName" v-bind="slotProps ?? {}" />
+        <slot
+          :name="slotName"
+          v-bind="slotProps ?? {}"
+        />
       </template>
     </MapoFormTabs>
 
     <template v-else>
-      <template v-for="[groupName, group] of defaultGroups" :key="groupName">
+      <template
+        v-for="[groupName, group] of defaultGroups"
+        :key="groupName"
+      >
         <MapoFormGroup
           v-if="groupName !== '__flat__'"
           :name="groupName"
@@ -190,17 +199,26 @@ const tabList = computed<TabEntry[]>(() => [...grouped.value.values()]);
             :key="slotName"
             #[slotName]="slotProps"
           >
-            <slot :name="slotName" v-bind="slotProps ?? {}" />
+            <slot
+              :name="slotName"
+              v-bind="slotProps ?? {}"
+            />
           </template>
         </MapoFormGroup>
 
-        <MapoFormFlatSection v-else :fields="group.fields as FieldDescriptor[]">
+        <MapoFormFlatSection
+          v-else
+          :fields="group.fields as FieldDescriptor[]"
+        >
           <template
             v-for="slotName in fieldSlotNames"
             :key="slotName"
             #[slotName]="slotProps"
           >
-            <slot :name="slotName" v-bind="slotProps ?? {}" />
+            <slot
+              :name="slotName"
+              v-bind="slotProps ?? {}"
+            />
           </template>
         </MapoFormFlatSection>
       </template>
