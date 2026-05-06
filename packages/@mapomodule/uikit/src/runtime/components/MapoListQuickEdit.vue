@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed, watch } from "vue";
-import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
+import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
 
@@ -101,7 +102,10 @@ async function save() {
           />
         </div>
 
-        <div v-if="loading" class="flex justify-center py-8">
+        <div
+          v-if="loading"
+          class="flex justify-center py-8"
+        >
           <UIcon
             name="i-lucide-loader-circle"
             class="h-6 w-6 animate-spin text-muted"
@@ -117,13 +121,24 @@ async function save() {
             immediate
           />
 
-          <slot name="extra" :model="model" />
+          <slot
+            name="extra"
+            :model="model"
+          />
 
           <div class="flex justify-end gap-2 pt-2">
-            <UButton variant="ghost" color="neutral" @click="isOpen = false">
+            <UButton
+              variant="ghost"
+              color="neutral"
+              @click="isOpen = false"
+            >
               Cancel
             </UButton>
-            <UButton color="primary" :loading="saving" @click="save">
+            <UButton
+              color="primary"
+              :loading="saving"
+              @click="save"
+            >
               Save
             </UButton>
           </div>

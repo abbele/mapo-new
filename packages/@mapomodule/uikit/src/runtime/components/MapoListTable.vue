@@ -7,7 +7,8 @@ import type { ListColumn } from "../types/list.js";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
-import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
+import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
 
 const props = withDefaults(
   defineProps<{
@@ -372,7 +373,10 @@ const sortingOptions = computed(() => ({
 <template>
   <div class="mapo-list-table space-y-3">
     <!-- Search -->
-    <div v-if="searchable" class="flex items-center gap-2">
+    <div
+      v-if="searchable"
+      class="flex items-center gap-2"
+    >
       <UInput
         :model-value="search"
         placeholder="Search..."
@@ -400,7 +404,10 @@ const sortingOptions = computed(() => ({
       <template #empty>
         <slot name="dtable.empty">
           <div class="flex flex-col items-center gap-2 py-8 text-muted">
-            <UIcon name="i-lucide-inbox" class="h-8 w-8" />
+            <UIcon
+              name="i-lucide-inbox"
+              class="h-8 w-8"
+            />
             <span class="text-sm">No items found</span>
           </div>
         </slot>
@@ -455,8 +462,14 @@ const sortingOptions = computed(() => ({
       :registry="registry"
       @saved="onQuickEditSaved"
     >
-      <template v-for="(_, name) in $slots" #[name]="slotProps">
-        <slot :name="`qedit.${String(name)}`" v-bind="slotProps ?? {}" />
+      <template
+        v-for="(_, name) in $slots"
+        #[name]="slotProps"
+      >
+        <slot
+          :name="`qedit.${String(name)}`"
+          v-bind="slotProps ?? {}"
+        />
       </template>
     </MapoListQuickEdit>
   </div>
