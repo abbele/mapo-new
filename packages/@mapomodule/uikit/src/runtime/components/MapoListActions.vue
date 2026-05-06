@@ -1,6 +1,10 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed } from "vue";
 import type { ActionDescriptor } from "../types/list.js";
+import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
+import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
+import { usePermissions } from "@mapomodule/store/runtime/composables/usePermissions";
+import { useCrud } from "@mapomodule/core/runtime/api/crud";
 
 const props = withDefaults(
   defineProps<{
