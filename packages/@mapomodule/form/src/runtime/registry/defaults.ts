@@ -70,7 +70,6 @@ export const defaultRegistry: FieldRegistry = {
         return {
           title: "",
           description: "",
-          permalink: "",
           ...rest,
           permalink: rest.permalink ?? url ?? "",
         };
@@ -81,7 +80,6 @@ export const defaultRegistry: FieldRegistry = {
         return {
           title: "",
           description: "",
-          permalink: "",
           ...rest,
           permalink: rest.permalink ?? url ?? "",
         };

@@ -1,9 +1,7 @@
 import { getNestedValue } from "@mapomodule/utils";
 
 type Matcher<T = unknown> = (val: T) => boolean;
-type Condition<TModel extends Record<string, unknown>> = (ctx: {
-  model: TModel;
-}) => boolean;
+type Condition<TModel extends object> = (ctx: { model: TModel }) => boolean;
 
 /**
  * Combines conditions with AND: all conditions must match.
@@ -11,7 +9,7 @@ type Condition<TModel extends Record<string, unknown>> = (ctx: {
  * @example
  * visible: when(matchesField('seo_enabled', true), matchesField('status', isOneOf(['published'])))
  */
-export function when<TModel extends Record<string, unknown>>(
+export function when<TModel extends object>(
   ...conditions: Condition<TModel>[]
 ): Condition<TModel> {
   return (ctx) => conditions.every((c) => c(ctx));
@@ -20,7 +18,7 @@ export function when<TModel extends Record<string, unknown>>(
 /**
  * Combines conditions with OR: at least one condition must match.
  */
-export function whenAny<TModel extends Record<string, unknown>>(
+export function whenAny<TModel extends object>(
   ...conditions: Condition<TModel>[]
 ): Condition<TModel> {
   return (ctx) => conditions.some((c) => c(ctx));
@@ -29,7 +27,7 @@ export function whenAny<TModel extends Record<string, unknown>>(
 /**
  * Negates a condition.
  */
-export function whenNot<TModel extends Record<string, unknown>>(
+export function whenNot<TModel extends object>(
   condition: Condition<TModel>,
 ): Condition<TModel> {
   return (ctx) => !condition(ctx);
@@ -43,7 +41,7 @@ export function whenNot<TModel extends Record<string, unknown>>(
  * matchesField('type', 'article')
  * matchesField('count', greaterThan(0))
  */
-export function matchesField<TModel extends Record<string, unknown>>(
+export function matchesField<TModel extends object>(
   key: string,
   matcher: unknown | Matcher,
 ): Condition<TModel> {

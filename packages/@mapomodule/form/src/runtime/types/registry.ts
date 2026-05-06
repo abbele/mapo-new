@@ -39,8 +39,12 @@ export type PartialFieldRegistry = {
  * Resolves the component entry for a given field descriptor.
  * Returns the `descriptor.is` override if set, otherwise looks up `registry.mapping`.
  */
+// FieldDescriptor<T> is contravariant in T through `validate: (ctx: { model: T })`.
+// These functions only read `type`, `is`, `attrs`, and `accessor` — none depends on T —
+// so `any` is the correct way to accept any FieldDescriptor<T> without a type error.
 export function resolveFieldComponent(
-  descriptor: FieldDescriptor,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  descriptor: FieldDescriptor<any>,
   registry: FieldRegistry,
 ): FieldComponentEntry | null {
   if (descriptor.is) return descriptor.is;
@@ -52,7 +56,8 @@ export function resolveFieldComponent(
  * The `'All'` key in `registry.attrs` is applied first, then the type-specific key.
  */
 export function resolveFieldAttrs(
-  descriptor: FieldDescriptor,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  descriptor: FieldDescriptor<any>,
   registry: FieldRegistry,
 ): Record<string, unknown> {
   const allAttrs = registry.attrs["All"] ?? {};
@@ -64,7 +69,8 @@ export function resolveFieldAttrs(
  * Merges the registry-level default accessor for a field type with the descriptor's own `accessor`.
  */
 export function resolveFieldAccessor(
-  descriptor: FieldDescriptor,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  descriptor: FieldDescriptor<any>,
   registry: FieldRegistry,
 ): FieldAccessor {
   const typeAccessor = registry.accessor[descriptor.type] ?? {};

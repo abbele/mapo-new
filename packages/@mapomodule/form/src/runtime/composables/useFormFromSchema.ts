@@ -1,9 +1,4 @@
-import {
-  resolveSchema,
-  extractDefs,
-  matchesSchema,
-  hasConditionals,
-} from "@mapomodule/utils";
+import { resolveSchema, extractDefs, matchesSchema } from "@mapomodule/utils";
 import type { JSONSchema } from "@mapomodule/utils";
 import type { FieldDescriptor, FieldType } from "../types/index.js";
 
