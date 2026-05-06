@@ -222,7 +222,7 @@ function getPatch(): Partial<T> {
 // ─── Delete ──────────────────────────────────────────────────────────────────
 
 async function deleteItem() {
-  const ok = await confirm.open({
+  const ok = await confirm.ask({
     title: "Delete",
     question:
       "Are you sure you want to delete this item? This action cannot be undone.",
@@ -253,7 +253,7 @@ function back() {
 
 async function guardUnsaved(): Promise<boolean> {
   if (!isDirty.value) return true;
-  return confirm.open({
+  return confirm.ask({
     title: "Unsaved changes",
     question: "You have unsaved changes. Do you want to leave without saving?",
     approveButton: { text: "Leave", attrs: { color: "red" } },
