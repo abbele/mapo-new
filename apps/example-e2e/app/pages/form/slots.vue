@@ -14,6 +14,16 @@ definePageMeta({
 
 const { $mapoFormRegistry } = useNuxtApp();
 
+// Slot name constants (bracket syntax #['x.y'] is not supported by Prettier's Vue parser)
+const slotEmail = "field.email";
+const slotNonexistent = "field.nonexistent";
+const slotWebsiteLabel = "field.website.label";
+const slotWebsiteBefore = "field.website.before";
+const slotWebsitePrepend = "field.website.prepend";
+const slotWebsiteAppend = "field.website.append";
+const slotWebsiteHint = "field.website.hint";
+const slotWebsiteAfter = "field.website.after";
+
 interface Model {
   name: string;
   email: string;
@@ -33,7 +43,9 @@ const fields: FieldDescriptor<Model>[] = [
 <template>
   <div class="p-6 max-w-2xl mx-auto space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-highlighted">Form Slots</h1>
+      <h1 class="text-2xl font-bold text-highlighted">
+        Form Slots
+      </h1>
       <p class="text-muted text-sm mt-1">
         E2E plan: <code>e2e/form/slots.md</code>
       </p>
@@ -42,9 +54,7 @@ const fields: FieldDescriptor<Model>[] = [
     <!-- Tests 1.1–1.3: full field override via #field.email -->
     <UCard>
       <template #header>
-        <span class="font-semibold text-sm text-highlighted"
-          >Full field override (#field.email) — tests 1.1–1.3</span
-        >
+        <span class="font-semibold text-sm text-highlighted">Full field override (#field.email) — tests 1.1–1.3</span>
       </template>
       <p class="text-xs text-muted mb-3">
         The "email" field is replaced by a custom slot. It still writes to
@@ -58,7 +68,7 @@ const fields: FieldDescriptor<Model>[] = [
         :registry="$mapoFormRegistry"
       >
         <!-- Tests 1.1: custom slot replaces entire field rendering -->
-        <template #field.email="{ field }">
+        <template #[slotEmail]="{ field }">
           <div
             class="border border-dashed border-primary/50 rounded-lg p-3 space-y-1"
           >
@@ -78,7 +88,7 @@ const fields: FieldDescriptor<Model>[] = [
         </template>
 
         <!-- Tests 5.1: slot for non-existent field — should be silently ignored -->
-        <template #field.nonexistent>
+        <template #[slotNonexistent]>
           <div>THIS SHOULD NOT BE VISIBLE</div>
         </template>
       </MapoForm>
@@ -87,9 +97,7 @@ const fields: FieldDescriptor<Model>[] = [
     <!-- Tests 2.1–2.6: granular sub-slots -->
     <UCard>
       <template #header>
-        <span class="font-semibold text-sm text-highlighted"
-          >Granular sub-slots — tests 2.1–2.6</span
-        >
+        <span class="font-semibold text-sm text-highlighted">Granular sub-slots — tests 2.1–2.6</span>
       </template>
       <p class="text-xs text-muted mb-3">
         The "website" field uses sub-slots: custom label, before (alert above),
@@ -104,17 +112,13 @@ const fields: FieldDescriptor<Model>[] = [
         :registry="$mapoFormRegistry"
       >
         <!-- Tests 2.1: custom label -->
-        <template #field.website.label="{ label }">
-          <span class="font-bold text-primary"
-            >{{ label }}
-            <span class="text-xs font-normal text-muted"
-              >(custom label slot)</span
-            ></span
-          >
+        <template #[slotWebsiteLabel]="{ label }">
+          <span class="font-bold text-primary">{{ label }}
+            <span class="text-xs font-normal text-muted">(custom label slot)</span></span>
         </template>
 
         <!-- Tests 2.2: content before the field wrapper -->
-        <template #field.website.before>
+        <template #[slotWebsiteBefore]>
           <UAlert
             icon="i-lucide-info"
             color="info"
@@ -125,12 +129,15 @@ const fields: FieldDescriptor<Model>[] = [
         </template>
 
         <!-- Tests 2.3: prepend inside control -->
-        <template #field.website.prepend>
-          <UIcon name="i-lucide-globe" class="size-4 text-muted" />
+        <template #[slotWebsitePrepend]>
+          <UIcon
+            name="i-lucide-globe"
+            class="size-4 text-muted"
+          />
         </template>
 
         <!-- Tests 2.4: append inside control -->
-        <template #field.website.append>
+        <template #[slotWebsiteAppend]>
           <UButton
             size="xs"
             variant="ghost"
@@ -140,14 +147,15 @@ const fields: FieldDescriptor<Model>[] = [
         </template>
 
         <!-- Tests 2.5: custom hint replaces default -->
-        <template #field.website.hint>
-          <a href="#" class="text-xs text-primary hover:underline"
-            >Need help with URLs?</a
-          >
+        <template #[slotWebsiteHint]>
+          <a
+            href="#"
+            class="text-xs text-primary hover:underline"
+          >Need help with URLs?</a>
         </template>
 
         <!-- Tests 2.6: content after errors -->
-        <template #field.website.after>
+        <template #[slotWebsiteAfter]>
           <p class="text-xs text-muted mt-1">
             Current value: <code>{{ model.website || "(empty)" }}</code>
           </p>
