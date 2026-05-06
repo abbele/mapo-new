@@ -73,14 +73,6 @@ const model = ref<Record<string, unknown>>({
   status: "draft",
   show_teaser: false,
 });
-
-const form = useMapoForm({
-  model,
-  fields: computed(() => fields),
-  errors: ref({}),
-  registry: $mapoFormRegistry,
-  immediate: true,
-});
 </script>
 
 <template>
