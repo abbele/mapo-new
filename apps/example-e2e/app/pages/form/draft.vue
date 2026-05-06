@@ -11,7 +11,7 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-const { $mapoFormRegistry } = useNuxtApp();
+const snack = useSnackStore();
 
 interface Model {
   title: string;
@@ -33,30 +33,37 @@ const fields: FieldDescriptor<Model>[] = [
   },
 ];
 
-const form = useMapoForm({
+// Track dirtiness locally by watching model changes directly.
+const isDirty = ref(false);
+watch(
   model,
-  fields: computed(() => fields),
-  errors,
-  registry: $mapoFormRegistry,
-  immediate: false,
-});
+  () => {
+    isDirty.value = true;
+  },
+  { deep: true },
+);
 
 // Tests 1.1–1.3: saves after debounce when isDirty; tests 2.1–2.3: restore from localStorage
-const { clearDraft, hasDraft, getDraft } = useFormDraft({
+const { clearDraft, getDraft } = useFormDraft({
   model,
-  isDirty: form.isDirty,
+  isDirty,
   key: "e2e-draft-article",
   debounce: 1000, // Tests 1.3: rapid edits → single write
   ttl: 24 * 60 * 60 * 1000,
   onRestore: (draft) => {
-    console.log("[E2E] Draft restored:", draft);
+    model.value = draft;
+    draftInfo.value = getDraft();
+  },
+  onSave: (savedAt) => {
+    snack.addMessage({
+      text: `Draft saved at ${savedAt.toLocaleTimeString()}`,
+      color: "info",
+    });
   },
 });
 
-const draftInfo = computed(() => {
-  if (!hasDraft()) return null;
-  return getDraft();
-});
+// Reactive ref instead of computed: localStorage reads are not reactive.
+const draftInfo = ref(getDraft());
 
 // Raw localStorage value for inspection
 const rawDraft = ref<string | null>(null);
@@ -100,10 +107,12 @@ function simulateSave() {
           variant="outline"
           @click="
             clearDraft();
+            draftInfo = null;
             refreshRaw();
           "
-          >Discard draft</UButton
         >
+          Discard draft
+        </UButton>
       </template>
     </UAlert>
 
@@ -115,20 +124,15 @@ function simulateSave() {
             >Edit form (auto-saves after 1s debounce)</span
           >
           <UBadge
-            :color="form.isDirty.value ? 'warning' : 'neutral'"
+            :color="isDirty ? 'warning' : 'neutral'"
             variant="subtle"
             size="xs"
           >
-            {{ form.isDirty.value ? "dirty" : "clean" }}
+            {{ isDirty ? "dirty" : "clean" }}
           </UBadge>
         </div>
       </template>
-      <MapoForm
-        v-model="model"
-        :fields="fields"
-        :errors="errors"
-        :registry="$mapoFormRegistry"
-      />
+      <MapoForm v-model="model" :fields="fields" :errors="errors" />
     </UCard>
 
     <!-- Controls -->

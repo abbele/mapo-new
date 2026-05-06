@@ -24,6 +24,8 @@ export interface UseFormDraftOptions<T> {
    * Show a notification here and decide whether to restore it.
    */
   onRestore?: (draft: T, savedAt: Date) => void;
+  /** Called after each successful write to localStorage. */
+  onSave?: (savedAt: Date) => void;
 }
 
 /**
@@ -43,6 +45,7 @@ export function useFormDraft<T>(options: UseFormDraftOptions<T>) {
     };
     try {
       localStorage.setItem(storageKey, JSON.stringify(entry));
+      options.onSave?.(new Date(entry.savedAt));
     } catch {
       // quota exceeded — silently ignore
     }
