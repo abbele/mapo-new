@@ -2,10 +2,7 @@ function isPlainObject(val: unknown): val is Record<string, unknown> {
   return typeof val === "object" && val !== null && !Array.isArray(val);
 }
 
-export function objectDiff<T extends Record<string, unknown>>(
-  base: T,
-  current: T,
-): Partial<T> {
+export function objectDiff<T extends object>(base: T, current: T): Partial<T> {
   const diff: Partial<T> = {};
   const allKeys = new Set([
     ...Object.keys(base),
@@ -13,8 +10,8 @@ export function objectDiff<T extends Record<string, unknown>>(
   ]) as Set<keyof T>;
 
   for (const key of allKeys) {
-    const baseVal = base[key];
-    const currentVal = current[key];
+    const baseVal = (base as Record<string, unknown>)[key as string];
+    const currentVal = (current as Record<string, unknown>)[key as string];
     if (isPlainObject(baseVal) && isPlainObject(currentVal)) {
       const nested = objectDiff(
         baseVal as Record<string, unknown>,
@@ -24,7 +21,7 @@ export function objectDiff<T extends Record<string, unknown>>(
         diff[key] = nested as T[keyof T];
       }
     } else if (!Object.is(baseVal, currentVal)) {
-      diff[key] = currentVal;
+      diff[key] = currentVal as T[keyof T];
     }
   }
   return diff;
