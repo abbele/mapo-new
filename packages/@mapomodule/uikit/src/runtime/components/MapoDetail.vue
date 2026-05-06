@@ -2,6 +2,7 @@
 import {
   ref,
   computed,
+  toRaw,
   useSlots,
   onMounted,
   onBeforeUnmount,
@@ -65,13 +66,17 @@ const emit = defineEmits<{
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 
-// Polyfill for structuredClone
 const deepClone = (obj: unknown): unknown => {
+  // toRaw is required: structuredClone cannot clone Vue reactive proxies
+  const raw = toRaw(obj as object);
   if (typeof globalThis !== "undefined" && "structuredClone" in globalThis) {
-    // @ts-expect-error — structuredClone exists at runtime but TS doesn't know it
-    return (globalThis as any).structuredClone(obj);
+    try {
+      return structuredClone(raw);
+    } catch {
+      /* fall through to JSON */
+    }
   }
-  return JSON.parse(JSON.stringify(obj));
+  return JSON.parse(JSON.stringify(raw));
 };
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -90,7 +95,9 @@ const isNew = computed(() => String(props.id) === "new");
 const model = ref<T>({} as T);
 const backup = ref<T | null>(null);
 const errors = ref<Record<string, string[]>>({});
-const isLoading = ref(false);
+// Start in loading state for existing items so MapoForm is never mounted with
+// empty data and then immediately unmounted when the spinner appears on mount.
+const isLoading = ref(String(props.id) !== "new");
 const isSaving = ref(false);
 const isDeleting = ref(false);
 const currentLang = ref(props.languages[0] ?? "");
