@@ -35,14 +35,14 @@ The main form renderer. Takes a list of `FieldDescriptor` objects and a model, t
 
 ### Exposed Methods
 
-| Method           | Signature             | Description                                                 |
-| ---------------- | --------------------- | ----------------------------------------------------------- |
-| `submit`         | `() => Promise<void>` | Run all validators and mark the form as submitted.          |
-| `validateClient` | `() => boolean`       | Run client-side validators only. Returns `true` if valid.   |
-| `resetDirty`     | `() => void`          | Reset the dirty-tracking baseline (call after a save).      |
-| `getPatch`       | `() => Partial<T>`    | Return only the fields changed since the last `resetDirty`. |
-| `isDirty`        | `Ref<boolean>`        | Reactive flag indicating unsaved changes.                   |
-| `isLoading`      | `Ref<boolean>`        | Reactive flag while async validators are running.           |
+| Method           | Signature                                                                        | Description                                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `submit`         | `(handler: (payload, isNew) => Promise<void>, isNew?: boolean) => Promise<void>` | Run all validators; on success call `handler` with the full model (`isNew=true`) or the diff patch (`isNew=false`). |
+| `validateClient` | `() => { valid: boolean; errors: Record<string, string> }`                       | Run all synchronous client validators. Returns `valid` and a map of field errors.                                   |
+| `resetDirty`     | `() => void`                                                                     | Reset the dirty-tracking baseline (call after a successful save).                                                   |
+| `getPatch`       | `() => Partial<T>`                                                               | Return only the fields changed since the last `resetDirty`.                                                         |
+| `isDirty`        | `Ref<boolean>`                                                                   | Reactive flag — `true` when any field has changed since the last baseline.                                          |
+| `isLoading`      | `Ref<boolean>`                                                                   | Reactive flag — `true` while the `submit` handler is executing.                                                     |
 
 ---
 
@@ -81,6 +81,24 @@ Collapsible section that groups related fields under a heading.
 | `label`           | `string`            | —              | Group heading label.               |
 | `fields`          | `FieldDescriptor[]` | — **required** | Fields belonging to this group.    |
 | `initialExpanded` | `boolean`           | —              | Whether the group starts expanded. |
+
+---
+
+## MapoFormFlatSection
+
+Flat grid layout for fields that belong to no group. Renders fields in a 12-column responsive grid and provides the same field-expand overlay as `MapoFormGroup` — without a collapsible heading.
+
+Used internally by `MapoForm` for fields that have no `group` or `tab` set.
+
+### Props
+
+| Prop     | Type                | Default        | Description                   |
+| -------- | ------------------- | -------------- | ----------------------------- |
+| `fields` | `FieldDescriptor[]` | — **required** | Fields to render in the grid. |
+
+### Slots
+
+Forwards all `field.*` slot names to each `MapoFormField` child (same forwarding contract as `MapoFormGroup`).
 
 ---
 
@@ -331,11 +349,11 @@ Single item inside a `MapoRepeater`. Handles both full-form and mini-card views.
 
 Thin wrappers around Nuxt UI primitives that integrate with the form registry system. They inherit all attributes and props from the underlying Nuxt UI component.
 
-| Component       | Wraps         | Registry key                                       |
-| --------------- | ------------- | -------------------------------------------------- |
-| `NuiInput`      | `UInput`      | `'text'`, `'char'`, `'email'`, `'url'`, `'number'` |
-| `NuiTextarea`   | `UTextarea`   | `'textarea'`                                       |
-| `NuiSlider`     | `USlider`     | `'slider'`                                         |
-| `NuiCheckbox`   | `UCheckbox`   | `'checkbox'`, `'boolean'`                          |
-| `NuiSelectMenu` | `USelectMenu` | `'select'`                                         |
-| `NuiSwitch`     | `USwitch`     | `'switch'`                                         |
+| Component       | Wraps         | Registry keys                   | Notes                                                                                                        |
+| --------------- | ------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `NuiInput`      | `UInput`      | `'text'`, `'number'`, `'color'` | `number` adds `type="number"`; `color` adds `type="color"` via registry `attrs`.                             |
+| `NuiTextarea`   | `UTextarea`   | `'textarea'`                    |                                                                                                              |
+| `NuiSlider`     | `USlider`     | `'slider'`                      |                                                                                                              |
+| `NuiCheckbox`   | `UCheckbox`   | `'boolean'`                     |                                                                                                              |
+| `NuiSwitch`     | `USwitch`     | `'switch'`                      |                                                                                                              |
+| `NuiSelectMenu` | `USelectMenu` | `'select'`                      | Registry sets `labelKey: 'text'` / `valueKey: 'value'` to match the `{ text, value }` descriptor convention. |

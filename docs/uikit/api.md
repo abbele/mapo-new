@@ -19,7 +19,7 @@ Full-page CRUD detail view with sidebar, language switcher, and save/delete acti
 | `languages`     | `string[]`              | `[]`           | Translation language codes (e.g. `['it', 'en']`).                                                               |
 | `modelName`     | `string \| null`        | `null`         | Human-readable model name shown in the page title.                                                              |
 | `sidebarCols`   | `number`                | `4`            | Sidebar column span (1–11 in a 12-col grid).                                                                    |
-| `sticky`        | `boolean`               | `true`         | Keep sidebar sticky while scrolling. Offset controlled by `--mapo-topbar-height` CSS variable (default `56px`). |
+| `sticky`        | `boolean`               | `true`         | Keep sidebar sticky while scrolling. Offset controlled by `--mapo-topbar-height` CSS variable (default `64px`). |
 | `usePatch`      | `boolean`               | `true`         | Send `PATCH` (diff only) on update instead of `PUT`.                                                            |
 | `readonly`      | `boolean`               | `false`        | Force read-only mode globally.                                                                                  |
 | `registry`      | `FieldRegistry \| null` | `null`         | Field registry. Falls back to `$mapoFormRegistry` if omitted.                                                   |
