@@ -17,10 +17,17 @@ Form engine for Mapo v2 — descriptor-driven, typesafe, headless-ready admin fo
 
 ## Install
 
+`@mapomodule/form` is included automatically when you install `mapomodule` (recommended). No additional module entry is needed.
+
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ["@nuxt/ui", "mapomodule", "@mapomodule/form"],
+  modules: ["@nuxt/ui", "mapomodule"],
+  mapo: {
+    form: {
+      // optional — global field registry defaults
+    },
+  },
 });
 ```
 
@@ -55,21 +62,24 @@ The `registry` prop is optional — `<MapoForm>` falls back to the global `$mapo
 
 ## Field types
 
-| Type                         | Component             | Notes                                                      |
-| ---------------------------- | --------------------- | ---------------------------------------------------------- |
-| `text`                       | `UInput`              |                                                            |
-| `textarea`                   | `UTextarea`           |                                                            |
-| `number`                     | `UInput[type=number]` |                                                            |
-| `boolean`                    | `UCheckbox`           |                                                            |
-| `switch`                     | `USwitch`             |                                                            |
-| `select`                     | `USelectMenu`         | requires `attrs.options`                                   |
-| `date` / `datetime` / `time` | `MapoDateField` etc.  | ISO string in model; `tz: 'naive' \| 'utc'` for `datetime` |
-| `fks`                        | `MapoFksField`        | FK autocomplete; `attrs.endpoint` required                 |
-| `m2m`                        | `MapoFksField`        | Multi-select autocomplete                                  |
-| `editor`                     | `MapoWygEditor`       | Tiptap v2; sanitized output, safe `Link` validator         |
-| `seo`                        | `MapoSeoPreview`      | Title / description with live SERP preview                 |
-| `map`                        | `MapoMapField`        | Leaflet, `{ lat, lng }` in model, lazy-loaded              |
-| `repeater`                   | `MapoRepeater`        | Nested fields, drag-and-drop, undo, templates              |
+| Type                         | Component             | Notes                                                       |
+| ---------------------------- | --------------------- | ----------------------------------------------------------- |
+| `text`                       | `UInput`              |                                                             |
+| `textarea`                   | `UTextarea`           |                                                             |
+| `number`                     | `UInput[type=number]` |                                                             |
+| `boolean`                    | `UCheckbox`           |                                                             |
+| `switch`                     | `USwitch`             |                                                             |
+| `color`                      | `UInput[type=color]`  |                                                             |
+| `slider`                     | `USlider`             |                                                             |
+| `file`                       | `MapoFileField`       | Current-file preview, image thumbnail, remove button        |
+| `select`                     | `USelectMenu`         | requires `attrs.options`                                    |
+| `date` / `datetime` / `time` | `MapoDateField` etc.  | ISO string in model; `tz: 'naive' \| 'utc'` for `datetime`  |
+| `fks`                        | `MapoFksField`        | FK autocomplete; `attrs.endpoint` required                  |
+| `m2m`                        | `MapoFksField`        | Multi-select autocomplete, removable chips                  |
+| `editor`                     | `MapoWygEditor`       | Tiptap v2; sanitized output, safe `Link` validator          |
+| `seo`                        | `MapoSeoPreview`      | Title / description with live SERP preview                  |
+| `map`                        | `MapoMapField`        | Leaflet, `{ lat, lng }` in model, SSR-safe via `ClientOnly` |
+| `repeater`                   | `MapoRepeater`        | Nested fields, drag-and-drop, undo stack, templates         |
 
 ## JSON Schema → Form
 

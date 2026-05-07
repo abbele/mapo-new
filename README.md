@@ -38,11 +38,13 @@ pnpm build
 
 ### Apps
 
-| Script                   | Port | Description                                                                       |
-| ------------------------ | ---- | --------------------------------------------------------------------------------- |
-| `pnpm dev:example`       | 3000 | Core feature demo (login, CRUD, permissions, snackbar, sidebar, form engine)      |
-| `pnpm dev:example-theme` | 3001 | Theming & override demo (CSS tokens, Nuxt UI config, MapoOverride, custom fields) |
-| `pnpm docs:dev`          | —    | VitePress documentation site                                                      |
+| Script                   | Port | Description                                                                            |
+| ------------------------ | ---- | -------------------------------------------------------------------------------------- |
+| `pnpm dev:example`       | 3000 | Core feature demo (login, CRUD, permissions, snackbar, sidebar, form engine)           |
+| `pnpm dev:example-theme` | 3001 | Theming & override demo (CSS tokens, Nuxt UI config, MapoOverride, custom fields)      |
+| `pnpm dev:example-form`  | —    | Custom form field demo (custom registry, `defineFormField`, Vuetify field integration) |
+| `pnpm dev:example-e2e`   | —    | E2E test target app — one page per feature scenario                                    |
+| `pnpm docs:dev`          | —    | VitePress documentation site                                                           |
 
 ### Package development
 
@@ -101,10 +103,13 @@ See [docs/guide/release-process.md](docs/guide/release-process.md) for the full 
 ## Monorepo Structure
 
 ```
-packages/@mapomodule/   individual @mapomodule/* packages
-packages/mapomodule/    meta-package
-apps/example/           core feature demo app
-apps/example-theme/     theming & override demo app
-docs/                   VitePress documentation site
-legacy/                 git submodules: mapo-v1 and mapo-v1-middleware (read-only reference)
+packages/@mapomodule/      individual @mapomodule/* packages
+packages/mapomodule/       meta-package
+apps/example/              core feature demo app
+apps/example-theme/        theming & override demo app
+apps/example-custom-form/  custom form field demo (defineFormField, third-party integration)
+apps/example-e2e/          E2E test target — one page per feature scenario
+e2e/                       Playwright E2E test suite
+docs/                      VitePress documentation site
+legacy/                    git submodules: mapo-v1 and mapo-v1-middleware (read-only reference)
 ```
