@@ -5,9 +5,11 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/module.d.mts",
       "import": "./dist/module.mjs"
     },
     "./runtime/*": {
+      "types": "./src/runtime/*",
       "import": "./dist/runtime/*.js",
       "default": "./src/runtime/*"
     }
