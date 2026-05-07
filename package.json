@@ -19,6 +19,7 @@
     "dev:utils": "pnpm --filter @mapomodule/utils dev",
     "dev:mapomodule": "pnpm --filter mapomodule dev",
     "dev:camomilla": "pnpm --filter mapo-integrations-camomilla dev",
+    "dev:form": "pnpm --filter @mapomodule/form dev",
     "dev:packages": "turbo run dev --filter='./packages/**'",
     "prepare": "husky",
     "release": "pnpm build && multi-semantic-release --extends $PWD/.releaserc.release.json",
