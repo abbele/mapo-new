@@ -16,17 +16,16 @@ Generic CRUD composable backed by `$mapoFetch`.
 
 **Returns** an object with:
 
-| Member            | Signature                              | Description                                                |
-| ----------------- | -------------------------------------- | ---------------------------------------------------------- |
-| `list`            | `(params?) => Promise<T[]>`            | Fetch a paginated list.                                    |
-| `detail`          | `(id) => Promise<T>`                   | Fetch a single record.                                     |
-| `create`          | `(payload) => Promise<T>`              | POST a new record.                                         |
-| `update`          | `(id, payload) => Promise<T>`          | PUT a full record.                                         |
-| `partialUpdate`   | `(id, payload) => Promise<Partial<T>>` | PATCH a partial record.                                    |
-| `destroy`         | `(id) => Promise<void>`                | DELETE a record.                                           |
-| `multipartCreate` | `(payload) => Promise<T>`              | POST with `multipart/form-data` (handles `File` / `Blob`). |
-| `multipartUpdate` | `(id, payload) => Promise<T>`          | PATCH with `multipart/form-data`.                          |
-| `bulkDestroy`     | `(ids) => Promise<void>`               | DELETE multiple records.                                   |
+| Member           | Signature                                             | Description                                                                 |
+| ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------------- |
+| `list`           | `(params?, config?) => Promise<PaginatedResponse<T>>` | Fetch a paginated list. Query params are forwarded to the server.           |
+| `detail`         | `(id, config?) => Promise<T>`                         | Fetch a single record by ID.                                                |
+| `create`         | `(data, config?, opts?) => Promise<T>`                | POST a new record. Applies multipart policy automatically when files exist. |
+| `update`         | `(id, data, config?, opts?) => Promise<T>`            | PUT a full record.                                                          |
+| `partialUpdate`  | `(id, diff, config?, opts?) => Promise<T>`            | PATCH a partial record.                                                     |
+| `delete`         | `(id, config?) => Promise<void>`                      | DELETE a record.                                                            |
+| `updateOrCreate` | `(data, config?, opts?) => Promise<T>`                | PUT if `data.id` is present, otherwise POST.                                |
+| `updateOrder`    | `(startId, endId, config?) => Promise<void>`          | POST to `{endpoint}update_order/` — used for drag-and-drop reorder.         |
 
 ---
 
@@ -38,12 +37,11 @@ Authentication composable. Wraps login, logout, and user-fetching over `$mapoFet
 
 **Returns:**
 
-| Member            | Signature                                                | Description                                    |
-| ----------------- | -------------------------------------------------------- | ---------------------------------------------- |
-| `login`           | `(credentials: { username, password }) => Promise<void>` | POST credentials and store the session cookie. |
-| `logout`          | `() => Promise<void>`                                    | DELETE session and clear auth store.           |
-| `fetchUser`       | `() => Promise<MapoUser>`                                | GET current user info and populate auth store. |
-| `isAuthenticated` | `ComputedRef<boolean>`                                   | Reactive flag from `useAuthStore`.             |
+| Member      | Signature                                                | Description                                                                                     |
+| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `login`     | `(credentials: { username, password }) => Promise<void>` | POST credentials; confirms the session by calling `fetchUser`.                                  |
+| `logout`    | `() => Promise<void>`                                    | GET logout endpoint, clears the session cookie, resets `useAuthStore`, redirects to `loginUrl`. |
+| `fetchUser` | `() => Promise<void>`                                    | GET current user info and hydrate `useAuthStore`.                                               |
 
 ---
 
@@ -87,16 +85,23 @@ Pinia store for toast notifications. Used by `MapoSnackBar`.
 
 **State:**
 
-| Field     | Type                   | Description                       |
-| --------- | ---------------------- | --------------------------------- |
-| `current` | `SnackMessage \| null` | Currently displayed notification. |
+| Field      | Type             | Description                           |
+| ---------- | ---------------- | ------------------------------------- |
+| `messages` | `SnackMessage[]` | Queue of pending snack notifications. |
+
+**Getters:**
+
+| Getter    | Type                   | Description                                |
+| --------- | ---------------------- | ------------------------------------------ |
+| `current` | `SnackMessage \| null` | Last notification in the queue, or `null`. |
 
 **Actions:**
 
-| Action    | Signature                                                        | Description                                                |
-| --------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
-| `show`    | `(message: string, type?: SnackType, duration?: number) => void` | Display a snack notification. `type` defaults to `'info'`. |
-| `dismiss` | `() => void`                                                     | Dismiss the current notification immediately.              |
+| Action       | Signature                                                        | Description                                                        |
+| ------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `show`       | `(message: string, type?: SnackType, duration?: number) => void` | Push a snack notification. `type` defaults to `'info'`.            |
+| `dismiss`    | `(id?: number) => void`                                          | Remove notification by ID, or pop the last one if `id` is omitted. |
+| `dismissAll` | `() => void`                                                     | Clear all pending notifications at once.                           |
 
 ```ts
 type SnackType = "success" | "error" | "warning" | "info";
@@ -432,22 +437,21 @@ Core composable powering `MapoForm`. Provides dirty tracking, validation, and su
 
 **Returns:**
 
-| Member           | Type                                                       | Description                                                       |
-| ---------------- | ---------------------------------------------------------- | ----------------------------------------------------------------- |
-| `isDirty`        | `ComputedRef<boolean>`                                     | `true` when model differs from the last save baseline.            |
-| `isLoading`      | `Ref<boolean>`                                             | `true` while async validators are running.                        |
-| `readonly`       | `Ref<boolean>`                                             | Controls read-only mode for all fields.                           |
-| `currentLang`    | `Ref<string>`                                              | Active language.                                                  |
-| `getFieldValue`  | `(key) => unknown`                                         | Get a field's value by key or descriptor.                         |
-| `setFieldValue`  | `(key, val) => void`                                       | Set a field's value.                                              |
-| `getClientError` | `(key) => string \| undefined`                             | Get the first client-side error for a field.                      |
-| `markTouched`    | `(key) => void`                                            | Mark a field as touched (triggers immediate validation).          |
-| `isTouched`      | `(key) => boolean`                                         | Check if a field has been touched.                                |
-| `validateClient` | `() => { valid: boolean, errors: Record<string, string> }` | Run all client validators synchronously.                          |
-| `resetDirty`     | `() => void`                                               | Reset the dirty-tracking baseline (call after a successful save). |
-| `getPatch`       | `() => Partial<T>`                                         | Return only changed fields since the last `resetDirty`.           |
-| `submit`         | `(handler?, isNew?) => Promise<void>`                      | Validate then call optional handler; sets `isLoading`.            |
-| `provideContext` | `() => void`                                               | Provide the form context to descendant field components.          |
+| Member           | Type                                                                             | Description                                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `isDirty`        | `ComputedRef<boolean>`                                                           | `true` when model differs from the last save baseline.                                                                      |
+| `isLoading`      | `Ref<boolean>`                                                                   | `true` while async validators are running.                                                                                  |
+| `readonly`       | `Ref<boolean>`                                                                   | Controls read-only mode for all fields.                                                                                     |
+| `currentLang`    | `Ref<string>`                                                                    | Active language.                                                                                                            |
+| `getFieldValue`  | `(key) => unknown`                                                               | Get a field's value by key or descriptor.                                                                                   |
+| `setFieldValue`  | `(key, val) => void`                                                             | Set a field's value.                                                                                                        |
+| `getClientError` | `(key) => string \| undefined`                                                   | Get the first client-side error for a field.                                                                                |
+| `markTouched`    | `(key) => void`                                                                  | Mark a field as touched (triggers immediate validation).                                                                    |
+| `isTouched`      | `(key) => boolean`                                                               | Check if a field has been touched.                                                                                          |
+| `validateClient` | `() => { valid: boolean, errors: Record<string, string> }`                       | Run all client validators synchronously.                                                                                    |
+| `resetDirty`     | `() => void`                                                                     | Reset the dirty-tracking baseline (call after a successful save).                                                           |
+| `getPatch`       | `() => Partial<T>`                                                               | Return only changed fields since the last `resetDirty`.                                                                     |
+| `submit`         | `(handler: (payload, isNew) => Promise<void>, isNew?: boolean) => Promise<void>` | Validate all fields, then call `handler`. On success calls `resetDirty` and clears touched state. No-op if already loading. |
 
 ---
 
@@ -469,14 +473,14 @@ Generates a `FieldDescriptor[]` array from a JSON Schema document.
 
 Persists the form model to `localStorage` with debounce and TTL.
 
-| Option      | Type                 | Default        | Description                                          |
-| ----------- | -------------------- | -------------- | ---------------------------------------------------- |
-| `model`     | `Ref<T>`             | — **required** | Form model to persist.                               |
-| `isDirty`   | `Ref<boolean>`       | — **required** | Dirty flag (draft is only saved when dirty).         |
-| `key`       | `string`             | — **required** | Unique storage key (prefixed as `mapo:draft:<key>`). |
-| `debounce`  | `number`             | `2000`         | Write delay in milliseconds.                         |
-| `ttl`       | `number`             | `86400000`     | Draft TTL in milliseconds (default 24 h).            |
-| `onRestore` | `(draft: T) => void` | —              | Callback fired on mount when a valid draft exists.   |
+| Option      | Type                                | Default        | Description                                                                                      |
+| ----------- | ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------ |
+| `model`     | `Ref<T>`                            | — **required** | Form model to persist.                                                                           |
+| `isDirty`   | `Ref<boolean>`                      | — **required** | Dirty flag (draft is only saved when dirty).                                                     |
+| `key`       | `string`                            | — **required** | Unique storage key (prefixed as `mapo:draft:<key>`).                                             |
+| `debounce`  | `number`                            | `2000`         | Write delay in milliseconds.                                                                     |
+| `ttl`       | `number`                            | `86400000`     | Draft TTL in milliseconds (default 24 h).                                                        |
+| `onRestore` | `(draft: T, savedAt: Date) => void` | —              | Callback fired on mount when a valid draft exists. `savedAt` is the timestamp of the last write. |
 
 **Returns:**
 
