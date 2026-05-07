@@ -8,11 +8,7 @@ import {
   resolveFieldAccessor,
 } from "../types/index.js";
 import { injectMapoForm } from "../composables/useMapoForm.js";
-import {
-  getNestedValue,
-  setNestedValueMutating,
-  debounce,
-} from "@mapomodule/utils";
+import { getNestedValue, debounce } from "@mapomodule/utils";
 import MapoUnknownField from "./MapoUnknownField.vue";
 
 const props = defineProps<{ descriptor: FieldDescriptor }>();
@@ -40,7 +36,7 @@ const showField = computed(() => {
   return true;
 });
 
-// ─── Valore ──────────────────────────────────────────────────────────────────
+// ─── Value ───────────────────────────────────────────────────────────────────
 
 const path = computed(() => {
   const lang = currentLang.value;
@@ -66,27 +62,9 @@ const modelValue = computed(() => {
 });
 
 function doUpdate(val: unknown) {
-  const setVal = accessor.value.set
-    ? accessor.value.set({ model: model.value, val, lang: currentLang.value })
-    : val;
-
-  if (props.descriptor.synci18n && form.languages.length) {
-    for (const lang of form.languages) {
-      setNestedValueMutating(
-        model.value as Record<string, unknown>,
-        `translations.${lang}.${props.descriptor.key as string}`,
-        setVal,
-      );
-    }
-  } else {
-    setNestedValueMutating(
-      model.value as Record<string, unknown>,
-      path.value,
-      setVal,
-    );
-  }
-
-  props.descriptor.onChange?.({ model: model.value, val: setVal });
+  // Delegate to the context so that dirtyKeys tracking, clientError clearing,
+  // initLang, and onChange are all handled in one place (useMapoForm.setFieldValue).
+  form.setFieldValue(props.descriptor.key as string, val);
 }
 
 // Per-field debounce: descriptor.debounce → form.debounce → 0 when immediate.

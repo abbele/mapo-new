@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, provide, onMounted, onUnmounted } from "vue";
+import { ref, computed, provide, onMounted, onUnmounted } from "vue";
 import type { FieldDescriptor } from "../types/index.js";
 import MapoFormField from "./MapoFormField.vue";
 
@@ -7,9 +7,17 @@ const props = defineProps<{ fields: FieldDescriptor[] }>();
 
 defineSlots<Record<string, unknown>>();
 
-// ─── Field expand (same as MapoFormGroup) ────────────────────────────────────
+// ─── Field expand ────────────────────────────────────────────────────────────
 
 const expandedFieldKey = ref<string | null>(null);
+
+const expandedFieldLabel = computed(() => {
+  if (!expandedFieldKey.value) return "";
+  const field = props.fields.find(
+    (f) => (f.key as string) === expandedFieldKey.value,
+  );
+  return field?.label ?? expandedFieldKey.value;
+});
 
 function expandField(key: string) {
   expandedFieldKey.value = key;
@@ -74,7 +82,9 @@ function colClass(cols: FieldDescriptor["cols"]): string {
           <div
             class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
           >
-            <span class="text-sm font-semibold tracking-wide text-gray-700" />
+            <span class="text-sm font-semibold tracking-wide text-gray-700">{{
+              expandedFieldLabel
+            }}</span>
             <button
               type="button"
               class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"

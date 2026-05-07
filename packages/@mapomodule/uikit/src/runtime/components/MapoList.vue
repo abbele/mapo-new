@@ -9,8 +9,7 @@ import type {
   ActionDescriptor,
   ListTabItem,
 } from "../types/list.js";
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
-import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 
 const props = withDefaults(
   defineProps<{
