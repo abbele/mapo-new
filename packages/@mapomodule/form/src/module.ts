@@ -39,7 +39,7 @@ export default defineNuxtModule<MapoFormOptions>({
     nuxt.options.runtimeConfig.public.mapoForm = {
       groups: options.groups,
       debounce: options.debounce,
-      // attrs è JSON-serializzabile (plain objects) → mergiato nel plugin
+      // attrs is JSON-serialisable (plain objects) — merged in the plugin
       fields: { attrs: options.fields?.attrs ?? {} },
     };
 

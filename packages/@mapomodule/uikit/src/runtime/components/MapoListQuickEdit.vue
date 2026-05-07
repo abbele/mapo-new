@@ -1,7 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed, watch } from "vue";
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
-import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
 

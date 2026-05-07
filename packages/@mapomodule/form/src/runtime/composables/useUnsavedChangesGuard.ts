@@ -8,7 +8,20 @@ export interface UnsavedChangesGuardOptions {
 }
 
 /**
- * Registers browser and router guards that warn before leaving a dirty form.
+ * Registers two guards that warn the user before abandoning a dirty form:
+ * - A Vue Router `onBeforeRouteLeave` guard (in-app navigation).
+ * - A native `beforeunload` event listener (tab close / hard refresh).
+ *
+ * Both guards are no-ops when `isDirty` is `false` or when `options.enabled`
+ * returns `false`. The browser guard is skipped in SSR environments.
+ *
+ * @param isDirty - Reactive flag indicating whether the form has unsaved changes.
+ * @param options - Optional message override and an `enabled` predicate.
+ *
+ * @example
+ * useUnsavedChangesGuard(form.isDirty, {
+ *   message: 'Leave without saving your article?',
+ * })
  */
 export function useUnsavedChangesGuard(
   isDirty: Ref<boolean>,

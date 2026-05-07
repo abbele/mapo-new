@@ -20,6 +20,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@mapomodule/form": "workspace:*",
     "@mapomodule/store": "workspace:*",
     "@mapomodule/utils": "workspace:*",
     "@mapomodule/core": "workspace:*"

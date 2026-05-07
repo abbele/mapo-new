@@ -29,7 +29,25 @@ export interface UseFormDraftOptions<T> {
 }
 
 /**
- * Persists form drafts to localStorage and restores them when available.
+ * Persists form drafts to `localStorage` and restores them on mount when available.
+ *
+ * The draft is written debounced while `isDirty` is `true`. On mount, if a valid
+ * non-expired draft is found, `onRestore` is called so the caller can decide
+ * whether to apply it (e.g. show a snack notification first).
+ *
+ * @param options - Configuration for key, TTL, debounce interval and lifecycle callbacks.
+ * @returns An object with `{ clearDraft, getDraft, hasDraft }` for manual control.
+ *
+ * @example
+ * useFormDraft({
+ *   model,
+ *   isDirty,
+ *   key: `article:${route.params.id}`,
+ *   onRestore: (draft, savedAt) => {
+ *     snack.show(`Draft from ${savedAt.toLocaleString()} restored`)
+ *     Object.assign(model.value, draft)
+ *   },
+ * })
  */
 export function useFormDraft<T>(options: UseFormDraftOptions<T>) {
   const storageKey = `mapo:draft:${options.key}`;

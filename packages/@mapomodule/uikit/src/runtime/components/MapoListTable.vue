@@ -7,8 +7,7 @@ import type { ListColumn } from "../types/list.js";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/fields.js";
-import type { FieldRegistry } from "@mapomodule/form/runtime/composables/useFieldRegistry.js";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 
 const props = withDefaults(
   defineProps<{
