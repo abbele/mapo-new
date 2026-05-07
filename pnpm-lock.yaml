@@ -313,6 +313,9 @@ importers:
       '@mapomodule/core':
         specifier: workspace:*
         version: link:../core
+      '@mapomodule/form':
+        specifier: workspace:*
+        version: link:../form
       '@mapomodule/store':
         specifier: workspace:*
         version: link:../store
