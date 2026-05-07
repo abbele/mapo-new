@@ -10,14 +10,14 @@ Mapo is a Vue 3 / Nuxt 4 admin framework. This guide gets you from zero to a run
 
 ## Install
 
-Install the meta-package and (optionally) the Camomilla integration:
+Install the meta-package, `@nuxt/ui`, and (optionally) the Camomilla integration:
 
 ```bash
-pnpm add mapomodule
+pnpm add mapomodule @nuxt/ui
 pnpm add mapo-integrations-camomilla   # optional — only if you use Camomilla CMS
 ```
 
-The `mapomodule` meta-package transparently installs `@mapomodule/core` and `@mapomodule/store`. You don't need to add them as separate dependencies.
+The `mapomodule` meta-package transparently installs `@mapomodule/core`, `@mapomodule/store`, and `@mapomodule/uikit`. You don't need to add them as separate dependencies. `@iconify-json/lucide` is bundled with `mapomodule` — no need to install it separately.
 
 ## Configure
 
@@ -26,7 +26,7 @@ Add the modules to your `nuxt.config.ts` and configure them under the `mapo` and
 ```ts
 export default defineNuxtConfig({
   modules: [
-    "@nuxt/ui",
+    "@nuxt/ui", // must come before mapomodule — see note below
     "mapomodule",
     "mapo-integrations-camomilla", // optional
   ],
@@ -81,13 +81,46 @@ definePageMeta({ middleware: ["auth"] });
 - **[Writing your own integration](/modules/integrations-howto)** — adapt Mapo to any backend
 - **[Known limitations](./known-limitations)** — what to expect during migration to v2
 
-## Reference example
+## Reference examples
 
-The repo ships an `apps/example/` Nuxt 4 app exercising every composable and store. Clone the repo and:
+The repo ships two demo apps:
+
+| App                   | Script                   | Port | What it covers                                                         |
+| --------------------- | ------------------------ | ---- | ---------------------------------------------------------------------- |
+| `apps/example/`       | `pnpm dev:example`       | 3000 | Login, CRUD, multipart upload, permissions, snackbar, confirm, sidebar |
+| `apps/example-theme/` | `pnpm dev:example-theme` | 3001 | CSS tokens, Nuxt UI config, MapoOverride, layout slots, dark mode      |
 
 ```bash
 pnpm install
-pnpm dev:example
+pnpm dev:example          # core feature demo
+pnpm dev:example-theme    # theming & override demo
 ```
 
-Open `http://localhost:3000` to play with login, CRUD, multipart upload, permissions, snackbar, confirm, and sidebar persistence.
+## Developing packages
+
+When working on the packages themselves, use the per-package watch scripts so `dist/` stays in sync without a full rebuild:
+
+```bash
+pnpm dev:uikit        # @mapomodule/uikit  — nuxt-module-build --stub --watch
+pnpm dev:core         # @mapomodule/core   — nuxt-module-build --stub --watch
+pnpm dev:store        # @mapomodule/store  — nuxt-module-build --stub --watch
+pnpm dev:utils        # @mapomodule/utils  — tsc --watch
+pnpm dev:mapomodule   # mapomodule         — nuxt-module-build --stub --watch
+pnpm dev:camomilla    # mapo-integrations-camomilla — nuxt-module-build --stub --watch
+```
+
+Or start all package watchers at once with Turborepo:
+
+```bash
+pnpm dev:packages     # runs `dev` across all packages in parallel
+```
+
+Run a package watcher alongside a demo app in two terminals:
+
+```bash
+# terminal 1
+pnpm dev:uikit
+
+# terminal 2
+pnpm dev:example-theme
+```

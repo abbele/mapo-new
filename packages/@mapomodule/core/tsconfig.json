@@ -14,5 +14,8 @@
       "@mapomodule/utils": ["./node_modules/@mapomodule/utils/src/index.ts"]
     }
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "./node_modules/@mapomodule/utils/src/route-meta.d.ts"
+  ]
 }

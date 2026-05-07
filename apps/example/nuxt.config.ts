@@ -4,12 +4,17 @@ export default defineNuxtConfig({
 
   modules: ["@nuxt/ui", "mapomodule", "mapo-integrations-camomilla"],
 
-  css: ["~/assets/css/main.css"],
-
   mapo: {
     authLoginUrl: "/api/auth/login",
     userInfoApi: "/api/profiles/me/",
     logoutUrl: "/api/auth/logout",
+
+    // Route CSS through the uikit module so Tailwind v4 + @nuxt/ui
+    // process it in the same pipeline as example-theme — this is what
+    // makes icons and design tokens load correctly.
+    uikit: {
+      css: "~/assets/css/main.css",
+    },
   },
 
   camomilla: {

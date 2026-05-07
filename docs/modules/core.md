@@ -215,21 +215,72 @@ const confirmed = await confirm.open({
 
 Three named route middleware are registered automatically:
 
-| Middleware    | Behaviour                                                            |
-| ------------- | -------------------------------------------------------------------- |
-| `auth`        | Redirects to `/login` if `authStore.isAuthenticated` is false        |
-| `permissions` | Checks `route.meta.permissions` against `authStore.modelPermissions` |
-| `roles`       | Checks `route.meta.roles` against the user's groups                  |
+| Middleware    | Behaviour                                                          |
+| ------------- | ------------------------------------------------------------------ |
+| `auth`        | Redirects to `/login` if `authStore.isAuthenticated` is false      |
+| `permissions` | Checks `route.meta.permissions` — supports two formats (see below) |
+| `roles`       | Checks `route.meta.roles` against the user's groups                |
 
 Apply them in `definePageMeta`:
 
 ```ts
 definePageMeta({
   middleware: ["auth", "permissions"],
-  permissions: { model: "article", action: "change" },
+  permissions: { model: "article" },
   roles: ["editor", "admin"],
 });
 ```
+
+### `permissions` field — two formats
+
+**`{ model: string }` (recommended for Django backends)**
+
+Derives all CRUD actions for a Django model from the user's raw permissions:
+
+```ts
+// User has: add_article, change_article, view_article (not delete_article)
+definePageMeta({
+  middleware: ["auth", "permissions"],
+  permissions: { model: "article" },
+});
+
+// After navigation, authStore.pagePermissions["route-name"] === ["add", "change", "view"]
+// Blocks navigation entirely if the user does not have view_article
+```
+
+Use `pagePermissions` in components to gate individual operations:
+
+```vue
+<script setup lang="ts">
+const auth = useAuthStore();
+const route = useRoute();
+const pagePerms = computed(
+  () => auth.pagePermissions[String(route.name)] ?? [],
+);
+</script>
+
+<template>
+  <UButton v-if="pagePerms.includes('add')" @click="create">New</UButton>
+  <UButton v-if="pagePerms.includes('delete')" color="red" @click="remove"
+    >Delete</UButton
+  >
+</template>
+```
+
+Superusers bypass the check and receive `["view", "add", "change", "delete"]` automatically.
+
+**`string[]` (explicit codenames)**
+
+Checks that the user has every listed raw Django permission codename. Does **not** populate `pagePermissions`.
+
+```ts
+definePageMeta({
+  middleware: ["auth", "permissions"],
+  permissions: ["view_article", "change_article"],
+});
+```
+
+Use this when you need to combine permissions from different models, or when the model-based pattern does not apply.
 
 ---
 

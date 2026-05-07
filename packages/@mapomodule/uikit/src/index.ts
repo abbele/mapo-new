@@ -1,1 +1,1 @@
-// @mapomodule/uikit — placeholder
+export type { MapoUikitOptions } from "./module";

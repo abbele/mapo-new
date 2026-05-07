@@ -1,0 +1,60 @@
+/*
+ * ① CSS Token Override
+ *
+ * This file is loaded AFTER the base uikit CSS, so any token defined here
+ * wins over the defaults. All Nuxt UI semantic tokens are supported.
+ *
+ * Reference: https://ui.nuxt.com/getting-started/theme
+ */
+
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* ── Color palette ──────────────────────────────────────────────────── */
+
+:root {
+  /* Primary: violet */
+  --color-primary-50:  oklch(0.97 0.03 290);
+  --color-primary-100: oklch(0.93 0.06 290);
+  --color-primary-200: oklch(0.87 0.10 290);
+  --color-primary-300: oklch(0.79 0.15 290);
+  --color-primary-400: oklch(0.69 0.20 290);
+  --color-primary-500: oklch(0.59 0.25 290);
+  --color-primary-600: oklch(0.50 0.23 290);
+  --color-primary-700: oklch(0.42 0.20 290);
+  --color-primary-800: oklch(0.34 0.16 290);
+  --color-primary-900: oklch(0.27 0.12 290);
+  --color-primary-950: oklch(0.18 0.08 290);
+
+  /* Success: emerald-ish */
+  --color-success-500: oklch(0.72 0.18 162);
+
+  /* Warning: amber */
+  --color-warning-500: oklch(0.78 0.19 75);
+
+  /* Error: rose */
+  --color-error-500: oklch(0.63 0.24 15);
+}
+
+/* ── Semantic UI tokens ──────────────────────────────────────────────── */
+
+:root {
+  --ui-radius: var(--radius-lg);       /* slightly rounder than default */
+  --ui-border: var(--color-neutral-200);
+  --ui-bg: var(--color-neutral-50);
+  --ui-bg-elevated: var(--color-white);
+}
+
+.dark {
+  --ui-border: var(--color-neutral-800);
+  --ui-bg: var(--color-neutral-950);
+  --ui-bg-elevated: var(--color-neutral-900);
+}
+
+/* ── Custom app-level utilities ──────────────────────────────────────── */
+
+.theme-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 1rem;
+}

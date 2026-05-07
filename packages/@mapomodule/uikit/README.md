@@ -1,5 +1,138 @@
 # @mapomodule/uikit
 
-> **⚠️ Placeholder — not yet implemented.** This package is reserved for Mapo's UI components (Sidebar, Topbar, List, Detail, Media, Menu). Until the implementation lands, importing from it has no effect.
+The UI shell of Mapo. Provides the admin layout, sidebar, topbar, login page, feedback components, and the **MapoOverride** system for full component replacement.
 
-The meta-package [`mapomodule`](../../mapomodule/) will install it automatically once shipped.
+Built on [Nuxt UI v3](https://ui.nuxt.com) + [Tailwind v4](https://tailwindcss.com).
+
+## Installation
+
+Typically installed via the meta-package [`mapomodule`](../../mapomodule/). Standalone:
+
+```bash
+pnpm add @mapomodule/uikit @nuxt/ui
+```
+
+```ts
+// nuxt.config.ts — @nuxt/ui MUST come before mapomodule
+export default defineNuxtConfig({
+  modules: ["@nuxt/ui", "@mapomodule/uikit"],
+  mapoUikit: {
+    css: "~/assets/css/theme.css", // optional CSS token override
+    ui: { button: { defaultVariants: { color: "primary" } } }, // optional Nuxt UI defaults
+  },
+});
+```
+
+When installed via `mapomodule`, configure under `mapo.uikit` instead.
+
+## What you get
+
+### Layouts
+
+| Layout         | Description                                                              |
+| -------------- | ------------------------------------------------------------------------ |
+| `mapo-default` | Full admin shell: collapsible sidebar + topbar + scrollable content area |
+| `mapo-empty`   | Bare wrapper — used for the login page                                   |
+
+### Components (auto-imported)
+
+| Component             | Description                                                                  |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `MapoSidebar`         | Collapsible sidebar with mini mode, auto-nav from route meta, footer section |
+| `MapoSidebarList`     | Recursive nav tree built from `route.meta.label` / `meta.parent`             |
+| `MapoSidebarListItem` | Single nav item with permission filtering and nested collapse                |
+| `MapoTopbar`          | Top bar with drawer toggle and left/default/right slots                      |
+| `MapoLogin`           | Centered login form with brand slot and footer slot                          |
+| `MapoSnackBar`        | Imperative snackbar driven by `useSnackStore`                                |
+| `MapoConfirmDialog`   | Promise-based confirm dialog driven by `useConfirmStore`                     |
+| `MapoRootComponents`  | Mounts `MapoSnackBar` + `MapoConfirmDialog` in the layout                    |
+
+### Layout slots (`mapo-default`)
+
+| Slot                 | Renders in                                           |
+| -------------------- | ---------------------------------------------------- |
+| `sidebar:logo`       | Sidebar header — replaces the default logo/name link |
+| `sidebar:nav-top`    | Above the auto-generated nav list                    |
+| `sidebar:nav-bottom` | Below the nav list, above the footer row             |
+| `sidebar:footer`     | Replaces the user avatar + logout row                |
+| `topbar:left`        | Immediately after the drawer toggle button           |
+| `topbar`             | Center area of the topbar (flex-1)                   |
+| `topbar:right`       | Right cluster of the topbar                          |
+
+## Theming
+
+### ① CSS token override
+
+Pass a CSS file via `mapo.uikit.css`. It is loaded **after** the base uikit CSS so your values always win:
+
+```css
+/* assets/css/theme.css */
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  --color-primary-500: oklch(0.59 0.25 290); /* violet */
+  --ui-radius: var(--radius-lg);
+  --ui-bg: var(--color-neutral-50);
+}
+
+.dark {
+  --ui-bg: var(--color-neutral-950);
+}
+```
+
+### ② Nuxt UI component defaults
+
+Pass a partial Nuxt UI config via `mapo.uikit.ui`. Deep-merged into `nuxt.options.ui`:
+
+```ts
+mapo: {
+  uikit: {
+    ui: {
+      button: { defaultVariants: { color: "primary", variant: "solid" } },
+      card:   { slots: { root: "rounded-xl shadow-md" } },
+      input:  { defaultVariants: { variant: "outline" } },
+    },
+  },
+},
+```
+
+## MapoOverride — component replacement
+
+Create a file in `app/mapooverride/` matching any Mapo component name to replace it entirely at build time:
+
+```
+app/
+└── mapooverride/
+    ├── MapoTopbar.vue       ← replaces MapoTopbar globally
+    ├── MapoSidebar.vue
+    └── MapoLogin.vue
+```
+
+The `@mapomodule/uikit` module hooks into Nuxt's `components:extend` and swaps the `filePath` — no imports, no registration needed. Keep props and slots compatible with the original.
+
+Overridable components: `MapoTopbar`, `MapoSidebar`, `MapoSidebarList`, `MapoSidebarListItem`, `MapoLogin`, `MapoSnackBar`, `MapoConfirmDialog`, `MapoRootComponents`.
+
+## Dev workflow
+
+```bash
+# watch mode — rebuilds dist/ on every src/ change
+pnpm --filter @mapomodule/uikit dev
+
+# or from the monorepo root
+pnpm dev:uikit
+```
+
+Run alongside a demo app:
+
+```bash
+# terminal 1
+pnpm dev:uikit
+
+# terminal 2
+pnpm dev:example-theme   # theming demo at http://localhost:3001
+```
+
+## Reference
+
+See [docs/uikit/](../../../docs/uikit/) for the full component and theming documentation.

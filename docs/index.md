@@ -5,22 +5,37 @@ hero:
   name: Mapo
   text: Vue 3 / Nuxt 4 Admin Framework
   tagline: Declarative, typed, and composable. Build admin interfaces faster.
+  image:
+    src: /logo.svg
+    alt: Mapo
   actions:
     - theme: brand
-      text: Get Started
+      text: Get Started →
       link: /guide/getting-started
     - theme: alt
-      text: Architecture & Flows
-      link: /guide/architecture-flows
+      text: UIKit & Theming
+      link: /uikit/
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/lotrekagency/mapo
+      text: GitHub
+      link: https://github.com/lotrekagency/mapo-new
 
 features:
-  - title: Declarative Forms
-    details: Describe your form with a typed FieldDescriptor array. Mapo handles rendering, validation, accessors, and i18n automatically.
-  - title: CRUD Engine
-    details: List and Detail components with pagination, filtering, sorting, patch diffing, unsaved-changes guard, and multipart upload out of the box.
-  - title: Nuxt 4 Native
-    details: Built on Nuxt 4, Pinia, Nuxt UI v3, and ofetch. Zero Vuex, zero Axios, zero legacy.
+  - icon: 🔐
+    title: Auth & Permissions
+    details: Cookie-based session, SSR hydration, route middleware, and a typed permissions system tied to Django model actions.
+  - icon: ⚡
+    title: CRUD Composable
+    details: <code>useCrud&lt;T&gt;(url)</code> — list, get, create, update, patch, delete and multipart upload with a single typed factory.
+  - icon: 🎨
+    title: Fully Themeable
+    details: Override CSS tokens, Nuxt UI component defaults, or replace entire components via the MapoOverride system. All layers are opt-in.
+  - icon: 🧩
+    title: Layout Slots
+    details: Customise the sidebar logo, topbar right area, nav sections, and footer row without replacing a full component.
+  - icon: 🏪
+    title: Pinia Stores
+    details: Auth, snackbar, confirm dialog, and sidebar state — all SSR-safe and cookie-persisted out of the box.
+  - icon: 🚀
+    title: Nuxt 4 Native
+    details: Built on Nuxt 4, Pinia, Nuxt UI v3, Tailwind v4, and ofetch. Zero Vuex, zero Axios, zero legacy.
 ---

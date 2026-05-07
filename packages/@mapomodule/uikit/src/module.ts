@@ -1,0 +1,164 @@
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  defineNuxtModule,
+  addComponent,
+  addLayout,
+  addTypeTemplate,
+  createResolver,
+  extendPages,
+} from "@nuxt/kit";
+import type { NuxtModule } from "@nuxt/schema";
+
+export interface MapoUikitOptions {
+  /**
+   * Path to a CSS file that is injected after the base uikit CSS.
+   * Use it to override Tailwind theme tokens or add global styles.
+   *
+   * @example
+   * // nuxt.config.ts
+   * mapoUikit: { css: '~/assets/css/theme.css' }
+   *
+   * // assets/css/theme.css
+   * @import "@nuxt/ui";
+   * :root {
+   *   --color-primary-500: oklch(0.7 0.2 240);
+   * }
+   */
+  css?: string;
+
+  /**
+   * Default Nuxt UI component config merged into nuxt.options.ui.
+   * Deep-merged so the consuming app can override individual keys.
+   * @see https://ui.nuxt.com/getting-started/theme
+   */
+  ui?: Record<string, unknown>;
+}
+
+export default defineNuxtModule<MapoUikitOptions>({
+  meta: {
+    name: "@mapomodule/uikit",
+    configKey: "mapoUikit",
+  },
+
+  defaults: {
+    ui: {},
+  },
+
+  // @nuxt/ui must be declared BEFORE mapomodule in the consuming app's modules[]
+  // so that @nuxt/icon's Icon component is available in SSR. Installing it via
+  // installModule() from inside another module causes an SSR Icon infinite loop.
+  moduleDependencies: {
+    "@nuxt/ui": {},
+  },
+
+  async setup(options, nuxt) {
+    const resolver = createResolver(import.meta.url);
+
+    addTypeTemplate({
+      filename: "types/mapo-uikit-page-meta.d.ts",
+      getContents: () =>
+        readFileSync(
+          resolver.resolve("./runtime/page-meta.nuxt.d.ts"),
+          "utf-8",
+        ),
+    });
+
+    // Base CSS: Tailwind v4 entry + Nuxt UI design tokens
+    nuxt.options.css.unshift(resolver.resolve("./runtime/assets/main.css"));
+
+    // Custom theme override CSS (injected after base so it wins)
+    if (options.css) {
+      nuxt.options.css.push(options.css);
+    }
+
+    // Merge module-level ui config into nuxt.options so consuming apps
+    // can override Nuxt UI component defaults from the mapoUikit config key.
+    if (options.ui && Object.keys(options.ui).length) {
+      // @ts-expect-error — nuxt.options.ui typed by @nuxt/ui augmentation at app build time
+      nuxt.options.ui = { ...options.ui, ...(nuxt.options.ui ?? {}) };
+    }
+
+    const components = [
+      "MapoSnackBar",
+      "MapoConfirmDialog",
+      "MapoLogin",
+      "MapoRootComponents",
+      "MapoSidebar",
+      "MapoSidebarList",
+      "MapoSidebarListItem",
+      "MapoTopbar",
+    ];
+
+    for (const name of components) {
+      addComponent({
+        name,
+        filePath: resolver.resolve(`./runtime/components/${name}.vue`),
+      });
+    }
+
+    addLayout(
+      { src: resolver.resolve("./runtime/layouts/default.vue") },
+      "mapo-default",
+    );
+    addLayout(
+      { src: resolver.resolve("./runtime/layouts/empty.vue") },
+      "mapo-empty",
+    );
+
+    // Ensure @nuxt/icon bundles lucide icons regardless of hoisting detection.
+    // Without this, in monorepo setups pnpm may hoist @iconify-json/lucide to the
+    // workspace root and @nuxt/icon fails to detect it as a local package.
+    nuxt.hook("modules:done", () => {
+      // icon options are typed by @nuxt/icon's NuxtOptions augmentation at app build time.
+      // Cast to any to avoid TS errors in the uikit package which doesn't depend on @nuxt/icon directly.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const iconOpts = nuxt.options as any;
+      iconOpts.icon ??= {};
+      iconOpts.icon.serverBundle ??= {};
+      const existing: string[] = iconOpts.icon.serverBundle.collections ?? [];
+      iconOpts.icon.serverBundle.collections = Array.from(
+        new Set([...existing, "lucide"]),
+      );
+    });
+
+    // MapoOverride* system: if the consuming app has a `mapooverride/` directory
+    // inside its srcDir, any .vue file named like a Mapo component will replace it
+    // at build time. Convention: MapoTopbar.vue overrides MapoTopbar, etc.
+    nuxt.hook("components:extend", (components) => {
+      const overrideDir = resolve(nuxt.options.srcDir, "mapooverride");
+      if (!existsSync(overrideDir)) return;
+      for (const component of components) {
+        // Component type from @nuxt/schema doesn't expose name/filePath/shortPath directly
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const c = component as any;
+        const overridePath = resolve(overrideDir, `${c.name}.vue`);
+        if (existsSync(overridePath)) {
+          c.filePath = overridePath;
+          c.shortPath = `mapooverride/${c.name}.vue`;
+        }
+      }
+    });
+
+    extendPages((pages) => {
+      // Add a catch-all route for the login page that renders the MapoLogin component.
+      // This allows the login page to be rendered without requiring the consuming app
+      // to create its own login page and route.
+      if (!pages.some((p) => p.path === "/login"))
+        pages.push({
+          name: "mapo-login",
+          path: "/login",
+          file: resolver.resolve("./runtime/pages/login.vue"),
+          meta: { layout: "mapo-empty" },
+        });
+
+      if (!pages.some((p) => p.path === "/"))
+        pages.push({
+          name: "mapo-index",
+          path: "/",
+          file: resolver.resolve("./runtime/pages/index.vue"),
+          meta: { layout: "mapo-default" },
+        });
+    });
+  },
+}) satisfies NuxtModule<MapoUikitOptions>;

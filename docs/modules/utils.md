@@ -125,3 +125,82 @@ import type { MenuNode } from "@mapomodule/utils";
 
 const tree: MenuNode[] = buildRouteTree(router.getRoutes());
 ```
+
+---
+
+## `calcMaxMenuNestDepth(nodes)`
+
+Returns the maximum nesting depth of a `MenuNode[]` tree. Root level = 1.
+
+```ts
+import { calcMaxMenuNestDepth } from "@mapomodule/utils";
+
+calcMaxMenuNestDepth([]); // 0
+calcMaxMenuNestDepth([{ children: [] }]); // 1
+calcMaxMenuNestDepth([{ children: [{ children: [] }] }]); // 2
+```
+
+---
+
+## `deepClone(value)`
+
+Deep-clones plain objects and arrays. Does not handle class instances, Maps, Sets, or circular references.
+
+```ts
+import { deepClone } from "@mapomodule/utils";
+
+const copy = deepClone({ user: { name: "Alice", tags: ["admin"] } });
+copy.user.tags.push("editor");
+// original is unchanged
+```
+
+---
+
+## `isFile(value)` / `isBlob(value)` / `isFileOrBlob(value)`
+
+Type-safe guards for `File` and `Blob` instances. Safe to call server-side (returns `false` if the global is unavailable).
+
+```ts
+import { isFile, isBlob, isFileOrBlob } from "@mapomodule/utils";
+
+isFile(new File([], "doc.pdf")); // true
+isBlob(new Blob(["data"])); // true
+isFileOrBlob(42); // false
+```
+
+---
+
+## `findPropPaths(obj, predicate)`
+
+Returns all dot-notation paths in `obj` where `predicate(value)` is truthy.
+
+```ts
+import { findPropPaths, isFile } from "@mapomodule/utils";
+
+const obj = { title: "Hello", meta: { thumb: new File([], "img.png") } };
+findPropPaths(obj, isFile); // ["meta.thumb"]
+```
+
+---
+
+## `filesInObject(obj)`
+
+Shorthand for `findPropPaths(obj, isFileOrBlob)`. Returns paths of all `File` / `Blob` values — used internally by `useCrud` multipart detection.
+
+```ts
+import { filesInObject } from "@mapomodule/utils";
+
+filesInObject({ title: "Doc", file: new File([], "a.pdf") }); // ["file"]
+```
+
+---
+
+## `filterObj(obj, keys)`
+
+Returns a shallow copy of `obj` containing only the specified top-level keys.
+
+```ts
+import { filterObj } from "@mapomodule/utils";
+
+filterObj({ a: 1, b: 2, c: 3 }, ["a", "c"]); // { a: 1, c: 3 }
+```

@@ -1,0 +1,63 @@
+/* ── Brand color: green ─────────────────────────────────────────────── */
+
+:root {
+  --vp-c-brand-1: #16a34a;   /* green-600 */
+  --vp-c-brand-2: #15803d;   /* green-700 */
+  --vp-c-brand-3: #14532d;   /* green-900 */
+  --vp-c-brand-soft: #dcfce7; /* green-100 */
+}
+
+.dark {
+  --vp-c-brand-1: #4ade80;   /* green-400 */
+  --vp-c-brand-2: #22c55e;   /* green-500 */
+  --vp-c-brand-3: #86efac;   /* green-300 */
+  --vp-c-brand-soft: #052e16; /* green-950 */
+}
+
+/* ── Home hero ──────────────────────────────────────────────────────── */
+
+.VPHero .name {
+  background: linear-gradient(135deg, #16a34a 0%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Feature cards ──────────────────────────────────────────────────── */
+
+.VPFeature {
+  border-radius: 12px !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.12);
+}
+
+/* ── Nav / sidebar ──────────────────────────────────────────────────── */
+
+.VPNav {
+  backdrop-filter: blur(12px);
+}
+
+/* ── Code blocks ────────────────────────────────────────────────────── */
+
+.vp-doc code {
+  color: #15803d;
+  background-color: #f0fdf4;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.dark .vp-doc code {
+  color: #4ade80;
+  background-color: #052e16;
+}
+
+/* ── Inline badge style for status pills ───────────────────────────── */
+
+.vp-doc table td:first-child code,
+.vp-doc table th:first-child code {
+  font-size: 0.85em;
+}

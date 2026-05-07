@@ -1,0 +1,18 @@
+{
+  // Root tsconfig for VSCode monorepo support.
+  // Each sub-project has its own tsconfig; this file stitches them together
+  // so the TypeScript language server resolves paths (including Nuxt's #imports,
+  // #app, etc.) correctly when the workspace root is open in the editor.
+  "files": [],
+  "references": [
+    { "path": "./apps/example" },
+    { "path": "./packages/@mapomodule/core" },
+    { "path": "./packages/@mapomodule/store" },
+    { "path": "./packages/@mapomodule/uikit" },
+    { "path": "./packages/@mapomodule/utils" },
+    { "path": "./packages/@mapomodule/form" },
+    { "path": "./packages/@mapomodule/i18n" },
+    { "path": "./packages/@mapomodule/mapo-integrations-camomilla" },
+    { "path": "./packages/mapomodule" }
+  ]
+}

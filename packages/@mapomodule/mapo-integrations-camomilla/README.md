@@ -35,6 +35,12 @@ export default defineNuxtConfig({
 
 All cookie names and Mapo-side path constants live in [`src/constants.ts`](./src/constants.ts) — no magic strings in the proxy or cookie sync code.
 
+## Dev workflow
+
+```bash
+pnpm dev:camomilla   # from monorepo root — watch mode
+```
+
 ## Reference
 
 See [docs/modules/camomilla](../../../docs/modules/camomilla.md) for the full reference, and [docs/modules/integrations-howto](../../../docs/modules/integrations-howto.md) if you want to write your own backend integration.

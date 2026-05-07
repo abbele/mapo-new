@@ -6,4 +6,13 @@ declare module "nuxt/app" {
   }
 }
 
+declare module "vue-router" {
+  interface RouteMeta {
+    permissions?: { model: string } | string[];
+    roles?: string[];
+    /** Route middleware names applied to this route. Read by useCanAccessRoute for sidebar visibility. */
+    middleware?: string | string[];
+  }
+}
+
 export {};

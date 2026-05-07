@@ -31,4 +31,13 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    // Nuxt pages can be single-word (index, login, etc.) and use compile-time macros
+    // (definePageMeta, useHead) that are auto-imported — not real undefined globals.
+    files: ['**/pages/**/*.vue', '**/layouts/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+      'no-undef': 'off',
+    },
+  },
 )

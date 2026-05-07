@@ -35,6 +35,12 @@ When installed via `mapomodule`, configure under the `mapo` key instead.
 | `useMapo()`       | Facade exposing the above as a single object                                |
 | `auth` middleware | Route middleware: redirects unauthenticated users to `loginUrl`             |
 
+## Dev workflow
+
+```bash
+pnpm dev:core   # from monorepo root — watch mode
+```
+
 ## Configuration
 
 All endpoints fall back to the `MAPO_DEFAULTS` constant exported from this package. See [docs/modules/core](../../../docs/modules/core.md) for the full reference.

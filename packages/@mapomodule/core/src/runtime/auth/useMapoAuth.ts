@@ -16,11 +16,15 @@ export function useMapoAuth(options?: AuthOverrides) {
   const logoutUrl = options?.logoutUrl ?? rc.logoutUrl;
   const loginUrl = rc.loginUrl;
 
-  const { $mapoFetch } = useNuxtApp();
+  const { $mapoFetch } = useNuxtApp() as ReturnType<typeof useNuxtApp> & {
+    $mapoFetch: typeof $fetch;
+  };
   const authStore = useAuthStore();
 
   async function fetchUser(): Promise<void> {
-    const user = await $mapoFetch(userInfoApi, { method: "GET" });
+    const user = await $mapoFetch<
+      import("@mapomodule/store/runtime/types").MapoUser
+    >(userInfoApi, { method: "GET" });
     authStore.setUser(user);
   }
 
@@ -34,7 +38,7 @@ export function useMapoAuth(options?: AuthOverrides) {
 
   async function logout(): Promise<void> {
     try {
-      await $mapoFetch(logoutUrl, { method: "POST" });
+      await $mapoFetch(logoutUrl, { method: "GET" });
     } finally {
       useCookie(CoreCookieEnum.Session).value = null;
       authStore.reset();

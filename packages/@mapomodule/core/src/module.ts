@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import {
   defineNuxtModule,
   addImports,
   addPlugin,
   addRouteMiddleware,
+  addTypeTemplate,
   hasNuxtModule,
   installModule,
   createResolver,
@@ -25,6 +27,8 @@ export type {
 } from "./runtime/types";
 export { MultipartPolicyEnum, CoreCookieEnum } from "./runtime/types";
 export type { MapoFacade, MapoApiLayer } from "./runtime/composables/useMapo";
+export { useCanAccessRoute } from "./runtime/auth/useCanAccessRoute";
+export type { RoutePermissions } from "./runtime/auth/useCanAccessRoute";
 
 export default defineNuxtModule<MapoOptions>({
   meta: {
@@ -36,6 +40,15 @@ export default defineNuxtModule<MapoOptions>({
 
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
+
+    addTypeTemplate({
+      filename: "types/mapo-core-page-meta.d.ts",
+      getContents: () =>
+        readFileSync(
+          resolver.resolve("./runtime/page-meta.nuxt.d.ts"),
+          "utf-8",
+        ),
+    });
 
     if (!hasNuxtModule("@mapomodule/store")) {
       await installModule("@mapomodule/store");
@@ -63,6 +76,10 @@ export default defineNuxtModule<MapoOptions>({
       {
         name: "useMapo",
         from: resolver.resolve("./runtime/composables/useMapo"),
+      },
+      {
+        name: "useCanAccessRoute",
+        from: resolver.resolve("./runtime/auth/useCanAccessRoute"),
       },
     ]);
 

@@ -6,12 +6,16 @@
   "exports": {
     ".": {
       "import": "./dist/module.mjs"
+    },
+    "./runtime/*": {
+      "import": "./dist/runtime/*.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
+    "dev": "nuxt-module-build build --stub --watch",
     "build": "nuxt-module-build build",
     "prepare": "nuxt-module-build build --stub",
     "dev:prepare": "nuxt-module-build build --stub",
@@ -32,6 +36,7 @@
     "nuxt": "^4.4.2",
     "ofetch": "^1.5.1",
     "pinia": "^3.0.4",
-    "vue": "^3.5.32"
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4"
   }
 }
