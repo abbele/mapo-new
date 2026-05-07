@@ -5,28 +5,36 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/types/index.d.ts"
+      "import": "./dist/module.mjs"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "nuxt-module-build build",
+    "prepare": "nuxt-module-build build --stub",
+    "dev:prepare": "nuxt-module-build build --stub",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
+  "peerDependencies": {
+    "nuxt": ">=4.0.0"
+  },
   "dependencies": {
     "@mapomodule/core": "workspace:*",
-    "@mapomodule/store": "workspace:*",
-    "@mapomodule/utils": "workspace:*",
-    "@mapomodule/integrations": "workspace:*",
-    "@mapomodule/routemeta": "workspace:*",
     "@mapomodule/form": "workspace:*",
+    "@mapomodule/i18n": "workspace:*",
+    "@mapomodule/routemeta": "workspace:*",
+    "@mapomodule/store": "workspace:*",
     "@mapomodule/uikit": "workspace:*",
-    "@mapomodule/i18n": "workspace:*"
+    "@mapomodule/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "4.4.2",
+    "@nuxt/module-builder": "^1.0.2",
+    "@nuxt/schema": "4.4.2",
+    "nuxt": "^4.4.2",
+    "vue": "^3.5.32"
   }
 }

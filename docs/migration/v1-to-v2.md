@@ -1,0 +1,247 @@
+# Migration guide: Mapo v1 → v2
+
+This guide covers everything that changed between Mapo v1 (Nuxt 2 / Vue 2 / Vuex / Axios) and Mapo v2 (Nuxt 4 / Vue 3 / Pinia / `$fetch`). It documents both the breaking changes to the framework itself and the tooling changes made to the monorepo.
+
+---
+
+## Monorepo tooling
+
+### Package manager: Yarn → pnpm
+
+v1 used Yarn Workspaces + Lerna. v2 uses **pnpm Workspaces**.
+
+```bash
+# v1
+yarn install
+yarn add some-package
+
+# v2
+pnpm install
+pnpm add some-package
+```
+
+The workspace declaration moved from `package.json` (`workspaces`) to `pnpm-workspace.yaml`:
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - "packages/@mapomodule/*"
+  - "packages/mapomodule"
+  - "apps/*"
+  - "docs"
+```
+
+`lerna.json` has been removed. All Lerna scripts (`lerna publish`, `lerna bootstrap`) are no longer used.
+
+### Task orchestration: Lerna → Turborepo
+
+Build, test, and lint tasks are now orchestrated by **Turborepo** (`turbo.json`). It handles dependency ordering and incremental caching automatically.
+
+```bash
+# Run build for all packages (respects dependency order)
+pnpm turbo build
+
+# Run typecheck across the monorepo
+pnpm turbo typecheck
+```
+
+### Release: `yarn pub` → multi-semantic-release
+
+Releases are driven by **Conventional Commits** + `multi-semantic-release`. Each `fix:`, `feat:`, or `BREAKING CHANGE:` commit automatically:
+
+1. Bumps the version of only the affected packages
+2. Generates a per-package `CHANGELOG.md`
+3. Publishes to npm
+4. Creates a GitHub release
+
+No more manual `yarn pub` or `lerna publish` invocations.
+
+### TypeScript: JavaScript → TypeScript strict
+
+v1 was plain JavaScript. v2 is **TypeScript strict** end-to-end. All packages extend a shared `tsconfig.base.json` at the root:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  }
+}
+```
+
+---
+
+## Package changes
+
+### Removed packages
+
+| Package                    | Reason                                                                                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `@mapomodule/integrations` | The adapter loader pattern is unnecessary in Nuxt 4 — each integration is a standalone Nuxt module added directly to `modules[]` |
+| `@mapomodule/http-client`  | Created and removed in the same session (DP-6 → DP-7). `$fetch.create()` in a plugin replaces it with zero abstraction overhead  |
+| `@mapomodule/routemeta`    | Nuxt 4's `definePageMeta()` supports arbitrary typed properties via module augmentation — the AST parser is no longer needed     |
+
+### New packages
+
+| Package                       | Purpose                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `mapo-integrations-camomilla` | Nitro proxy middleware for Camomilla CMS — rewrites `/api/*` paths and handles Django session/cookie sync |
+
+### Renamed / restructured
+
+| v1                       | v2                                                                |
+| ------------------------ | ----------------------------------------------------------------- |
+| `packages/@mapomodule/*` | `packages/@mapomodule/*`                                          |
+| `store/modules/app.js`   | `@mapomodule/store` → `useSidebarStore`, `useSnackStore`          |
+| `store/modules/user.js`  | `@mapomodule/store` → `useAuthStore`                              |
+| `store/modules/media.js` | `@mapomodule/store` → (media state moved into `@mapomodule/form`) |
+
+### `mapomodule` — from re-export to real Nuxt module (DP-9)
+
+In v1, `mapomodule` was a JavaScript file that re-exported everything from `@mapomodule/core`. In v2 it started as a TypeScript re-export (`export * from '@mapomodule/core'`) but has been refactored into a proper `defineNuxtModule`:
+
+```ts
+// mapomodule/src/module.ts
+export default defineNuxtModule({
+  meta: { name: "mapomodule", configKey: "mapo" },
+  async setup() {
+    if (!hasNuxtModule("@mapomodule/core")) {
+      await installModule("@mapomodule/core");
+    }
+  },
+}) satisfies NuxtModule;
+```
+
+This means `mapomodule` in `modules[]` is now sufficient to install the entire Mapo stack — no need to list `@mapomodule/core` or `@mapomodule/store` separately.
+
+---
+
+## Breaking changes
+
+### Vuex → Pinia
+
+All Vuex module access is gone. Replace with Pinia composables:
+
+```ts
+// v1 — Vuex
+this.$store.commit("mapo/user/SET_TOKEN", token);
+this.$store.dispatch("mapo/app/showSnackMessage", {
+  message: "Saved!",
+  color: "success",
+});
+this.$store.getters["mapo/app/drawer"];
+
+// v2 — Pinia
+const auth = useAuthStore();
+// No setToken — authentication is derived from user info, not a token value
+// After login, use: auth.setUser(user) — called automatically by useMapoAuth().login()
+
+const snack = useSnackStore();
+snack.show("Saved!", "success");
+
+const sidebar = useSidebarStore();
+sidebar.drawer;
+```
+
+> **Important**: `setToken()` does not exist in v2. The `__mapo_session` cookie is HttpOnly and cannot be stored in JavaScript state. `isAuthenticated` is derived from whether user info has been loaded (`!!auth.info`). You should not need to call `setUser` or `reset` directly — `useMapoAuth()` handles both.
+
+### Axios → `$fetch`
+
+`this.$axios` is gone. All HTTP calls now go through `$mapoFetch` (configured by `@mapomodule/core`) or via `useCrud`.
+
+```ts
+// v1
+const { data } = await this.$axios.get("/api/articles/");
+
+// v2
+const data = await useCrud<Article>("/api/articles/").list();
+// or direct:
+const { $mapoFetch } = useNuxtApp();
+const data = await $mapoFetch("/api/articles/");
+```
+
+`$mapoFetch` does not inject an `Authorization` header — auth is cookie-based. The 401/403 interceptors are handled automatically (session reset + redirect on 401, snack on 403).
+
+### `nuxtServerInit` → init server plugin
+
+The Vuex `nuxtServerInit` action is replaced by a Nuxt server plugin in `@mapomodule/core`:
+
+```ts
+// v1 — store/index.js
+actions: {
+  nuxtServerInit({ commit, dispatch }, { req }) {
+    const { __mapo_session } = cookieparser.parse(req.headers.cookie)
+    if (__mapo_session) {
+      commit('user/SET_TOKEN', __mapo_session)
+      await dispatch('user/getInfo')
+    }
+  }
+}
+
+// v2 — handled automatically by @mapomodule/core plugin (01.init.server.ts)
+// No action required — authStore and sidebarStore are hydrated on every SSR request.
+// The plugin forwards the full Cookie header to the backend and calls authStore.setUser().
+```
+
+### Route middleware
+
+```ts
+// v1 — middleware/auth.js
+export default function ({ store, redirect }) {
+  if (!store.getters["mapo/user/isLoggedIn"]) redirect("/login");
+}
+
+// v2 — applied via definePageMeta, implemented in @mapomodule/core
+definePageMeta({
+  middleware: ["auth"],
+});
+```
+
+### Integration configuration
+
+```ts
+// v1 — nuxt.config.js
+mapo: {
+  integrations: {
+    camomilla: {
+      location: '@mapomodule/mapo-integrations-camomilla',
+      configuration: {
+        api: { target: 'http://localhost:8000' }
+      }
+    }
+  }
+}
+
+// v2 — nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['mapomodule', 'mapo-integrations-camomilla'],
+  mapo: {
+    authLoginUrl: '/api/auth/login',
+    userInfoApi: '/api/profiles/me/',
+    logoutUrl: '/api/auth/logout',
+  },
+  camomilla: {
+    server: 'http://localhost:8000',
+  }
+})
+```
+
+### Page meta
+
+```ts
+// v1 — export default {} in page script
+export default {
+  meta: { title: "Articles", icon: "mdi-file" },
+  middleware: "auth",
+};
+
+// v2 — definePageMeta (Nuxt 4 native, no AST parser needed)
+definePageMeta({
+  middleware: ["auth", "permissions"],
+  label: "Articles",
+  icon: "mdi-file",
+  permissions: { model: "article", action: "view" },
+});
+```

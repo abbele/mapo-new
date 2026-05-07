@@ -1,0 +1,77 @@
+export enum MultipartPolicyEnum {
+  Auto = "auto",
+  Force = "force",
+  Disable = "disable",
+}
+
+export type MultipartPolicy = `${MultipartPolicyEnum}`;
+
+export enum CoreCookieEnum {
+  Session = "__mapo_session",
+}
+
+export interface ListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  ordering?: string;
+  [key: string]: unknown;
+}
+
+export interface PaginatedResponse<T> {
+  results: T[];
+  count: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+export type ApiResponse<T> = T;
+
+export interface CrudConfig {
+  baseURL?: string;
+  headers?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+export interface CrudOptions {
+  multipart?: MultipartPolicy;
+}
+
+export interface CrudRepository<T> {
+  list(params?: ListParams, config?: CrudConfig): Promise<PaginatedResponse<T>>;
+  detail(id: string | number, config?: CrudConfig): Promise<T>;
+  create(data: Partial<T>, config?: CrudConfig, opts?: CrudOptions): Promise<T>;
+  update(
+    id: string | number,
+    data: Partial<T>,
+    config?: CrudConfig,
+    opts?: CrudOptions,
+  ): Promise<T>;
+  partialUpdate(
+    id: string | number,
+    diff: Partial<T>,
+    config?: CrudConfig,
+    opts?: CrudOptions,
+  ): Promise<T>;
+  delete(id: string | number, config?: CrudConfig): Promise<void>;
+  updateOrCreate(
+    data: Partial<T> & { id?: string | number },
+    config?: CrudConfig,
+    opts?: CrudOptions,
+  ): Promise<T>;
+  updateOrder(
+    startId: string | number,
+    endId: string | number,
+    config?: CrudConfig,
+  ): Promise<void>;
+}
+
+export interface Credentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthToken {
+  token: string;
+  [key: string]: unknown;
+}

@@ -1,0 +1,142 @@
+# mapo-integrations-camomilla
+
+Nuxt module that integrates Mapo with [Camomilla CMS](https://github.com/lotrekagency/camomilla). It works as a **Nitro server-side proxy**: every `/api/*` request from the Nuxt app is intercepted, the path is rewritten to the correct Camomilla endpoint, and the request is forwarded to the backend. Cookie handling and session sync are managed transparently.
+
+## Prerequisites
+
+On the Django/Camomilla side:
+
+```python
+# settings.py
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "camomilla.authentication.SessionAuthentication",
+        # ... other classes
+    ),
+}
+
+USE_X_FORWARDED_HOST = True  # required for correct media URLs
+```
+
+Minimum Camomilla version: **django-camomilla-cms >= 5.7.1**
+
+## Installation
+
+```bash
+pnpm add mapo-integrations-camomilla
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ["mapo-integrations-camomilla"],
+  camomilla: {
+    server: "http://localhost:8000",
+  },
+});
+```
+
+## Options
+
+| Option                 | Type                    | Default                   | Description                                           |
+| ---------------------- | ----------------------- | ------------------------- | ----------------------------------------------------- |
+| `server`               | `string`                | `'http://localhost:8000'` | URL of the Camomilla backend                          |
+| `base`                 | `string`                | `''`                      | Router base prefix of your Nuxt app (e.g. `'/admin'`) |
+| `syncCamomillaSession` | `boolean`               | `false`                   | Enable SSO between Mapo and Django admin — see below  |
+| `forwardedHeaders`     | `string[]`              | `[]`                      | Additional request headers to forward to the backend  |
+| `pathRewrite`          | `Record<string,string>` | `{}`                      | Custom path rewrites merged after the built-in ones   |
+| `changeOrigin`         | `boolean`               | `true`                    | Override the `Host` header sent to the backend        |
+
+## Path rewriting
+
+The proxy rewrites these paths automatically. After rewriting, a deduplication pass removes any accidental double slashes that can appear when the source path already ends with `/` and the rewrite target also starts with `/`:
+
+```ts
+rewritten.replace(/([^:]\/)\/+/g, "$1");
+```
+
+This prevents requests like `/api/profiles/me/` from being rewritten to `/api/camomilla//users/current/`.
+
+### Rewrite table
+
+| Nuxt app path        | Camomilla backend path          |
+| -------------------- | ------------------------------- |
+| `/api/auth/login`    | `/api/camomilla/auth/login/`    |
+| `/api/auth/logout`   | `/api/camomilla/auth/logout/`   |
+| `/api/profiles/me`   | `/api/camomilla/users/current/` |
+| `/api/media-folders` | `/api/camomilla/media-folders`  |
+| `/api/media`         | `/api/camomilla/media`          |
+| `/api/<anything>`    | `/api/<anything>`               |
+
+Custom rewrites are merged **after** the defaults, so you can extend but not break the built-in mapping:
+
+```ts
+camomilla: {
+  server: 'http://localhost:8000',
+  pathRewrite: {
+    '^/api/custom-resource': '/api/camomilla/my-custom-resource',
+  }
+}
+```
+
+## Cookie and session handling
+
+The proxy manages three cookies:
+
+| Cookie           | Purpose                                            |
+| ---------------- | -------------------------------------------------- |
+| `__mapo_session` | Mapo's auth token (alias for Django's `sessionid`) |
+| `sessionid`      | Django session cookie                              |
+| `csrftoken`      | Django CSRF token                                  |
+
+All other cookies are stripped from requests to the backend.
+
+### On every request
+
+- `__mapo_session` is mapped to `sessionid` so Camomilla recognises the Django session
+- `csrftoken` is forwarded as the `X-CSRFToken` header (required for POST/PUT/PATCH/DELETE)
+- `X-Forwarded-Host` and `X-Forwarded-Proto` are derived from the `Referer` header
+
+### On login / logout
+
+- Camomilla's `sessionid` response cookie is aliased as `__mapo_session` — this is how Mapo picks up the session after login
+- The original `sessionid` cookie is stripped from the response (unless `syncCamomillaSession: true`)
+
+## `syncCamomillaSession`
+
+When `false` (default): Mapo and Django admin have independent sessions. Logging in to Mapo does not log you into Django admin, and vice versa.
+
+When `true`: both `sessionid` and `__mapo_session` are kept in sync. Logging in from either Mapo or the Django admin panel authenticates you on both sides simultaneously. Useful during development or when the same team uses both interfaces.
+
+```ts
+camomilla: {
+  server: 'http://localhost:8000',
+  syncCamomillaSession: true,
+}
+```
+
+## Integration with `@mapomodule/core`
+
+`mapo-integrations-camomilla` and `@mapomodule/core` are designed to work together without any glue code.
+
+> **SSR proxy routing**: The `@mapomodule/core` init server plugin calls `userInfoApi` using an **absolute URL** (`http://host/api/profiles/me/`). This is required so the internal server-side `$fetch` call enters Nitro's request pipeline and gets intercepted by this proxy — a relative path would bypass Nitro middleware entirely.
+
+- `useMapoAuth()` calls `/api/auth/login` → proxy rewrites to `/api/camomilla/auth/login/`
+- `useCrud('/api/articles/')` calls `/api/articles/` → proxy forwards to `/api/articles/` on the backend
+- `userInfoApi: '/api/profiles/me/'` → proxy rewrites to `/api/camomilla/users/current/`
+
+```ts
+// nuxt.config.ts — full example
+export default defineNuxtConfig({
+  modules: ["mapomodule", "mapo-integrations-camomilla"],
+  mapo: {
+    authLoginUrl: "/api/auth/login",
+    userInfoApi: "/api/profiles/me/",
+    logoutUrl: "/api/auth/logout",
+  },
+  camomilla: {
+    server: process.env.CAMOMILLA_URL ?? "http://localhost:8000",
+    syncCamomillaSession: false,
+  },
+});
+```

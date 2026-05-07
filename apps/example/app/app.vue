@@ -1,12 +1,6 @@
-<script setup lang="ts">
-import { useMapo } from "mapomodule";
-
-const mapo = useMapo();
-</script>
-
 <template>
-  <div>
+  <UApp>
     <NuxtRouteAnnouncer />
-    <NuxtWelcome />
-  </div>
+    <NuxtPage />
+  </UApp>
 </template>

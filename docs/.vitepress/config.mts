@@ -10,7 +10,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Modules', link: '/modules/core' },
-      { text: 'Components', link: '/components/' },
+      { text: 'Integrations', link: '/modules/camomilla' },
       { text: 'Migration', link: '/migration/v1-to-v2' },
     ],
 
@@ -19,8 +19,8 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Getting Started', link: '/guide/getting-started' },
-          { text: 'Installation', link: '/guide/installation' },
-          { text: 'Configuration', link: '/guide/configuration' },
+          { text: 'Architecture & Flows', link: '/guide/architecture-flows' },
+          { text: 'Known Limitations', link: '/guide/known-limitations' },
           { text: 'Release Process', link: '/guide/release-process' },
           { text: 'Contributing', link: '/guide/contributing' },
         ],
@@ -30,37 +30,20 @@ export default defineConfig({
         items: [
           { text: 'Core', link: '/modules/core' },
           { text: 'Store', link: '/modules/store' },
-          { text: 'Form', link: '/modules/form' },
-          { text: 'UI Kit', link: '/modules/uikit' },
-          { text: 'Integrations', link: '/modules/integrations' },
-          { text: 'i18n', link: '/modules/i18n' },
-          { text: 'Route Meta', link: '/modules/routemeta' },
           { text: 'Utils', link: '/modules/utils' },
         ],
       },
       {
-        text: 'Components',
+        text: 'Backend Integrations',
         items: [
-          { text: 'Overview', link: '/components/' },
-        ],
-      },
-      {
-        text: 'Override System',
-        items: [
-          { text: 'How it works', link: '/override-system' },
+          { text: 'Camomilla CMS', link: '/modules/camomilla' },
+          { text: 'Writing your own', link: '/modules/integrations-howto' },
         ],
       },
       {
         text: 'Migration',
         items: [
           { text: 'v1 → v2', link: '/migration/v1-to-v2' },
-          { text: 'Codemod', link: '/migration/codemod' },
-        ],
-      },
-      {
-        text: 'API Reference',
-        items: [
-          { text: 'Auto-generated', link: '/api/' },
         ],
       },
     ],
