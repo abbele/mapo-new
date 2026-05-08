@@ -49,11 +49,17 @@ const props = withDefaults(
     /** Field registry. Falls back to $mapoFormRegistry if omitted. */
     registry?: FieldRegistry | null;
     /**
-     * When set, enables automatic draft persistence to localStorage.
-     * The key is prefixed with `mapo:draft:`.
+     * Enable automatic draft persistence to localStorage.
+     * When `true`, the key is auto-generated as `${endpoint}:${id}`.
+     * Provide `draftKey` to override with a custom key.
+     * Drafts expire after 24 h. The built-in banner handles restore/discard.
+     */
+    draft?: boolean;
+    /**
+     * Custom localStorage key for draft persistence. Requires `draft: true`.
+     * Key is prefixed with `mapo:draft:`.
      * Example: `"article:42"` → `mapo:draft:article:42`.
-     * Use `"article:new"` for new records.
-     * A `@draft-found` event is emitted after fetch if a valid draft exists.
+     * Falls back to `${endpoint}:${id}` when omitted.
      */
     draftKey?: string;
   }>(),
@@ -66,6 +72,7 @@ const props = withDefaults(
     readonly: false,
     modelName: null,
     registry: null,
+    draft: false,
     draftKey: undefined,
   },
 );
@@ -137,6 +144,11 @@ const isLoading = ref(String(props.id) !== "new");
 const isSaving = ref(false);
 const isDeleting = ref(false);
 const currentLang = ref(props.languages[0] ?? "");
+const draftBanner = ref<{
+  savedAt: Date;
+  restore: () => void;
+  discard: () => void;
+} | null>(null);
 
 const isDirty = computed(
   () =>
@@ -180,7 +192,9 @@ const sidebarColsClass = computed(
 const DRAFT_TTL = 86_400_000; // 24h
 
 function draftStorageKey() {
-  return props.draftKey ? `mapo:draft:${props.draftKey}` : null;
+  if (!props.draft && !props.draftKey) return null;
+  const key = props.draftKey ?? `${props.endpoint}:${props.id}`;
+  return `mapo:draft:${key}`;
 }
 
 function clearDraft() {
@@ -200,20 +214,23 @@ function checkDraft() {
       return;
     }
     const savedAt = new Date(entry.savedAt);
-    emit(
-      "draft-found",
-      entry.model,
-      savedAt,
-      () => Object.assign(model.value, entry.model),
-      () => localStorage.removeItem(key),
-    );
+    const restore = () => {
+      Object.assign(model.value, entry.model);
+      draftBanner.value = null;
+    };
+    const discard = () => {
+      localStorage.removeItem(key);
+      draftBanner.value = null;
+    };
+    draftBanner.value = { savedAt, restore, discard };
+    emit("draft-found", entry.model, savedAt, restore, discard);
   } catch {
     /* corrupted entry — ignore */
   }
 }
 
 // Auto-save draft debounced whenever model changes and form is dirty.
-if (props.draftKey) {
+if (props.draft || props.draftKey) {
   const saveDraft = debounce(() => {
     const key = draftStorageKey();
     if (!key || !isDirty.value || typeof localStorage === "undefined") return;
@@ -257,8 +274,18 @@ async function fetchModel() {
 // ─── Save ────────────────────────────────────────────────────────────────────
 
 async function save(andBack = false) {
-  const allValid = formValidators.map((fn) => fn().valid).every(Boolean);
-  if (!allValid) return;
+  const validationResults = formValidators.map((fn) => fn());
+  const allValid = validationResults.every((r) => r.valid);
+  if (!allValid) {
+    const fieldErrors = validationResults.flatMap((r) =>
+      Object.entries(r.errors),
+    );
+    const message = fieldErrors.length
+      ? fieldErrors.map(([field, msg]) => `${field}: ${msg}`).join("\n")
+      : "Please fix the errors before saving.";
+    snack.show(message, "error");
+    return;
+  }
 
   errors.value = {};
   isSaving.value = true;
@@ -296,15 +323,17 @@ async function save(andBack = false) {
   } catch (err: unknown) {
     const response = (err as { response?: { status?: number; data?: unknown } })
       ?.response;
-    if (
-      response?.status === 400 &&
-      response?.data &&
-      typeof response.data === "object"
-    ) {
-      errors.value = response.data as Record<string, string[]>;
+    const data = response?.data;
+    if (response?.status === 400 && data && typeof data === "object") {
+      errors.value = data as Record<string, string[]>;
+      // Field-level errors: the useMapoForm watcher shows the detailed toast.
+      // Only surface a toast here if the response carries a top-level detail message.
+      const detail = (data as { detail?: string }).detail;
+      if (detail) snack.show(detail, "error");
+    } else {
+      const detail = (data as { detail?: string } | undefined)?.detail;
+      snack.show(detail ?? "Failed to save", "error");
     }
-    const detail = (response?.data as { detail?: string })?.detail;
-    snack.show(detail ?? "Failed to save", "error");
   } finally {
     isSaving.value = false;
   }
@@ -410,10 +439,17 @@ const slotBindings = computed(() => ({
   isSaving: isSaving.value,
   isDeleting: isDeleting.value,
   isDirty: isDirty.value,
+  draftBanner: draftBanner.value,
   save,
   deleteItem,
   back,
 }));
+
+type DraftBannerState = {
+  savedAt: Date;
+  restore: () => void;
+  discard: () => void;
+} | null;
 
 type SlotBindings = {
   model: T;
@@ -424,6 +460,7 @@ type SlotBindings = {
   isSaving: boolean;
   isDeleting: boolean;
   isDirty: boolean;
+  draftBanner: DraftBannerState;
   save: (andBack?: boolean) => Promise<void>;
   deleteItem: () => Promise<void>;
   back: () => void;
@@ -434,6 +471,12 @@ defineSlots<{
   title(props: SlotBindings): VNode[];
   /** Replaces the language switcher in the main column. */
   "body-lang"(props: SlotBindings): VNode[];
+  /**
+   * Draft restore banner shown when a localStorage draft is found.
+   * Receives `draftBanner` (with `savedAt`, `restore`, `discard`) plus the full slot bindings.
+   * Override to render a completely custom banner; set to an empty slot to suppress it.
+   */
+  "draft-banner"(props: SlotBindings): VNode[];
   /** Extra content above the main form. */
   "body-top"(props: SlotBindings): VNode[];
   /** Replaces the entire main form. */
@@ -472,6 +515,35 @@ defineSlots<{
   </div>
 
   <div v-else>
+    <!-- Draft banner -->
+    <slot name="draft-banner" v-bind="slotBindings">
+      <Transition name="slide-down">
+        <UAlert
+          v-if="draftBanner"
+          icon="i-lucide-history"
+          color="warning"
+          variant="subtle"
+          class="mb-3"
+          :title="`Unsaved draft found — last edited ${draftBanner.savedAt.toLocaleString()}`"
+          description="You have a local draft that was not saved. Do you want to restore it or discard it?"
+        >
+          <template #actions>
+            <UButton size="xs" color="warning" @click="draftBanner?.restore()">
+              Restore draft
+            </UButton>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="draftBanner?.discard()"
+            >
+              Discard
+            </UButton>
+          </template>
+        </UAlert>
+      </Transition>
+    </slot>
+
     <!-- Title -->
     <slot
       name="title"

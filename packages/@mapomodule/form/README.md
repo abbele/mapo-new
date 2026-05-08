@@ -13,6 +13,7 @@ Form engine for Mapo v2 — descriptor-driven, typesafe, headless-ready admin fo
 - **Multilingual fields**: `translatable: true` writes to `model.translations[lang].field` automatically
 - **Client validation**: `validate(value, ctx)` per descriptor + `required` shorthand
 - **Tab/group layout**: declare `tab` and `group` per field — tabs render automatically, groups are collapsible
+- **Draft persistence**: `draftKey` option on `useMapoForm()` auto-saves to localStorage every 2 s; `checkDraft()` / `draftBanner` offer restore/discard; clears on successful `submit()`
 - **Fail-soft**: unknown field types render a non-destructive placeholder, never crash the form
 
 ## Install
@@ -103,6 +104,22 @@ form.provideContext();
 ```
 
 The headless composable still requires the registry explicitly — `useNuxtApp()` is not available in every context where you might want to drive a form (tests, storybook, server-side preview).
+
+## Draft persistence (headless)
+
+```ts
+const form = useMapoForm({
+  model,
+  fields,
+  registry: $mapoFormRegistry,
+  draftKey: `article:${route.params.id}`,
+});
+
+// After fetch:
+form.checkDraft(); // populates form.draftBanner if a draft is found
+```
+
+`form.draftBanner.value` exposes `{ savedAt, restore(), discard() }`. On `submit()` success the draft is cleared automatically. When using `<MapoDetail :draft="true">`, all of this is handled for you.
 
 ## Custom fields
 

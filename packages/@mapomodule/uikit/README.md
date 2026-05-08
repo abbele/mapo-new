@@ -71,10 +71,10 @@ When installed via `mapomodule`, configure under `mapo.uikit` instead.
 
 #### Detail shell
 
-| Component              | Description                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `MapoDetail`           | Two-column detail shell: `useCrud` lifecycle, differential PATCH, error mapping |
-| `MapoDetailLangSwitch` | Language tabs with per-language error badge — syncs the `?lang=` query param    |
+| Component              | Description                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `MapoDetail`           | Two-column detail shell: `useCrud` lifecycle, differential PATCH, error mapping, draft auto-save (`:draft="true"`) |
+| `MapoDetailLangSwitch` | Language tabs with per-language error badge — syncs the `?lang=` query param                                       |
 
 ### Layout slots (`mapo-default`)
 
