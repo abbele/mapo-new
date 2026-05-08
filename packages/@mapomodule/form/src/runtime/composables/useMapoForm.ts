@@ -19,7 +19,7 @@ import type { FieldDescriptor, FieldRegistry } from "../types/index.js";
 import { resolveFieldAccessor } from "../types/index.js";
 import { useCurrentLang } from "./useCurrentLang.js";
 // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
-import { useSnackStore } from "#imports";
+import { useSnackStore, useAuthStore } from "#imports";
 
 /** Options accepted by `useMapoForm()`. */
 export interface UseMapoFormOptions<T extends object> {
@@ -111,6 +111,7 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
 
   const currentLang = useCurrentLang(currentLangProp);
   const snack = useSnackStore();
+  const authStore = useAuthStore();
   const backup = ref(safeClone(model.value)) as Ref<T>;
   const clientErrors = ref<Record<string, string>>({});
   const isLoading = ref(false);
@@ -144,7 +145,9 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
 
   function _draftStorageKey(): string | null {
     const key = toValue(options.draftKey);
-    return key ? `mapo:draft:${key}` : null;
+    if (!key) return null;
+    const userId = authStore.user?.id ?? "anonymous";
+    return `mapo:draft:${userId}:${key}`;
   }
 
   function clearDraft() {
@@ -191,9 +194,21 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
       const key = _draftStorageKey();
       if (!key || !isDirty.value || typeof localStorage === "undefined") return;
       try {
+        const noDraftKeys = new Set(
+          toValue(fields)
+            .filter((f) => f.noDraft)
+            .map((f) => f.key as string),
+        );
+        const snapshot = toRaw(model.value) as Record<string, unknown>;
+        const filtered =
+          noDraftKeys.size > 0
+            ? Object.fromEntries(
+                Object.entries(snapshot).filter(([k]) => !noDraftKeys.has(k)),
+              )
+            : snapshot;
         localStorage.setItem(
           key,
-          JSON.stringify({ model: toRaw(model.value), savedAt: Date.now() }),
+          JSON.stringify({ model: filtered, savedAt: Date.now() }),
         );
       } catch {
         /* quota exceeded — ignore */
