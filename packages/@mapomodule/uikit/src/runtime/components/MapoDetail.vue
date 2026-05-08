@@ -11,7 +11,6 @@ import {
   type VNode,
 } from "vue";
 import { objectDiff, debounce } from "@mapomodule/utils";
-// @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
 import {
   useRouter,
   onBeforeRouteLeave,
@@ -19,8 +18,9 @@ import {
   useSnackStore,
   useConfirmStore,
   useNuxtApp,
+  // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
 } from "#imports";
-import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form/types";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

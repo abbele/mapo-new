@@ -59,6 +59,8 @@ export default tseslint.config(
         URL: 'readonly',
         NodeFilter: 'readonly',
         Element: 'readonly',
+        structuredClone: 'readonly',
+        localStorage: 'readonly',
         // Nuxt auto-imports used in package components
         useRuntimeConfig: 'readonly',
         useRequestURL: 'readonly',
