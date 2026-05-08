@@ -14,6 +14,7 @@ const form = useMapoForm<T>({
   immediate?:   boolean,        // true = no debounce
   debounce?:    number,         // ms, default 300
   registry:     FieldRegistry,
+  draftKey?:    MaybeRef<string | undefined>,    // enable draft persistence
 })
 ```
 
@@ -21,21 +22,24 @@ const form = useMapoForm<T>({
 
 ## Returns
 
-| Property / Method           | Type                                                            | Description                                           |
-| --------------------------- | --------------------------------------------------------------- | ----------------------------------------------------- |
-| `state`                     | `ComputedRef<{model, errors, isDirty, currentLang, isLoading}>` | Reactive snapshot of the form state                   |
-| `isDirty`                   | `Ref<boolean>`                                                  | `true` when the model differs from the backup         |
-| `isLoading`                 | `Ref<boolean>`                                                  | `true` while `submit()` is running                    |
-| `currentLang`               | `Ref<string>`                                                   | Active language (synced through provide/inject)       |
-| `readonly`                  | `Ref<boolean>`                                                  | Toggle to lock every field                            |
-| `getFieldValue(descriptor)` | `unknown`                                                       | Current value with `accessor.get` applied             |
-| `setFieldValue(key, val)`   | `void`                                                          | Updates the model (with `initLang` if `translatable`) |
-| `getClientError(key)`       | `string \| null`                                                | Error from `descriptor.validate()`                    |
-| `validateClient()`          | `{ valid, errors }`                                             | Runs every `validate()`                               |
-| `resetDirty()`              | `void`                                                          | Clears the backup (after a successful save)           |
-| `getPatch()`                | `Partial<T>`                                                    | Diff model vs backup — for differential PATCH         |
-| `submit(handler, isNew?)`   | `Promise<void>`                                                 | Validate, call handler, manage loading state          |
-| `provideContext()`          | `void`                                                          | Inject the context for nested `<MapoFormField>`       |
+| Property / Method           | Type                                                            | Description                                                                  |
+| --------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `state`                     | `ComputedRef<{model, errors, isDirty, currentLang, isLoading}>` | Reactive snapshot of the form state                                          |
+| `isDirty`                   | `Ref<boolean>`                                                  | `true` when the model differs from the backup                                |
+| `isLoading`                 | `Ref<boolean>`                                                  | `true` while `submit()` is running                                           |
+| `currentLang`               | `Ref<string>`                                                   | Active language (synced through provide/inject)                              |
+| `readonly`                  | `Ref<boolean>`                                                  | Toggle to lock every field                                                   |
+| `getFieldValue(descriptor)` | `unknown`                                                       | Current value with `accessor.get` applied                                    |
+| `setFieldValue(key, val)`   | `void`                                                          | Updates the model (with `initLang` if `translatable`)                        |
+| `getClientError(key)`       | `string \| null`                                                | Error from `descriptor.validate()`                                           |
+| `validateClient()`          | `{ valid, errors }`                                             | Runs every `validate()`                                                      |
+| `resetDirty()`              | `void`                                                          | Clears the backup (after a successful save)                                  |
+| `getPatch()`                | `Partial<T>`                                                    | Diff model vs backup — for differential PATCH                                |
+| `submit(handler, isNew?)`   | `Promise<void>`                                                 | Validate, call handler, manage loading state, clear draft on success         |
+| `provideContext()`          | `void`                                                          | Inject the context for nested `<MapoFormField>`                              |
+| `draftBanner`               | `Ref<{ savedAt, restore, discard } \| null>`                    | Populated after `checkDraft()` when a pending draft is found in localStorage |
+| `checkDraft()`              | `void`                                                          | Read localStorage for a pending draft; call after the model is fetched       |
+| `clearDraft()`              | `void`                                                          | Remove the draft from localStorage                                           |
 
 ## Headless usage
 
@@ -103,6 +107,45 @@ await form.submit(async (data, isNew) => {
   }
 });
 ```
+
+## Draft persistence (standalone)
+
+When using `useMapoForm()` without `<MapoDetail>`, pass `draftKey` to enable auto-save to localStorage. The composable debounces saves every 2 s while the form is dirty and clears the draft automatically on `submit()`.
+
+```ts
+const form = useMapoForm({
+  model,
+  fields,
+  registry: $mapoFormRegistry,
+  draftKey: `article:${route.params.id}`,
+});
+
+// After your fetch resolves, offer to restore:
+onMounted(async () => {
+  model.value = await $fetch(`/api/articles/${id}`);
+  form.checkDraft(); // populates form.draftBanner if a draft exists
+});
+```
+
+```vue
+<template>
+  <!-- Render a banner when a draft is found -->
+  <UAlert
+    v-if="form.draftBanner.value"
+    color="warning"
+    :title="`Draft from ${form.draftBanner.value.savedAt.toLocaleString()}`"
+  >
+    <template #actions>
+      <UButton @click="form.draftBanner.value?.restore()">Restore</UButton>
+      <UButton variant="ghost" @click="form.draftBanner.value?.discard()"
+        >Discard</UButton
+      >
+    </template>
+  </UAlert>
+</template>
+```
+
+> When using `<MapoDetail>` with `:draft="true"`, all of this is handled automatically — you do not need `useMapoForm` draft options.
 
 ## `MapoFormContext` (inject in child fields)
 

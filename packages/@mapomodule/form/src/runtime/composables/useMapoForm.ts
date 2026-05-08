@@ -3,6 +3,7 @@ import {
   computed,
   toRaw,
   toValue,
+  watch,
   type Ref,
   type MaybeRef,
   provide,
@@ -12,10 +13,13 @@ import {
   getNestedValue,
   setNestedValueMutating,
   objectDiff,
+  debounce,
 } from "@mapomodule/utils";
 import type { FieldDescriptor, FieldRegistry } from "../types/index.js";
 import { resolveFieldAccessor } from "../types/index.js";
 import { useCurrentLang } from "./useCurrentLang.js";
+// @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
+import { useSnackStore } from "#imports";
 
 /** Options accepted by `useMapoForm()`. */
 export interface UseMapoFormOptions<T extends object> {
@@ -28,6 +32,20 @@ export interface UseMapoFormOptions<T extends object> {
   /** Global debounce in milliseconds. Override per field with `descriptor.debounce`. Default: `300`. */
   debounce?: number;
   registry: FieldRegistry;
+  /**
+   * When set, enables automatic draft persistence to localStorage.
+   * Key is prefixed with `mapo:draft:`. Drafts expire after 24 h.
+   * Call the returned `checkDraft()` after the model is populated to offer restore.
+   * Example: `"article:42"` → `mapo:draft:article:42`.
+   */
+  draftKey?: MaybeRef<string | undefined>;
+}
+
+/** State exposed when a pending draft is found in localStorage. */
+export interface MapoDraftBanner {
+  savedAt: Date;
+  restore: () => void;
+  discard: () => void;
 }
 
 /** Reactive context shared with child form fields via provide/inject. */
@@ -92,6 +110,7 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
   } = options;
 
   const currentLang = useCurrentLang(currentLangProp);
+  const snack = useSnackStore();
   const backup = ref(safeClone(model.value)) as Ref<T>;
   const clientErrors = ref<Record<string, string>>({});
   const isLoading = ref(false);
@@ -99,10 +118,89 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
   const touched = ref<Set<string>>(new Set());
   const submitted = ref(false);
 
+  // Show a toast listing field-level BE errors whenever the server populates `errors`.
+  watch(
+    errors,
+    (val) => {
+      const entries = Object.entries(val);
+      if (!entries.length) return;
+      const lines = entries
+        .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`)
+        .join("\n");
+      snack.show(lines, "error");
+    },
+    { deep: true },
+  );
+
   // Incremental dirty tracking: updated in setFieldValue to avoid
   // a JSON.stringify(objectDiff(...)) on every computed read.
   const dirtyKeys = ref<Set<string>>(new Set());
   const isDirty = computed(() => dirtyKeys.value.size > 0);
+
+  // ─── Draft persistence ──────────────────────────────────────────────────────
+
+  const DRAFT_TTL = 86_400_000; // 24 h
+  const draftBanner = ref<MapoDraftBanner | null>(null);
+
+  function _draftStorageKey(): string | null {
+    const key = toValue(options.draftKey);
+    return key ? `mapo:draft:${key}` : null;
+  }
+
+  function clearDraft() {
+    const key = _draftStorageKey();
+    if (key && typeof localStorage !== "undefined")
+      localStorage.removeItem(key);
+  }
+
+  /**
+   * Reads localStorage for a pending draft and, if found, populates `draftBanner`
+   * with `restore` / `discard` callbacks. Call this after the model has been
+   * fetched from the server so the user can choose whether to apply the draft.
+   */
+  function checkDraft() {
+    const key = _draftStorageKey();
+    if (!key || typeof localStorage === "undefined") return;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const entry = JSON.parse(raw) as { model: T; savedAt: number };
+      if (Date.now() - entry.savedAt > DRAFT_TTL) {
+        localStorage.removeItem(key);
+        return;
+      }
+      const savedAt = new Date(entry.savedAt);
+      draftBanner.value = {
+        savedAt,
+        restore: () => {
+          Object.assign(model.value, entry.model);
+          draftBanner.value = null;
+        },
+        discard: () => {
+          localStorage.removeItem(key);
+          draftBanner.value = null;
+        },
+      };
+    } catch {
+      /* corrupted entry — ignore */
+    }
+  }
+
+  if (options.draftKey) {
+    const saveDraft = debounce(() => {
+      const key = _draftStorageKey();
+      if (!key || !isDirty.value || typeof localStorage === "undefined") return;
+      try {
+        localStorage.setItem(
+          key,
+          JSON.stringify({ model: toRaw(model.value), savedAt: Date.now() }),
+        );
+      } catch {
+        /* quota exceeded — ignore */
+      }
+    }, 2000);
+    watch(model, saveDraft, { deep: true });
+  }
 
   function markTouched(key: string) {
     if (touched.value.has(key)) return;
@@ -252,11 +350,15 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
     if (isLoading.value) return;
     submitted.value = true;
     const { valid } = validateClient();
-    if (!valid) return;
+    if (!valid) {
+      snack.show("Please fix the errors before saving.", "error");
+      return;
+    }
     isLoading.value = true;
     try {
       await handler(isNew ? model.value : getPatch(), isNew);
       resetDirty();
+      clearDraft();
       submitted.value = false;
       touched.value = new Set();
     } finally {
@@ -341,5 +443,8 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
     getPatch,
     submit,
     ctx,
+    draftBanner,
+    checkDraft,
+    clearDraft,
   };
 }

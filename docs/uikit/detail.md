@@ -54,28 +54,31 @@ The page now supports:
 
 ## Props
 
-| Prop            | Type                   | Default       | Description                                      |
-| --------------- | ---------------------- | ------------- | ------------------------------------------------ |
-| `endpoint`      | `string`               | —             | REST endpoint for `useCrud`                      |
-| `id`            | `string \| number`     | —             | Record id; pass `'new'` for create mode          |
-| `fields`        | `FieldDescriptor<T>[]` | —             | Body form fields                                 |
-| `sidebarFields` | `FieldDescriptor<T>[]` | `[]`          | Sidebar form fields                              |
-| `languages`     | `string[]`             | `[]`          | Translation language codes (e.g. `['it', 'en']`) |
-| `modelName`     | `string`               | —             | Human-readable name for the page title           |
-| `sidebarCols`   | `number`               | `4`           | Sidebar column span on a 12-col grid             |
-| `sticky`        | `boolean`              | `true`        | Keep the sidebar sticky while scrolling          |
-| `usePatch`      | `boolean`              | `true`        | Send PATCH (diff only) on update; otherwise PUT  |
-| `readonly`      | `boolean`              | `false`       | Force read-only mode                             |
-| `registry`      | `FieldRegistry`        | auto-injected | Optional registry override                       |
+| Prop            | Type                   | Default       | Description                                                                                   |
+| --------------- | ---------------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `endpoint`      | `string`               | —             | REST endpoint for `useCrud`                                                                   |
+| `id`            | `string \| number`     | —             | Record id; pass `'new'` for create mode                                                       |
+| `fields`        | `FieldDescriptor<T>[]` | —             | Body form fields                                                                              |
+| `sidebarFields` | `FieldDescriptor<T>[]` | `[]`          | Sidebar form fields                                                                           |
+| `languages`     | `string[]`             | `[]`          | Translation language codes (e.g. `['it', 'en']`)                                              |
+| `modelName`     | `string`               | —             | Human-readable name for the page title                                                        |
+| `sidebarCols`   | `number`               | `4`           | Sidebar column span on a 12-col grid                                                          |
+| `sticky`        | `boolean`              | `true`        | Keep the sidebar sticky while scrolling                                                       |
+| `usePatch`      | `boolean`              | `true`        | Send PATCH (diff only) on update; otherwise PUT                                               |
+| `readonly`      | `boolean`              | `false`       | Force read-only mode                                                                          |
+| `registry`      | `FieldRegistry`        | auto-injected | Optional registry override                                                                    |
+| `draft`         | `boolean`              | `false`       | Enable auto-save draft to localStorage. Key is auto-generated as `${endpoint}:${id}`.         |
+| `draftKey`      | `string`               | —             | Custom localStorage key for draft persistence. Requires `draft: true`. Prefix: `mapo:draft:`. |
 
 The `registry` prop is optional — `<MapoDetail>` resolves `$mapoFormRegistry` automatically.
 
 ## Emits
 
-| Event     | Payload         | When                      |
-| --------- | --------------- | ------------------------- |
-| `saved`   | the saved model | After a successful save   |
-| `deleted` | —               | After a successful delete |
+| Event         | Payload                              | When                                                                                                                                |
+| ------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `saved`       | the saved model                      | After a successful save                                                                                                             |
+| `deleted`     | —                                    | After a successful delete                                                                                                           |
+| `draft-found` | `(draft, savedAt, restore, discard)` | After fetch when a valid draft exists. The built-in banner handles this automatically; listen only for side-effects (e.g. a toast). |
 
 ---
 
@@ -222,6 +225,49 @@ function onDeleted() {
 </script>
 ```
 
+## How to: enable draft auto-save
+
+Pass `:draft="true"` to activate automatic draft persistence. The component debounces saves to localStorage every 2 s while the form is dirty and shows a built-in restore banner on the next load.
+
+```vue
+<MapoDetail
+  :id="route.params.id"
+  endpoint="/api/articles"
+  :draft="true"
+  :fields="fields"
+/>
+```
+
+On the next page load a `UAlert` banner appears automatically offering **Restore** / **Discard**. No extra code needed.
+
+**Custom key** — by default the key is `${endpoint}:${id}` (e.g. `/api/articles:42`). Override it when the default key is not unique enough:
+
+```vue
+<MapoDetail :draft="true" draft-key="article:42" … />
+```
+
+**Custom banner UI** — override the `draft-banner` slot to replace the default `UAlert`:
+
+```vue
+<MapoDetail :draft="true" …>
+  <template #draft-banner="{ draftBanner }">
+    <div v-if="draftBanner" class="my-banner">
+      Draft from {{ draftBanner.savedAt.toLocaleString() }}
+      <button @click="draftBanner.restore()">Restore</button>
+      <button @click="draftBanner.discard()">Discard</button>
+    </div>
+  </template>
+</MapoDetail>
+```
+
+**Suppress the banner** — pass an empty template:
+
+```vue
+<template #draft-banner />
+```
+
+Drafts expire automatically after 24 h and are cleared from localStorage on successful save.
+
 ## How to: choose PATCH vs PUT
 
 `usePatch` is `true` by default. `<MapoDetail>` sends only the diff between the loaded model and the current one (`getPatch()` from `useMapoForm`).
@@ -248,25 +294,30 @@ interface DetailSlotProps<T> {
   isSaving: boolean;
   isDeleting: boolean;
   isDirty: boolean;
-  save: () => Promise<void>;
-  saveAndContinue: () => Promise<void>;
+  draftBanner: {
+    savedAt: Date;
+    restore: () => void;
+    discard: () => void;
+  } | null;
+  save: (andBack?: boolean) => Promise<void>;
   deleteItem: () => Promise<void>;
   back: () => void;
 }
 ```
 
-| Slot                                                                        | Replaces                                                                |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `#title`                                                                    | The page title                                                          |
-| `#body`                                                                     | The entire body form (advanced — usually not needed)                    |
-| `#body-lang`                                                                | The language switch above the body                                      |
-| `#body-top`                                                                 | Section above the body fields                                           |
-| `#body-bottom`                                                              | Section below the body fields                                           |
-| `#side-buttons`                                                             | The whole sidebar button stack                                          |
-| `#button-save` / `#button-savecontinue` / `#button-back` / `#button-delete` | Single buttons                                                          |
-| `#side-top`                                                                 | Section above the sidebar form                                          |
-| `#side-bottom`                                                              | Section below the sidebar form                                          |
-| `#field.<key>.*`                                                            | Forwarded to `<MapoForm>` (label, append, prepend, hint, before, after) |
+| Slot                                                                        | Replaces / adds                                                                                                                                            |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `#draft-banner`                                                             | The draft restore banner (shown automatically when `draftKey` is set and a draft exists). Override for a custom UI; pass an empty template to suppress it. |
+| `#title`                                                                    | The page title                                                                                                                                             |
+| `#body`                                                                     | The entire body form (advanced — usually not needed)                                                                                                       |
+| `#body-lang`                                                                | The language switch above the body                                                                                                                         |
+| `#body-top`                                                                 | Section above the body fields                                                                                                                              |
+| `#body-bottom`                                                              | Section below the body fields                                                                                                                              |
+| `#side-buttons`                                                             | The whole sidebar button stack                                                                                                                             |
+| `#button-save` / `#button-savecontinue` / `#button-back` / `#button-delete` | Single buttons                                                                                                                                             |
+| `#side-top`                                                                 | Section above the sidebar form                                                                                                                             |
+| `#side-bottom`                                                              | Section below the sidebar form                                                                                                                             |
+| `#field.<key>.*`                                                            | Forwarded to `<MapoForm>` (label, append, prepend, hint, before, after)                                                                                    |
 
 ## Pitfalls
 
