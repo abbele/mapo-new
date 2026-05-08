@@ -11,10 +11,16 @@ export interface UseFormDraftOptions<T> {
   model: Ref<T>;
   isDirty: Ref<boolean>;
   /**
-   * Unique draft key. It is prefixed with `mapo:draft:`.
-   * Example: `article:42` becomes `mapo:draft:article:42`, and `article:new` is used for new records.
+   * Unique draft key. It is prefixed with `mapo:draft:{userId}:` when `userId` is provided,
+   * otherwise `mapo:draft:`. Example: `article:42` → `mapo:draft:1:article:42`.
    */
   key: string;
+  /**
+   * User identifier used to scope the draft so it is never shared across accounts.
+   * Without this, a draft survives logout and may be seen by the next user on the same browser.
+   * Pass `useAuthStore().user?.id` (or equivalent) from the calling composable.
+   */
+  userId?: string | number;
   /** Milliseconds between debounced writes to localStorage. Default: `2000`. */
   debounce?: number;
   /** TTL in milliseconds before the draft is discarded. Default: `86_400_000` (24h). */
@@ -50,7 +56,10 @@ export interface UseFormDraftOptions<T> {
  * })
  */
 export function useFormDraft<T>(options: UseFormDraftOptions<T>) {
-  const storageKey = `mapo:draft:${options.key}`;
+  const storageKey =
+    options.userId != null
+      ? `mapo:draft:${options.userId}:${options.key}`
+      : `mapo:draft:${options.key}`;
   const ttl = options.ttl ?? 86_400_000;
   const canUseStorage = typeof localStorage !== "undefined";
 

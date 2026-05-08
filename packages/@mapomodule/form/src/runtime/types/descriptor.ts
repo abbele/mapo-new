@@ -138,6 +138,11 @@ interface FieldBase<T> {
   attrs?: Record<string, unknown>;
   /** Direct component override. Takes priority over `registry.mapping[type]`. */
   is?: Component;
+  /**
+   * When `true`, this field's value is excluded from draft snapshots saved to localStorage.
+   * Use for sensitive fields (passwords, API keys, tokens) that should never be persisted client-side.
+   */
+  noDraft?: boolean;
 }
 
 // ─── Discriminated union for each KnownFieldType ─────────────────────────────

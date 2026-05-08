@@ -42,6 +42,14 @@ export function useMapoAuth(options?: AuthOverrides) {
     } finally {
       useCookie(CoreCookieEnum.Session).value = null;
       authStore.reset();
+      if (typeof localStorage !== "undefined") {
+        const toRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k?.startsWith("mapo:draft:")) toRemove.push(k);
+        }
+        toRemove.forEach((k) => localStorage.removeItem(k));
+      }
       await navigateTo(loginUrl);
     }
   }
