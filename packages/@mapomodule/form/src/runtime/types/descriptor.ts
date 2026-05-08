@@ -1,5 +1,28 @@
 import type { Component } from "vue";
 
+/** Lookup table for decrementing depth at compile time. */
+type Prev = [never, 0, 1, 2, 3, 4];
+
+/**
+ * Recursively builds all valid dotted-path keys of T up to depth D.
+ * Arrays are not expanded — repeater items declare their own nested `fields`.
+ * When T is the default `Record<string, unknown>`, this resolves to `string`
+ * so untyped field arrays remain unconstrained.
+ */
+export type DeepKeyOf<T, D extends number = 4> = [D] extends [never]
+  ? never
+  : T extends object
+    ? {
+        [K in keyof T & string]:
+          | K
+          | (NonNullable<T[K]> extends unknown[]
+              ? never
+              : NonNullable<T[K]> extends object
+                ? `${K}.${DeepKeyOf<NonNullable<T[K]>, Prev[D]>}`
+                : never);
+      }[keyof T & string]
+    : never;
+
 /**
  * All field types recognised by the default Mapo form registry.
  * Use {@link FieldType} when you need to accept custom (string) types too.
@@ -49,8 +72,8 @@ export interface FieldAccessor<TValue = unknown, TModel = unknown> {
  * All concrete descriptor types extend this interface.
  */
 interface FieldBase<T> {
-  /** Model key. Accepts a direct `keyof T` or a dotted path (e.g. `"data.title"`). */
-  key: (keyof T & string) | (string & {});
+  /** Model key. Accepts a direct `keyof T` or a dotted path up to 4 levels deep (e.g. `"data.hero.title"`). */
+  key: DeepKeyOf<T>;
   /** Human-readable label displayed above the field. */
   label?: string;
   /** Adds a required validation rule and marks the field visually. */

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ref } from "vue";
 import { useMapoForm } from "../runtime/composables/useMapoForm.js";
 import { defaultRegistry } from "../runtime/registry/defaults.js";
+import type { FieldDescriptor } from "../runtime/types/descriptor.js";
 
 // provide/inject called outside setup() emits a warning; silence it in tests.
 beforeEach(() => {
@@ -26,7 +27,7 @@ function makeForm(overrides: Partial<Article> = {}) {
     ...overrides,
   });
 
-  const fields = ref([
+  const fields = ref<FieldDescriptor<Article>[]>([
     { key: "title", type: "text" as const },
     { key: "slug", type: "text" as const },
     { key: "is_draft", type: "switch" as const },
@@ -76,7 +77,10 @@ describe("setFieldValue", () => {
 
   it("writes nested path (dotted key)", () => {
     const { model } = makeForm();
-    const extendedFields = ref([{ key: "meta.slug", type: "text" as const }]);
+    // meta.slug is intentionally not a key of Article — tests runtime dotted-path writes on arbitrary paths
+    const extendedFields = ref<FieldDescriptor<any>[]>([
+      { key: "meta.slug", type: "text" as const },
+    ]);
     const extForm = useMapoForm({
       model,
       fields: extendedFields,
@@ -129,7 +133,7 @@ describe("validateClient", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       {
         key: "title",
         type: "text" as const,
@@ -155,7 +159,7 @@ describe("validateClient", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       {
         key: "title",
         type: "text" as const,
@@ -183,7 +187,7 @@ describe("translatable fields", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       { key: "title", type: "text" as const, translatable: true },
     ]);
     const currentLang = ref("it");
@@ -206,7 +210,7 @@ describe("translatable fields", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       { key: "title", type: "text" as const, translatable: true },
     ]);
     const currentLang = ref("de");
@@ -229,7 +233,7 @@ describe("translatable fields", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       {
         key: "title",
         type: "text" as const,
@@ -272,7 +276,7 @@ describe("submit", () => {
       count: 0,
       translations: {},
     });
-    const fields = ref([
+    const fields = ref<FieldDescriptor<Article>[]>([
       {
         key: "title",
         type: "text" as const,

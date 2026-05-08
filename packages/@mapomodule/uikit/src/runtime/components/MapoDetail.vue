@@ -3,12 +3,14 @@ import {
   ref,
   computed,
   toRaw,
+  watch,
   useSlots,
   onMounted,
   onBeforeUnmount,
+  provide,
   type VNode,
 } from "vue";
-import { objectDiff } from "@mapomodule/utils";
+import { objectDiff, debounce } from "@mapomodule/utils";
 // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
 import {
   useRouter,
@@ -46,6 +48,14 @@ const props = withDefaults(
     readonly?: boolean;
     /** Field registry. Falls back to $mapoFormRegistry if omitted. */
     registry?: FieldRegistry | null;
+    /**
+     * When set, enables automatic draft persistence to localStorage.
+     * The key is prefixed with `mapo:draft:`.
+     * Example: `"article:42"` → `mapo:draft:article:42`.
+     * Use `"article:new"` for new records.
+     * A `@draft-found` event is emitted after fetch if a valid draft exists.
+     */
+    draftKey?: string;
   }>(),
   {
     sidebarFields: () => [],
@@ -56,12 +66,24 @@ const props = withDefaults(
     readonly: false,
     modelName: null,
     registry: null,
+    draftKey: undefined,
   },
 );
 
 const emit = defineEmits<{
   (e: "saved", model: T): void;
   (e: "deleted"): void;
+  /**
+   * Fired after fetching when a valid, non-expired draft is found in localStorage.
+   * Call `restore()` to apply the draft to the model, or `discard()` to delete it.
+   */
+  (
+    e: "draft-found",
+    draft: T,
+    savedAt: Date,
+    restore: () => void,
+    discard: () => void,
+  ): void;
 }>();
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
@@ -90,6 +112,20 @@ const router = useRouter();
 const snack = useSnackStore();
 const confirm = useConfirmStore();
 const crud = useCrud<T>(props.endpoint);
+
+type ValidateClientFn = () => {
+  valid: boolean;
+  errors: Record<string, string>;
+};
+const formValidators: ValidateClientFn[] = [];
+
+provide("mapoDetailRegisterValidator", (fn: ValidateClientFn) => {
+  formValidators.push(fn);
+  return () => {
+    const idx = formValidators.indexOf(fn);
+    if (idx >= 0) formValidators.splice(idx, 1);
+  };
+});
 
 const isNew = computed(() => String(props.id) === "new");
 const model = ref<T>({} as T);
@@ -139,17 +175,73 @@ const sidebarColsClass = computed(
   () => `col-span-12 ${MD_COL_SPAN[props.sidebarCols] ?? "md:col-span-4"}`,
 );
 
+// ─── Draft persistence ────────────────────────────────────────────────────────
+
+const DRAFT_TTL = 86_400_000; // 24h
+
+function draftStorageKey() {
+  return props.draftKey ? `mapo:draft:${props.draftKey}` : null;
+}
+
+function clearDraft() {
+  const key = draftStorageKey();
+  if (key && typeof localStorage !== "undefined") localStorage.removeItem(key);
+}
+
+function checkDraft() {
+  const key = draftStorageKey();
+  if (!key || typeof localStorage === "undefined") return;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const entry = JSON.parse(raw) as { model: T; savedAt: number };
+    if (Date.now() - entry.savedAt > DRAFT_TTL) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const savedAt = new Date(entry.savedAt);
+    emit(
+      "draft-found",
+      entry.model,
+      savedAt,
+      () => Object.assign(model.value, entry.model),
+      () => localStorage.removeItem(key),
+    );
+  } catch {
+    /* corrupted entry — ignore */
+  }
+}
+
+// Auto-save draft debounced whenever model changes and form is dirty.
+if (props.draftKey) {
+  const saveDraft = debounce(() => {
+    const key = draftStorageKey();
+    if (!key || !isDirty.value || typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({ model: toRaw(model.value), savedAt: Date.now() }),
+      );
+    } catch {
+      /* quota exceeded — ignore */
+    }
+  }, 2000);
+  watch(model, saveDraft, { deep: true });
+}
+
 // ─── Fetch ───────────────────────────────────────────────────────────────────
 
 async function fetchModel() {
   if (isNew.value) {
     backup.value = null;
+    checkDraft();
     return;
   }
   isLoading.value = true;
   try {
     model.value = await crud.detail(props.id);
     backup.value = deepClone(model.value) as T;
+    checkDraft();
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response
       ?.status;
@@ -165,6 +257,9 @@ async function fetchModel() {
 // ─── Save ────────────────────────────────────────────────────────────────────
 
 async function save(andBack = false) {
+  const allValid = formValidators.map((fn) => fn().valid).every(Boolean);
+  if (!allValid) return;
+
   errors.value = {};
   isSaving.value = true;
   try {
@@ -185,6 +280,7 @@ async function save(andBack = false) {
     }
     Object.assign(model.value, result);
     backup.value = deepClone(model.value) as T;
+    clearDraft();
     snack.show(
       isNew.value ? "Created successfully" : "Saved successfully",
       "success",

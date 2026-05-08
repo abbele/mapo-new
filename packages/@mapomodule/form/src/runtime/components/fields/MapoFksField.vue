@@ -68,9 +68,22 @@ const placeholder = computed(() =>
 );
 
 // Chip text shown in the trigger.
+// Handles both returnObject=true (item is a full object) and returnObject=false (item is a raw ID).
 function getLabel(item: unknown): string {
-  if (!item || typeof item !== "object") return String(item);
+  if (item !== null && item !== undefined && typeof item !== "object") {
+    // Raw ID — look it up in the loaded items array.
+    const found = items.value.find((i) => i[itemValue.value] === item);
+    return found ? String(found[itemText.value] ?? item) : String(item);
+  }
+  if (!item || typeof item !== "object") return "";
   return String((item as Record<string, unknown>)[itemText.value] ?? "");
+}
+
+// Extracts the comparable key from an item, regardless of whether it's an object or a raw ID.
+function getItemKey(item: unknown): unknown {
+  if (item !== null && item !== undefined && typeof item !== "object")
+    return item;
+  return (item as Record<string, unknown>)?.[itemValue.value];
 }
 </script>
 
@@ -99,9 +112,7 @@ function getLabel(item: unknown): string {
       <div class="flex flex-wrap gap-1 py-0.5">
         <UBadge
           v-for="item in internalValue as unknown[]"
-          :key="
-            (item as Record<string, unknown>)[itemValue as string] as string
-          "
+          :key="String(getItemKey(item))"
           variant="soft"
           color="primary"
           class="cursor-default"
@@ -116,9 +127,7 @@ function getLabel(item: unknown): string {
             class="-mr-1 ml-0.5 h-3.5 w-3.5"
             @click.stop="
               internalValue = (internalValue as unknown[]).filter(
-                (i) =>
-                  (i as Record<string, unknown>)[itemValue as string] !==
-                  (item as Record<string, unknown>)[itemValue as string],
+                (i) => getItemKey(i) !== getItemKey(item),
               )
             "
           />

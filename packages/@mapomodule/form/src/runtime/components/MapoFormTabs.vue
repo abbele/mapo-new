@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import type { FieldDescriptor } from "../types/index.js";
 import { injectMapoForm } from "../composables/useMapoForm.js";
 import MapoFormGroup from "./MapoFormGroup.vue";
-import MapoFormField from "./MapoFormField.vue";
+import MapoFormFlatSection from "./MapoFormFlatSection.vue";
 
 interface TabEntry {
   name: string;
@@ -31,26 +31,6 @@ const tabsWithErrors = computed(() => {
       .map((t) => t.name),
   );
 });
-
-// col-span-* classes are safelisted in main.css via @source inline().
-const COL_SPAN: Record<number, string> = {
-  1: "col-span-1",
-  2: "col-span-2",
-  3: "col-span-3",
-  4: "col-span-4",
-  5: "col-span-5",
-  6: "col-span-6",
-  7: "col-span-7",
-  8: "col-span-8",
-  9: "col-span-9",
-  10: "col-span-10",
-  11: "col-span-11",
-  12: "col-span-12",
-};
-function colClass(cols: FieldDescriptor["cols"]): string {
-  if (!cols || typeof cols !== "number") return "col-span-12";
-  return COL_SPAN[cols] ?? "col-span-12";
-}
 </script>
 
 <template>
@@ -97,24 +77,11 @@ function colClass(cols: FieldDescriptor["cols"]): string {
           </template>
         </MapoFormGroup>
 
-        <div v-else class="grid grid-cols-12 gap-5">
-          <div
-            v-for="field in group.fields"
-            :key="field.key as string"
-            :class="colClass(field.cols)"
-          >
-            <slot :name="`field.${field.key as string}`" :field="field">
-              <MapoFormField :descriptor="field">
-                <template
-                  v-for="(_, slotName) in $slots"
-                  #[slotName]="slotProps"
-                >
-                  <slot :name="slotName" v-bind="slotProps ?? {}" />
-                </template>
-              </MapoFormField>
-            </slot>
-          </div>
-        </div>
+        <MapoFormFlatSection v-else :fields="group.fields">
+          <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
+            <slot :name="slotName" v-bind="slotProps ?? {}" />
+          </template>
+        </MapoFormFlatSection>
       </template>
     </div>
   </div>

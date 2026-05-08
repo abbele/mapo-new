@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends object">
-import { computed, useSlots, watchEffect } from "vue";
+import { computed, useSlots, watchEffect, inject, onUnmounted } from "vue";
 import type { Ref } from "vue";
 import { useNuxtApp } from "#app";
 import type { FieldDescriptor, FieldRegistry } from "../types/index.js";
@@ -96,6 +96,20 @@ defineExpose({
   isDirty: form.isDirty,
   isLoading: form.isLoading,
 });
+
+type ValidateClientFn = () => {
+  valid: boolean;
+  errors: Record<string, string>;
+};
+type RegisterFn = (fn: ValidateClientFn) => () => void;
+const registerValidator = inject<RegisterFn | null>(
+  "mapoDetailRegisterValidator",
+  null,
+);
+if (registerValidator) {
+  const unregister = registerValidator(form.validateClient);
+  onUnmounted(unregister);
+}
 
 // Forward only field-specific slots to inner layers, avoiding host-level slots
 // such as header/footer/actions where they have no meaning.
