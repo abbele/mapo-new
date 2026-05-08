@@ -215,8 +215,10 @@ export function useMapoForm<T extends object>(options: UseMapoFormOptions<T>) {
     valid: boolean;
     errors: Record<string, string>;
   } {
-    // Explicit execution: always validate all fields, bypassing the
-    // "touched/submitted" gate that only controls reactive message rendering.
+    // Mark as submitted so getClientError() shows errors for all fields,
+    // not just touched ones. Called both from submit() and from external
+    // consumers (e.g. MapoDetail) that bypass the submit() handler.
+    submitted.value = true;
     const errs: Record<string, string> = {};
     const fs = toValue(fields);
     for (const descriptor of fs) {
