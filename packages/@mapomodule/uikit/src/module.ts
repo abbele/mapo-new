@@ -67,6 +67,12 @@ export default defineNuxtModule<MapoUikitOptions>({
     // Base CSS: Tailwind v4 entry + Nuxt UI design tokens
     nuxt.options.css.unshift(resolver.resolve("./runtime/assets/main.css"));
 
+    // Allow Vite to serve files from this package when consumed outside its workspace root
+    nuxt.options.vite.server ??= {};
+    nuxt.options.vite.server.fs ??= {};
+    nuxt.options.vite.server.fs.allow ??= [];
+    nuxt.options.vite.server.fs.allow.push(resolver.resolve("."));
+
     // Custom theme override CSS (injected after base so it wins)
     if (options.css) {
       nuxt.options.css.push(options.css);
