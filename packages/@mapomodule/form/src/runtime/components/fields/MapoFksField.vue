@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+import { useNuxtApp } from "#app";
 import { debounce } from "@mapomodule/utils";
 import type { FksDescriptor } from "../../types/index.js";
 
@@ -26,15 +27,20 @@ const items = ref<Record<string, unknown>[]>([]);
 const isLoading = ref(false);
 const searchTerm = ref("");
 
+const $mapoFetch = (useNuxtApp() as any).$mapoFetch;
+
 async function fetchItems(query: string) {
   isLoading.value = true;
   try {
-    // Nuxt's $fetch handles relative paths on both server and client, so no location.origin is needed.
-    const endpoint = attrs.value.endpoint;
+    const rawEndpoint = attrs.value.endpoint as string;
+    const endpoint =
+      rawEndpoint.startsWith("/") || rawEndpoint.startsWith("http")
+        ? rawEndpoint
+        : `/${rawEndpoint}`;
     const url = query
       ? `${endpoint}${endpoint.includes("?") ? "&" : "?"}search=${encodeURIComponent(query)}`
       : endpoint;
-    const data = await $fetch<unknown>(url);
+    const data = await ($mapoFetch ?? $fetch)<unknown>(url);
     // Supports both a plain array and a paginated DRF response { results: [] }.
     const raw = Array.isArray(data)
       ? data
