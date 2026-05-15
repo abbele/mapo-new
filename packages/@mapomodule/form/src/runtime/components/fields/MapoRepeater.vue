@@ -155,6 +155,11 @@ function duplicateItem(index: number) {
 }
 
 function updateItem(index: number, val: Record<string, unknown>) {
+  const oldItem = items.value[index];
+  if (oldItem !== val) {
+    const existingUid = itemUids.get(oldItem);
+    if (existingUid) itemUids.set(val, existingUid);
+  }
   const next = [...items.value];
   next[index] = val;
   emitItems(next);
