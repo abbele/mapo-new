@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, provide, onMounted, onUnmounted } from "vue";
+import { ref, computed, provide, onMounted, onUnmounted } from "vue";
 import type { FieldDescriptor } from "../types/index.js";
+import { injectMapoForm } from "../composables/useMapoForm.js";
 import MapoFormField from "./MapoFormField.vue";
 
 const props = defineProps<{
@@ -40,6 +41,10 @@ onUnmounted(() => {
 });
 
 provide("mapoGroupExpand", { expandField, collapseField, expandedFieldKey });
+
+const form = injectMapoForm();
+const model = computed(() => form?.model.value);
+const currentLang = computed(() => form?.currentLang.value ?? "");
 
 // ─── Col-span lookup ─────────────────────────────────────────────────────────
 
@@ -114,7 +119,12 @@ function colClass(cols: FieldDescriptor["cols"]): string {
                   height: 100%;
                 "
               >
-                <slot :name="`field.${field.key as string}`" :field="field">
+                <slot
+                  :name="`field.${field.key as string}`"
+                  :field="field"
+                  :model="model"
+                  :current-lang="currentLang"
+                >
                   <MapoFormField
                     :descriptor="field"
                     style="flex: 1; min-height: 0; height: 100%"
@@ -161,7 +171,12 @@ function colClass(cols: FieldDescriptor["cols"]): string {
         :key="field.key as string"
         :class="colClass(field.cols)"
       >
-        <slot :name="`field.${field.key as string}`" :field="field">
+        <slot
+          :name="`field.${field.key as string}`"
+          :field="field"
+          :model="model"
+          :current-lang="currentLang"
+        >
           <MapoFormField :descriptor="field">
             <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
               <slot :name="slotName" v-bind="slotProps ?? {}" />
