@@ -39,6 +39,14 @@ In practice, prefer `mapomodule` as the single entry point — it installs `@map
 
 All composables are auto-imported in the Nuxt app — no explicit imports needed.
 
+| Composable            | Description                                             |
+| --------------------- | ------------------------------------------------------- |
+| `useCrud<T>()`        | CRUD repository factory                                 |
+| `useMapoAuth()`       | Login / logout / fetchUser                              |
+| `useMapo()`           | Facade aggregating the most common composables          |
+| `useCanAccessRoute()` | Checks if the current user can access a route by perms  |
+| `useMapoFetch()`      | Returns the `$mapoFetch` instance (auth-aware `$fetch`) |
+
 ---
 
 ## Boot plugins
@@ -208,6 +216,24 @@ const confirmed = await confirm.open({
   message: "This cannot be undone.",
 });
 ```
+
+---
+
+## `useMapoFetch()`
+
+Returns the `$mapoFetch` instance — the same auth-aware `$fetch` created by the `00.fetch.ts` plugin. Use it when you need to make API calls imperatively (e.g. inside event handlers or composables) and want the 401/403 interceptors applied automatically.
+
+```ts
+const $fetch = useMapoFetch();
+
+async function submit(data: unknown) {
+  await $fetch("/api/articles/", { method: "POST", body: data });
+}
+```
+
+`useMapoFetch` is auto-imported — no manual import needed. Under the hood it reads `useNuxtApp().$mapoFetch`.
+
+> **vs `useCrud`**: prefer `useCrud<T>()` for standard REST resources — it adds typed methods, multipart handling, and differential PATCH. Use `useMapoFetch` for one-off calls or non-REST endpoints.
 
 ---
 

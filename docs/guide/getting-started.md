@@ -72,6 +72,28 @@ definePageMeta({ middleware: ["auth"] });
 </script>
 ```
 
+## TypeScript types
+
+Every package exposes a `./types` subpath that re-exports all public TypeScript types. The `mapomodule` meta-package aggregates them all:
+
+```ts
+// Preferred — single import from the meta-package
+import type {
+  FieldDescriptor,
+  ListColumn,
+  CrudRepository,
+} from "mapomodule/types";
+
+// Or import from individual packages
+import type { FieldDescriptor } from "@mapomodule/form/types";
+import type { ListColumn } from "@mapomodule/uikit/types";
+import type { CamomillaPathRewrite } from "mapo-integrations-camomilla/types";
+```
+
+`mapomodule/types` includes all types from `@mapomodule/core`, `@mapomodule/store`, `@mapomodule/form`, `@mapomodule/uikit`, and `@mapomodule/utils`. The Camomilla integration types are only available via `mapo-integrations-camomilla/types` directly, since that package is optional.
+
+---
+
 ## Next steps
 
 - **[Architecture & Flows](./architecture-flows)** — how SSR hydration, the fetch interceptor, and auth wire together

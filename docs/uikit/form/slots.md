@@ -30,6 +30,18 @@ For every field with `key: 'myField'`, the following slots are available:
 | `#field.myField.append`  | Inside the field, trailing (NUI `trailing` slot)           |
 | `#field.myField.hint`    | Helper text under the field                                |
 
+### Slot props
+
+Every `field.*` slot receives the following bindings:
+
+| Prop          | Type              | Description                                                  |
+| ------------- | ----------------- | ------------------------------------------------------------ |
+| `field`       | `FieldDescriptor` | The full descriptor for this field.                          |
+| `model`       | `T \| undefined`  | The form's current model value (reactive, read-only).        |
+| `currentLang` | `string`          | The active language code (empty string when i18n is unused). |
+
+`model` and `currentLang` are injected from the parent `MapoForm` context via `provide/inject` — they are always up to date even inside nested `MapoFormGroup` / `MapoFormFlatSection` sections.
+
 ```vue
 <MapoForm v-model="article" :fields="fields">
   <!-- Custom label for the slug field -->
