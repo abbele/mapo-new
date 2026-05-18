@@ -210,5 +210,6 @@ The system never breaks on malformed descriptors or unknown types. In **developm
 - [Translated fields (i18n) →](./i18n)
 - [Slots and customization →](./slots)
 - [Registry and custom fields →](./registry)
+- [Reusable field sets →](./reusable-fields)
 - [`useMapoForm()` headless →](./composable)
 - [From JSON Schema to form →](./schema-to-form)
