@@ -212,11 +212,42 @@ Replace the whole action card (Save/Back) or the danger card entirely:
 
 ## How to: pass field-level slots through
 
-`<MapoDetail>` forwards `field.<key>.*` slots to the inner `<MapoForm>` instances. Useful for any per-field customization:
+`<MapoDetail>` forwards `field.<key>.*` and `group.<name>.*` slots to the inner `<MapoForm>` instances.
+
+**Per-field sub-slots** — injected within the field's grid cell:
 
 ```vue
+<!-- Append a button inside the slug field -->
 <template #field.slug.append="{ model }">
   <UButton size="xs" @click="model.slug = slugify(model.title)">Auto</UButton>
+</template>
+
+<!-- Inject content before a field (within its column) -->
+<template #field.excerpt.before>
+  <p class="text-xs text-muted mb-1">Keep under 160 characters for SEO.</p>
+</template>
+
+<!-- Inject content after a field (within its column) -->
+<template #field.excerpt.after>
+  <UBadge>{{ model.excerpt?.length ?? 0 }}/160</UBadge>
+</template>
+```
+
+**Per-group slots** — wrap an entire group card:
+
+```vue
+<!-- Banner above a named group -->
+<template #group.seo.before>
+  <UAlert
+    color="info"
+    title="SEO fields"
+    description="Filled automatically if left blank."
+  />
+</template>
+
+<!-- Content below a group card -->
+<template #group.seo.after>
+  <p class="text-xs text-muted">Changes apply on next publish.</p>
 </template>
 ```
 
@@ -338,7 +369,10 @@ interface DetailSlotProps<T> {
 | `#side-bottom`                                           | Section below the sidebar form fields, above the danger card                                                                                               |
 | `#side-danger`                                           | The danger card at the bottom (Delete button). Shown only for existing records. Pass an empty template to suppress it.                                     |
 | `#button-delete`                                         | The Delete button inside `#side-danger`                                                                                                                    |
-| `#field.<key>.*`                                         | Forwarded to `<MapoForm>` (label, append, prepend, hint, before, after)                                                                                    |
+| `#field.<key>`                                           | Replace the entire field cell                                                                                                                              |
+| `#field.<key>.before` / `#field.<key>.after`             | Content injected before / after the field widget within its grid column                                                                                    |
+| `#field.<key>.label` / `.hint` / `.append` / `.prepend`  | UFormField sub-slots forwarded to `<MapoForm>`                                                                                                             |
+| `#group.<name>.before` / `#group.<name>.after`           | Content injected before / after a named group card                                                                                                         |
 
 ## Pitfalls
 

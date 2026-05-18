@@ -124,9 +124,17 @@ const fields: FieldDescriptor<Article>[] = [
     type: "datetime",
     label: "Pubblicato il",
     tab: "meta",
+    group: "publishing",
     cols: 6,
   },
-  { key: "is_draft", type: "switch", label: "Bozza", tab: "meta", cols: 6 },
+  {
+    key: "is_draft",
+    type: "switch",
+    label: "Bozza",
+    tab: "meta",
+    group: "publishing",
+    cols: 6,
+  },
   {
     key: "rating",
     type: "slider",
@@ -262,7 +270,7 @@ function simulateErrors() {
       :languages="languages"
       :current-lang="currentLang"
     >
-      <!-- Slot append sul campo slug — aggiunge un bottone auto-generate -->
+      <!-- field.*.append — auto-generate slug from title -->
       <template #field.slug.append>
         <UButton
           size="sm"
@@ -277,6 +285,36 @@ function simulateErrors() {
                 .replace(/\s+/g, '-')
                 .replace(/[^a-z0-9-]/g, '') ?? ''
           "
+        />
+      </template>
+
+      <!-- field.*.before — tip injected above the excerpt widget -->
+      <template #field.excerpt.before>
+        <p class="text-xs text-muted mb-1">
+          Mantieni sotto i 160 caratteri per un buon SEO.
+        </p>
+      </template>
+
+      <!-- field.*.after — live character count below the excerpt widget -->
+      <template #field.excerpt.after="{ model }">
+        <p
+          class="mt-1 text-right text-xs"
+          :class="
+            (model?.excerpt?.length ?? 0) > 160 ? 'text-error' : 'text-muted'
+          "
+        >
+          {{ model?.excerpt?.length ?? 0 }} / 160
+        </p>
+      </template>
+
+      <!-- group.*.before — banner above the "publishing" group card -->
+      <template #group.publishing.before>
+        <UAlert
+          color="info"
+          variant="subtle"
+          icon="i-lucide-calendar"
+          title="Pianificazione"
+          description="Lascia vuota la data per salvare come bozza senza pubblicazione automatica."
         />
       </template>
     </MapoForm>

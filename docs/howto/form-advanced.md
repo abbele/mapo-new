@@ -2,6 +2,70 @@
 
 Deeper recipes: repeater fields, client-side validation, headless `useMapoForm()`, and form-from-JSON-schema.
 
+## Injecting content around fields and groups
+
+### `field.{key}.before` / `field.{key}.after`
+
+Inject content inside a field's grid column, above or below the widget:
+
+```vue
+<MapoForm v-model="article" :fields="fields">
+  <!-- Contextual tip above the excerpt textarea -->
+  <template #field.excerpt.before>
+    <p class="text-xs text-muted mb-1">Keep under 160 characters for SEO.</p>
+  </template>
+
+  <!-- Live character count below the excerpt textarea -->
+  <template #field.excerpt.after="{ model }">
+    <p
+      class="mt-1 text-right text-xs"
+      :class="(model?.excerpt?.length ?? 0) > 160 ? 'text-error' : 'text-muted'"
+    >
+      {{ model?.excerpt?.length ?? 0 }} / 160
+    </p>
+  </template>
+</MapoForm>
+```
+
+The `before`/`after` slots receive the same `{ field, model, currentLang }` bindings as the main `field.{key}` slot.
+
+### `group.{name}.before` / `group.{name}.after`
+
+Wrap an entire named group card with contextual content. Groups are set via `field.group`:
+
+```ts
+const fields: FieldDescriptor[] = [
+  {
+    key: "published_at",
+    type: "datetime",
+    label: "Published at",
+    group: "publishing",
+  },
+  { key: "is_draft", type: "switch", label: "Draft", group: "publishing" },
+];
+```
+
+```vue
+<MapoForm v-model="model" :fields="fields">
+  <!-- Banner above the "publishing" group card -->
+  <template #group.publishing.before>
+    <UAlert
+      color="info"
+      variant="subtle"
+      icon="i-lucide-calendar"
+      title="Scheduling"
+      description="Leave the date empty to save as draft without auto-publishing."
+    />
+  </template>
+</MapoForm>
+```
+
+These slots are rendered at the `MapoFormTabs` / `MapoForm` level and wrap the group card from the outside — they are **not** forwarded into `MapoFormGroup` itself.
+
+When used inside `<MapoDetail>`, both `field.*` and `group.*` slots are forwarded automatically to all inner `<MapoForm>` instances (main body and sidebar).
+
+---
+
 ## Repeater field
 
 A repeater renders a list of items, each with their own nested fields. Items can be reordered via drag-and-drop.

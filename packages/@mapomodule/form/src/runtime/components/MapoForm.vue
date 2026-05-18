@@ -115,7 +115,9 @@ if (registerValidator) {
 // such as header/footer/actions where they have no meaning.
 const slots = useSlots();
 const fieldSlotNames = computed(() =>
-  Object.keys(slots).filter((name) => name.startsWith("field.")),
+  Object.keys(slots).filter(
+    (name) => name.startsWith("field.") || name.startsWith("group."),
+  ),
 );
 provideCurrentLang(currentLangRef);
 
@@ -180,19 +182,19 @@ const tabList = computed<TabEntry[]>(() => [...grouped.value.values()]);
 
     <template v-else>
       <template v-for="[groupName, group] of defaultGroups" :key="groupName">
-        <MapoFormGroup
-          v-if="groupName !== '__flat__'"
-          :name="groupName"
-          :fields="group.fields"
-        >
-          <template
-            v-for="slotName in fieldSlotNames"
-            :key="slotName"
-            #[slotName]="slotProps"
-          >
-            <slot :name="slotName" v-bind="slotProps ?? {}" />
-          </template>
-        </MapoFormGroup>
+        <template v-if="groupName !== '__flat__'">
+          <slot :name="`group.${groupName}.before`" />
+          <MapoFormGroup :name="groupName" :fields="group.fields">
+            <template
+              v-for="slotName in fieldSlotNames"
+              :key="slotName"
+              #[slotName]="slotProps"
+            >
+              <slot :name="slotName" v-bind="slotProps ?? {}" />
+            </template>
+          </MapoFormGroup>
+          <slot :name="`group.${groupName}.after`" />
+        </template>
 
         <MapoFormFlatSection v-else :fields="group.fields as FieldDescriptor[]">
           <template

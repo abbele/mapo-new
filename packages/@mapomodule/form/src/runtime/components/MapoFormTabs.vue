@@ -66,16 +66,19 @@ const tabsWithErrors = computed(() => {
       class="space-y-5 pt-5"
     >
       <template v-for="[groupName, group] of tab.groups" :key="groupName">
-        <MapoFormGroup
-          v-if="groupName !== '__flat__'"
-          :name="groupName"
-          :label="group.label"
-          :fields="group.fields"
-        >
-          <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
-            <slot :name="slotName" v-bind="slotProps ?? {}" />
-          </template>
-        </MapoFormGroup>
+        <template v-if="groupName !== '__flat__'">
+          <slot :name="`group.${groupName}.before`" />
+          <MapoFormGroup
+            :name="groupName"
+            :label="group.label"
+            :fields="group.fields"
+          >
+            <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
+              <slot :name="slotName" v-bind="slotProps ?? {}" />
+            </template>
+          </MapoFormGroup>
+          <slot :name="`group.${groupName}.after`" />
+        </template>
 
         <MapoFormFlatSection v-else :fields="group.fields">
           <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
