@@ -151,6 +151,12 @@ const isDirty = computed(
     Object.keys(objectDiff(backup.value, model.value)).length > 0,
 );
 const mainCols = computed(() => 12 - props.sidebarCols);
+
+// When all sidebarFields are flat (no group), we wrap them in a UCard for visual structure.
+// When groups are present, MapoFormGroup already renders its own card-like container.
+const sidebarHasGroups = computed(() =>
+  (props.sidebarFields ?? []).some((f) => f.group != null),
+);
 const sidebarStyle = computed(() =>
   props.sticky
     ? {
@@ -490,8 +496,13 @@ defineSlots<{
   "button-delete"(props: SlotBindings): VNode[];
   /** Extra content at the top of the sidebar (below action buttons). */
   "side-top"(props: SlotBindings): VNode[];
-  /** Extra content at the bottom of the sidebar. */
+  /** Extra content at the bottom of the sidebar, above the danger zone. */
   "side-bottom"(props: SlotBindings): VNode[];
+  /**
+   * Danger-zone card at the very bottom of the sidebar (delete action).
+   * Rendered only for existing records (`!isNew`). Override to replace or suppress it.
+   */
+  "side-danger"(props: SlotBindings): VNode[];
   /** Per-field form slot. Slot name: `field.{field.key}`. */
   [K: `field.${string}`]: (props: { model: T; currentLang: string }) => VNode[];
 }>();
@@ -695,27 +706,48 @@ defineSlots<{
             v-bind="slotBindings"
           />
 
-          <!-- Sidebar fields form -->
-          <MapoForm
-            v-if="sidebarFields && sidebarFields.length"
-            v-model="model"
-            :fields="sidebarFields"
-            :errors="errors"
-            :languages="languages"
-            :current-lang="currentLang"
-            :registry="registry"
-            :readonly="readonly"
-          >
-            <template
-              v-for="slotName in formSlotNames"
-              :key="slotName"
-              #[slotName]="slotProps"
+          <!-- Sidebar fields form.
+               Flat fields (no group) get a UCard wrapper for visual structure.
+               Grouped fields render their own group cards, so no outer wrapper. -->
+          <template v-if="sidebarFields && sidebarFields.length">
+            <UCard v-if="!sidebarHasGroups">
+              <MapoForm
+                v-model="model"
+                :fields="sidebarFields"
+                :errors="errors"
+                :languages="languages"
+                :current-lang="currentLang"
+                :registry="registry"
+                :readonly="readonly"
+              >
+                <template
+                  v-for="slotName in formSlotNames"
+                  :key="slotName"
+                  #[slotName]="slotProps"
+                >
+                  <slot
+                    :name="slotName"
+                    v-bind="slotProps ?? {}"
+                  />
+                </template>
+              </MapoForm>
+            </UCard>
+            <MapoForm
+              v-else
+              v-model="model"
+              :fields="sidebarFields"
+              :errors="errors"
+              :languages="languages"
+              :current-lang="currentLang"
+              :registry="registry"
+              :readonly="readonly"
             >
               <slot
                 :name="slotName"
                 v-bind="slotProps ?? {}"
               />
-            </template>
+            </mapoform>
+          </template>
           </MapoForm>
 
           <slot

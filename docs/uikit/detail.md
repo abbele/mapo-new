@@ -130,9 +130,23 @@ The split is purely visual; both groups share the same model. `getPatch()` diffs
 
 `<MapoDetailLangSwitch>` renders above the body. Each tab shows a red error badge when at least one field inside `translations.<lang>.*` has an error. The `?lang=` query param is kept in sync — language deep-links work out of the box.
 
+**Many languages** — when the number of languages exceeds `langThreshold` (default `8`), the tab bar is automatically replaced with a searchable `USelectMenu`. The threshold is configurable:
+
+```vue
+<!-- Force select menu from 4+ languages -->
+<MapoDetail :languages="langs" :lang-threshold="4" … />
+```
+
+Pass `:lang-threshold="Infinity"` to always use the tab bar regardless of how many languages there are.
+
 ## How to: customize the sidebar buttons
 
-The default sidebar shows Save / Save & continue / Back / Delete. Override individual buttons with the matching slot:
+The sidebar renders two separate areas:
+
+1. **Action card** (`#side-buttons`) — Save, Save & continue, Back.
+2. **Danger card** (`#side-danger`) — Delete, shown only for existing records, visually separated at the bottom of the sidebar.
+
+Override individual buttons with the matching slot:
 
 ```vue
 <MapoDetail :id="id" :fields="fields">
@@ -142,6 +156,7 @@ The default sidebar shows Save / Save & continue / Back / Delete. Override indiv
     </UButton>
   </template>
 
+  <!-- Override just the delete button inside the danger card -->
   <template #button-delete="{ deleteItem }">
     <UButton variant="ghost" color="error" @click="deleteItem">
       Move to trash
@@ -150,17 +165,21 @@ The default sidebar shows Save / Save & continue / Back / Delete. Override indiv
 </MapoDetail>
 ```
 
-Or replace the whole button block:
+Replace the whole action card (Save/Back) or the danger card entirely:
 
 ```vue
+<!-- Replace Save/Back card -->
 <template #side-buttons="{ save, isDirty, isSaving }">
-  <div class="flex flex-col gap-2">
-    <UButton :loading="isSaving" :disabled="!isDirty" @click="save"
+  <UCard>
+    <UButton :loading="isSaving" :disabled="!isDirty" block @click="save"
       >Publish</UButton
     >
-    <UButton variant="ghost" @click="$router.back()">Back to list</UButton>
-  </div>
+    <UButton variant="ghost" block @click="$router.back()">Back</UButton>
+  </UCard>
 </template>
+
+<!-- Suppress the delete card entirely -->
+<template #side-danger />
 ```
 
 ## How to: add custom sidebar / body sections
@@ -305,19 +324,21 @@ interface DetailSlotProps<T> {
 }
 ```
 
-| Slot                                                                        | Replaces / adds                                                                                                                                            |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `#draft-banner`                                                             | The draft restore banner (shown automatically when `draftKey` is set and a draft exists). Override for a custom UI; pass an empty template to suppress it. |
-| `#title`                                                                    | The page title                                                                                                                                             |
-| `#body`                                                                     | The entire body form (advanced — usually not needed)                                                                                                       |
-| `#body-lang`                                                                | The language switch above the body                                                                                                                         |
-| `#body-top`                                                                 | Section above the body fields                                                                                                                              |
-| `#body-bottom`                                                              | Section below the body fields                                                                                                                              |
-| `#side-buttons`                                                             | The whole sidebar button stack                                                                                                                             |
-| `#button-save` / `#button-savecontinue` / `#button-back` / `#button-delete` | Single buttons                                                                                                                                             |
-| `#side-top`                                                                 | Section above the sidebar form                                                                                                                             |
-| `#side-bottom`                                                              | Section below the sidebar form                                                                                                                             |
-| `#field.<key>.*`                                                            | Forwarded to `<MapoForm>` (label, append, prepend, hint, before, after)                                                                                    |
+| Slot                                                     | Replaces / adds                                                                                                                                            |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `#draft-banner`                                          | The draft restore banner (shown automatically when `draftKey` is set and a draft exists). Override for a custom UI; pass an empty template to suppress it. |
+| `#title`                                                 | The page title                                                                                                                                             |
+| `#body`                                                  | The entire body form (advanced — usually not needed)                                                                                                       |
+| `#body-lang`                                             | The language switch above the body                                                                                                                         |
+| `#body-top`                                              | Section above the body fields                                                                                                                              |
+| `#body-bottom`                                           | Section below the body fields                                                                                                                              |
+| `#side-buttons`                                          | The Save / Save & continue / Back action card                                                                                                              |
+| `#button-save` / `#button-savecontinue` / `#button-back` | Single buttons inside the action card                                                                                                                      |
+| `#side-top`                                              | Section above the sidebar form fields                                                                                                                      |
+| `#side-bottom`                                           | Section below the sidebar form fields, above the danger card                                                                                               |
+| `#side-danger`                                           | The danger card at the bottom (Delete button). Shown only for existing records. Pass an empty template to suppress it.                                     |
+| `#button-delete`                                         | The Delete button inside `#side-danger`                                                                                                                    |
+| `#field.<key>.*`                                         | Forwarded to `<MapoForm>` (label, append, prepend, hint, before, after)                                                                                    |
 
 ## Pitfalls
 
