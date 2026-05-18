@@ -45,7 +45,7 @@ const props = withDefaults(
       page: number;
       pageSize: number;
     }) => Record<string, unknown>;
-    columns: ListColumn[];
+    columns: ListColumn<T>[];
     lookup?: string;
     searchable?: boolean;
     draggable?: boolean;
@@ -83,9 +83,9 @@ defineSlots<{
   "dtable.loading"(): any;
   /**
    * Per-column cell override. Slot name: `cell.{column.key}`.
-   * Receives `{ item: T, value: unknown }`.
+   * Receives `{ item: T, value: T[keyof T] }`.
    */
-  [K: `cell.${string}`]: (props: { item: T; value: unknown }) => any;
+  [K: `cell.${string}`]: (props: { item: T; value: T[keyof T] }) => any;
 }>();
 
 const slots = useSlots();
