@@ -1,3 +1,4 @@
+import { ref, computed } from "vue";
 import {
   defineNuxtPlugin,
   navigateTo,
@@ -31,18 +32,29 @@ export default defineNuxtPlugin({
       }
     };
 
+    // Global loading counter — incremented on every request, decremented on
+    // every response (success or error). Exposed as $mapoFetchLoading so any
+    // component can show a spinner without wrapping every fetch call manually.
+    const pending = ref(0);
+    const mapoFetchLoading = computed(() => pending.value > 0);
+
     const mapoFetch = $fetch.create({
+      onRequest() {
+        pending.value++;
+      },
       onResponse({ response, request }) {
+        pending.value--;
         handle(response.status, String(request));
       },
       onResponseError({ response, request, error }) {
+        pending.value--;
         handle(response?.status ?? 0, String(request));
         return Promise.reject(error);
       },
     });
 
     return {
-      provide: { mapoFetch },
+      provide: { mapoFetch, mapoFetchLoading },
     };
   },
 });

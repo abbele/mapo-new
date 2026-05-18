@@ -221,17 +221,31 @@ const confirmed = await confirm.open({
 
 ## `useMapoFetch()`
 
-Returns the `$mapoFetch` instance — the same auth-aware `$fetch` created by the `00.fetch.ts` plugin. Use it when you need to make API calls imperatively (e.g. inside event handlers or composables) and want the 401/403 interceptors applied automatically.
+Returns the global `$mapoFetch` instance together with a centralized `loading` indicator. `loading` tracks **all** in-flight `$mapoFetch` requests across the entire app — it is maintained by plugin-level `onRequest`/`onResponse` interceptors, so it reflects raw `useNuxtApp().$mapoFetch` calls too, not just calls made through this composable.
 
 ```ts
-const $fetch = useMapoFetch();
+const { fetch, loading } = useMapoFetch();
 
 async function submit(data: unknown) {
-  await $fetch("/api/articles/", { method: "POST", body: data });
+  await fetch("/api/articles/", { method: "POST", body: data });
 }
 ```
 
-`useMapoFetch` is auto-imported — no manual import needed. Under the hood it reads `useNuxtApp().$mapoFetch`.
+```vue
+<template>
+  <!-- loading is true while ANY $mapoFetch request is in flight -->
+  <UButton :loading="loading" @click="submit(payload)">Save</UButton>
+</template>
+```
+
+`useMapoFetch` is auto-imported — no manual import needed. `loading` is a `ComputedRef<boolean>` that handles concurrent calls correctly (stays `true` until the last in-flight request completes).
+
+You can also access the loading state directly from anywhere without destructuring:
+
+```ts
+const { $mapoFetchLoading } = useNuxtApp();
+// use $mapoFetchLoading in a template or composable
+```
 
 > **vs `useCrud`**: prefer `useCrud<T>()` for standard REST resources — it adds typed methods, multipart handling, and differential PATCH. Use `useMapoFetch` for one-off calls or non-REST endpoints.
 
