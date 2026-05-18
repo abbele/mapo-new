@@ -42,7 +42,7 @@ interface Article {
 }
 
 // ─── Columns ──────────────────────────────────────────────────────────────────
-const columns: ListColumn[] = [
+const columns: ListColumn<Article>[] = [
   {
     key: "id",
     label: "ID",

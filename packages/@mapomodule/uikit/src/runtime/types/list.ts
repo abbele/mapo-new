@@ -1,6 +1,7 @@
 /** Defines a single column in the list table. */
-export interface ListColumn {
-  key: string;
+export interface ListColumn<T = Record<string, unknown>> {
+  /** Property name on the row object. Must be a key of `T`. */
+  key: keyof T & string;
   label: string;
   sortable?: boolean;
   /** CSS class applied to the `<td>` cell. */

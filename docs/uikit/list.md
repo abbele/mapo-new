@@ -21,7 +21,7 @@ interface News {
   published_at: string;
 }
 
-const columns: ListColumn[] = [
+const columns: ListColumn<News>[] = [
   { key: "title", label: "Title", sortable: true },
   { key: "status", label: "Status" },
   { key: "published_at", label: "Published", sortable: true },
@@ -64,7 +64,7 @@ That single component renders a paginated table, a search input, a filter dropdo
 | Prop               | Type                                                     | Default          | Description                                                                                                                                                                                                                   |
 | ------------------ | -------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `endpoint`         | `string`                                                 | —                | REST collection endpoint. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations (detail, delete, reorder) automatically use the path without the query string. |
-| `columns`          | `ListColumn[]`                                           | —                | Column definitions                                                                                                                                                                                                            |
+| `columns`          | `ListColumn<T>[]`                                        | —                | Column definitions. Pass the model type as generic (`ListColumn<News>[]`) to enforce that `key` is a real property of `T`.                                                                                                    |
 | `lookup`           | `string`                                                 | `'id'`           | Key used as primary key (selection, links, drag)                                                                                                                                                                              |
 | `filters`          | `FilterDescriptor[]`                                     | `[]`             | Filter dropdown items                                                                                                                                                                                                         |
 | `actions`          | `ActionDescriptor<T>[]`                                  | `[]`             | Bulk actions shown when rows are selected                                                                                                                                                                                     |
@@ -102,8 +102,17 @@ You can compose them directly when you need a custom layout — the props mirror
 
 ## How to: define columns
 
+Pass the model type as the `ListColumn` generic so TypeScript enforces that `key` is an actual property of your model — typos become compile-time errors:
+
 ```ts
-const columns: ListColumn[] = [
+interface News {
+  id: number;
+  title: string;
+  status: string;
+  published_at: string;
+}
+
+const columns: ListColumn<News>[] = [
   { key: "title", label: "Title", sortable: true },
   { key: "status", label: "Status" },
   {
@@ -112,15 +121,18 @@ const columns: ListColumn[] = [
     sortable: true,
     class: "text-right",
   },
+  // { key: "typo" }  ← compile error: not a key of News
 ];
 ```
 
-| Field      | Description                                                |
-| ---------- | ---------------------------------------------------------- |
-| `key`      | Property name on the row object                            |
-| `label`    | Header text                                                |
-| `sortable` | Adds a sort handle (server-side ordering via `?ordering=`) |
-| `class`    | CSS class applied to the `<td>`                            |
+Without the generic (`ListColumn[]`) the key is typed as `string` and any value is accepted — still works at runtime but you lose autocomplete and typo protection.
+
+| Field      | Description                                                               |
+| ---------- | ------------------------------------------------------------------------- |
+| `key`      | Property name on the row object (`keyof T & string` when `T` is provided) |
+| `label`    | Header text                                                               |
+| `sortable` | Adds a sort handle (server-side ordering via `?ordering=`)                |
+| `class`    | CSS class applied to the `<td>`                                           |
 
 ## How to: customize a cell
 
@@ -145,10 +157,10 @@ Use the per-cell slot `#cell.<key>` — it receives `{ item, value }`:
 </MapoList>
 ```
 
-| Binding | Type      | Description                     |
-| ------- | --------- | ------------------------------- |
-| `item`  | `T`       | The full row object             |
-| `value` | `unknown` | The value of `item[column.key]` |
+| Binding | Type         | Description                                                         |
+| ------- | ------------ | ------------------------------------------------------------------- |
+| `item`  | `T`          | The full row object                                                 |
+| `value` | `T[keyof T]` | The value of `item[column.key]` — a union of all value types of `T` |
 
 The slot system propagates from `<MapoList>` down to `<MapoListTable>` automatically.
 
@@ -335,6 +347,29 @@ A link icon appears on each row pointing at `/news/${row[lookup]}`. Combine with
 | `#qedit.extra`    | `<MapoListQuickEdit>` | `{ model: T }`                           |
 
 All slots are forwarded transparently from `<MapoList>` to its sub-components.
+
+## How to: add a per-row action
+
+`<MapoList>` does not have a dedicated `rowActions` prop. Single-row actions are modelled as regular `actions` with `handleMultiple: false` — the action appears in the bulk toolbar whenever exactly one row is selected, which keeps the surface API minimal.
+
+```ts
+const actions: ActionDescriptor<News>[] = [
+  {
+    label: "Duplicate",
+    handleMultiple: false, // only enabled when a single row is selected
+    handler: async ({ selection }) => {
+      if (!selection?.length) return;
+      await $fetch(`/api/news/${selection[0]!.id}/duplicate/`, {
+        method: "POST",
+      });
+    },
+  },
+];
+```
+
+If you need an always-visible inline button on every row regardless of selection, use the `#dtable.toolbar` slot or a custom `#cell.{key}` cell with a `UButton` that reads the `item` binding directly.
+
+---
 
 ## Pitfalls
 

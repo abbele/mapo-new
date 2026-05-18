@@ -14,7 +14,7 @@ import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 const props = withDefaults(
   defineProps<{
     endpoint: string;
-    columns: ListColumn[];
+    columns: ListColumn<T>[];
     lookup?: string;
     // Filters
     filters?: FilterDescriptor[];
@@ -122,9 +122,9 @@ defineSlots<{
   "dtable.loading"(): any;
   /**
    * Per-column cell override. Slot name: `cell.{column.key}`.
-   * Receives `{ item: T, value: unknown }`.
+   * Receives `{ item: T, value: T[keyof T] }`.
    */
-  [K: `cell.${string}`]: (props: { item: T; value: unknown }) => any;
+  [K: `cell.${string}`]: (props: { item: T; value: T[keyof T] }) => any;
   /**
    * Per-filter custom panel content. Slot name: `filter.{filter.value}`.
    * Receives `{ filter, toggleChoice, removeFilter }`.
