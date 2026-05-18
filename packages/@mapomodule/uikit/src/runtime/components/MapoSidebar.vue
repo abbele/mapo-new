@@ -3,9 +3,15 @@ import { computed } from "vue";
 import { useSidebarStore } from "@mapomodule/store/runtime/stores/sidebar";
 
 defineSlots<{
+  /** Logo / app name in the sidebar header. */
   logo(): unknown;
+  /** Extra content above the main navigation list. */
   "nav-top"(): unknown;
+  /** Extra content below the main navigation list. */
   "nav-bottom"(): unknown;
+  /** Extra links or content between the footer nav and the user profile row. */
+  "footer-extra"(): unknown;
+  /** Replaces the user profile row at the very bottom of the sidebar. */
   footer(): unknown;
 }>();
 
@@ -73,6 +79,9 @@ const sidebarWidth = computed(() => (sidebar.mini ? "w-[60px]" : "w-60"));
       <div v-if="!sidebar.mini" class="px-2 pb-1">
         <MapoSidebarList footer :mini="sidebar.mini" />
       </div>
+
+      <!-- Extra footer content (above user row) -->
+      <slot name="footer-extra" />
 
       <!-- User row -->
       <div
