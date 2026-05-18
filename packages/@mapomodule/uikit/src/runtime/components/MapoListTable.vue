@@ -26,6 +26,25 @@ const props = withDefaults(
      * and tab params without baking them into the endpoint string.
      */
     filterParams?: Record<string, unknown>;
+    /** Initial page size. Default: 20. */
+    defaultPageSize?: number;
+    /** Page size options shown in the per-page selector. Default: [10, 20, 50, 100]. */
+    pageSizeOptions?: number[];
+    /**
+     * Custom response parser. When provided it replaces the built-in DRF / flat-array
+     * detection. Return `{ items, total }` from any shape your backend returns.
+     * @example (raw) => ({ items: raw.data, total: raw.meta.total })
+     */
+    responseAdapter?: (raw: unknown) => { items: T[]; total: number };
+    /**
+     * Custom pagination query params factory. When provided it replaces the default
+     * `{ page, page_size }` params. Use this to support offset/limit or cursor pagination.
+     * @example ({ page, pageSize }) => ({ offset: (page - 1) * pageSize, limit: pageSize })
+     */
+    paginationParams?: (state: {
+      page: number;
+      pageSize: number;
+    }) => Record<string, unknown>;
     columns: ListColumn[];
     lookup?: string;
     searchable?: boolean;
@@ -43,6 +62,8 @@ const props = withDefaults(
     draggable: false,
     positionField: "position",
     editFields: () => [],
+    defaultPageSize: 20,
+    pageSizeOptions: () => [10, 20, 50, 100],
   },
 );
 
@@ -85,7 +106,10 @@ const total = ref(0);
 const loading = ref(false);
 
 // --- Pagination ---
-const pagination = ref<PaginationState>({ pageIndex: 0, pageSize: 20 });
+const pagination = ref<PaginationState>({
+  pageIndex: 0,
+  pageSize: props.defaultPageSize,
+});
 
 // --- Sorting ---
 const sorting = ref<SortingState>([]);
@@ -229,11 +253,18 @@ async function refresh() {
           )
         : {};
 
+    const pageState = {
+      page: pagination.value.pageIndex + 1,
+      pageSize: pagination.value.pageSize,
+    };
+    const paginationP = props.paginationParams
+      ? props.paginationParams(pageState)
+      : { page: pageState.page, page_size: pageState.pageSize };
+
     const params: Record<string, unknown> = {
       ...endpointParams,
       ...(props.filterParams ?? {}),
-      page: pagination.value.pageIndex + 1,
-      page_size: pagination.value.pageSize,
+      ...paginationP,
     };
     if (search.value) params.search = search.value;
     if (sorting.value.length)
@@ -242,7 +273,12 @@ async function refresh() {
         .join(",");
 
     const res = await crud.list(params as Record<string, string>);
-    if (res && typeof res === "object" && "results" in res) {
+
+    if (props.responseAdapter) {
+      const adapted = props.responseAdapter(res);
+      items.value = adapted.items;
+      total.value = adapted.total;
+    } else if (res && typeof res === "object" && "results" in res) {
       items.value = (res as { results: T[]; count: number }).results;
       total.value = (res as { results: T[]; count: number }).count;
     } else {
@@ -478,7 +514,7 @@ const sortingOptions = computed(() => ({
       <USelect
         :model-value="pagination.pageSize"
         :items="
-          [10, 20, 50, 100].map((n) => ({ label: `${n} / page`, value: n }))
+          pageSizeOptions.map((n) => ({ label: `${n} / page`, value: n }))
         "
         size="xs"
         class="w-28"

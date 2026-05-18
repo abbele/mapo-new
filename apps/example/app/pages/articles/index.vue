@@ -204,8 +204,11 @@ const listRef = ref<{ refresh: () => void } | null>(null);
   <div class="p-6">
     <!--
       B2 test: endpoint has a static ?ordering=-id query param.
-      List calls receive it as a base param; detail/delete/updateOrder
-      still go to /api/mock/articles/<id>/ — not /api/mock/articles?ordering=-id/<id>/.
+      B3 test: defaultPageSize + pageSizeOptions are customizable.
+             For offset/limit backends use:
+               :pagination-params="({ page, pageSize }) => ({ offset: (page - 1) * pageSize, limit: pageSize })"
+             For non-DRF response shapes use:
+               :response-adapter="(raw) => ({ items: raw.data, total: raw.meta.total })"
     -->
     <MapoList
       ref="listRef"
@@ -219,6 +222,8 @@ const listRef = ref<{ refresh: () => void } | null>(null);
       :edit-fields="quickEditFields"
       lookup="id"
       :searchable="true"
+      :default-page-size="5"
+      :page-size-options="[5, 10, 25, 50]"
     >
       <!-- #head: page title + create button -->
       <template #head>
