@@ -62,11 +62,13 @@ Current implementation status of all Mapo v2 features relative to the legacy v1 
 | Feature                                    | Notes                                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `<MapoList>` shell                         | Composes `<MapoListHead>`, `<MapoListFilters>`, `<MapoListActions>`, `<MapoListTabs>`, `<MapoListTable>`, `<MapoListQuickEdit>` |
-| Server-side pagination / search / ordering | Filters passed as request params (no query-string concatenation)                                                                |
+| Server-side pagination / search / ordering | Filters, tabs, and pagination all pass as `list()` params — never baked into the endpoint string                                |
+| Filters + sorting work simultaneously      | Active filters are preserved when sorting; sorting is preserved when filters change (B1 fix)                                    |
+| `endpoint` with static query params        | Params in the endpoint URL (e.g. `?ordering=-date`) are passed to `list()` calls; CRUD ops use the clean path (B2 fix)          |
 | Selection keyed by `lookup`                | Paging or sorting does not move selections                                                                                      |
 | Drag reorder via `crud.updateOrder`        | Single server call — no parallel `PATCH` storm                                                                                  |
 | Quick-edit modal                           | Driven by the same `FieldDescriptor[]` used by `<MapoDetail>` — no bespoke dialog code                                          |
-| Column slots                               | `cell.<key>`, `head.<key>`, `expand.<key>` + tabbed status filter via `meta.tabs`                                               |
+| Column slots                               | `#cell.<key>` receives `{ item, value }`, `#dtable.toolbar`, `#dtable.empty`, `#dtable.loading`, `#qedit.extra`                 |
 
 ### Detail / Form Engine (`@mapomodule/form` + `@mapomodule/uikit`)
 

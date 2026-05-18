@@ -2,20 +2,17 @@
 /**
  * Articles list — powered by <MapoList>.
  *
- * In Mapo v1 (Vuetify 2), a page like this required:
- *   - A hand-rolled <v-data-table> with manual :headers and :items bindings
- *   - A custom fetch in created() / mounted() that you wired to pagination events
- *   - A separate <v-dialog> for bulk actions with imperative open/close logic
- *   - Another <v-dialog> for filters, with individual v-model per filter
- *   - A <v-chip-group> for active filter chips you assembled yourself
- *   - A custom confirm dialog wired to a separate Vuex action for bulk delete
- *   - Tab state managed in data() and synced to the URL query manually
- *   - Quick-edit: a full separate page or yet another dialog you built from scratch
+ * This page exercises the B1+B2 fixes:
  *
- * In Mapo v2, the entire page is <MapoList> with declarative props.
- * The component handles: server-side fetch, pagination, sorting, debounced search,
- * filter chips, bulk actions with confirm, permission checks, tab-based endpoint
- * switching, and quick-edit via a pre-built modal — all with zero custom logic here.
+ *  B1 — Filters and sorting:
+ *    The status filter (single + multi-select) and is_featured filter now actually
+ *    update the list. Before the fix, filter chips appeared but the table never changed.
+ *    Sorting columns also works while filters are active (they used to reset each other).
+ *
+ *  B2 — Endpoint with static query params:
+ *    The endpoint is "/api/mock/articles?ordering=-id" — a static default sort.
+ *    Quick-edit (detail) and delete still call "/api/mock/articles/<id>/" correctly,
+ *    NOT "/api/mock/articles?ordering=-id/<id>/", which was the broken pre-fix behavior.
  */
 
 import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
@@ -45,8 +42,6 @@ interface Article {
 }
 
 // ─── Columns ──────────────────────────────────────────────────────────────────
-// In v1 you wrote Vuetify header objects with manual value/text/sortable.
-// Here, key maps to the object property — no accessor functions needed for primitives.
 const columns: ListColumn[] = [
   {
     key: "id",
@@ -56,6 +51,12 @@ const columns: ListColumn[] = [
   },
   { key: "title", label: "Title", sortable: true },
   { key: "status", label: "Status", sortable: true },
+  {
+    key: "is_featured",
+    label: "Featured",
+    sortable: false,
+    class: "w-24 text-center",
+  },
   { key: "published_at", label: "Published", sortable: true },
   {
     key: "priority",
@@ -66,9 +67,9 @@ const columns: ListColumn[] = [
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
-// In v1: a custom filter panel with v-model per checkbox group, manual chip rendering,
-// manual URL param serialization, and manual reset logic.
-// Here: one descriptor object per filter — MapoList handles everything else.
+// B1 fix test: both filters must actually update the table.
+// Before the fix they showed chips but the list never changed.
+// `status` is multi-select → sends status=a&status=b; `is_featured` is exclusive.
 const filters: FilterDescriptor[] = [
   {
     value: "status",
@@ -78,6 +79,14 @@ const filters: FilterDescriptor[] = [
       { text: "Published", value: "published", icon: "i-lucide-circle-check" },
       { text: "Draft", value: "draft", icon: "i-lucide-pencil" },
       { text: "Archived", value: "archived", icon: "i-lucide-archive" },
+    ],
+  },
+  {
+    value: "is_featured",
+    text: "Featured",
+    choices: [
+      { text: "Featured only", value: "true", icon: "i-lucide-star" },
+      { text: "Not featured", value: "false", icon: "i-lucide-star-off" },
     ],
   },
 ];
@@ -168,6 +177,7 @@ const quickEditFields: FieldDescriptor<Article>[] = [
   },
 ];
 
+// (listRef kept for external refresh, e.g. after a side action)
 const listRef = ref<{ refresh: () => void } | null>(null);
 </script>
 
@@ -192,9 +202,14 @@ const listRef = ref<{ refresh: () => void } | null>(null);
       #filter.{value}    → custom filter UI for a specific filter key
   -->
   <div class="p-6">
+    <!--
+      B2 test: endpoint has a static ?ordering=-id query param.
+      List calls receive it as a base param; detail/delete/updateOrder
+      still go to /api/mock/articles/<id>/ — not /api/mock/articles?ordering=-id/<id>/.
+    -->
     <MapoList
       ref="listRef"
-      endpoint="/api/mock/articles"
+      endpoint="/api/mock/articles?ordering=-id"
       detail-base="/articles"
       :columns="columns"
       :filters="filters"
@@ -205,7 +220,7 @@ const listRef = ref<{ refresh: () => void } | null>(null);
       lookup="id"
       :searchable="true"
     >
-      <!-- #head: page title + create button. In v1 this was outside the ListTable entirely. -->
+      <!-- #head: page title + create button -->
       <template #head>
         <div class="flex items-center justify-between mb-4">
           <h1 class="text-2xl font-semibold">Articles</h1>
@@ -213,6 +228,33 @@ const listRef = ref<{ refresh: () => void } | null>(null);
             New article
           </UButton>
         </div>
+      </template>
+
+      <!-- B1 test: custom cell for is_featured — rendered only when filter is active -->
+      <template #cell.is_featured="{ value }">
+        <UIcon
+          v-if="value"
+          name="i-lucide-star"
+          class="h-4 w-4 text-yellow-500"
+        />
+        <UIcon v-else name="i-lucide-star-off" class="h-4 w-4 text-muted" />
+      </template>
+
+      <!-- Custom status badge -->
+      <template #cell.status="{ value }">
+        <UBadge
+          :color="
+            value === 'published'
+              ? 'success'
+              : value === 'draft'
+                ? 'warning'
+                : 'neutral'
+          "
+          variant="subtle"
+          size="sm"
+        >
+          {{ value }}
+        </UBadge>
       </template>
     </MapoList>
   </div>

@@ -12,7 +12,7 @@ pnpm add @mapomodule/utils
 
 ## `normalizeEndpoint(endpoint)`
 
-Ensures an API endpoint string has exactly one leading slash and one trailing slash. Used internally by `useCrud` to normalize user-provided paths before making requests.
+Ensures an API endpoint path has exactly one leading slash and one trailing slash. Query strings (anything after `?`) are preserved unchanged — the slash is inserted before the `?`, never after it. Used internally by `useCrud` to normalize user-provided paths.
 
 ```ts
 import { normalizeEndpoint } from "@mapomodule/utils";
@@ -21,6 +21,8 @@ normalizeEndpoint("api/articles"); // '/api/articles/'
 normalizeEndpoint("/api/articles"); // '/api/articles/'
 normalizeEndpoint("/api/articles/"); // '/api/articles/'
 normalizeEndpoint("///api/articles"); // '/api/articles/'
+normalizeEndpoint("/api/articles?fields=id"); // '/api/articles/?fields=id'
+normalizeEndpoint("/api/articles/?ordering=-date"); // '/api/articles/?ordering=-date'
 ```
 
 ---

@@ -61,23 +61,23 @@ That single component renders a paginated table, a search input, a filter dropdo
 
 ## Props
 
-| Prop            | Type                     | Default      | Description                                                           |
-| --------------- | ------------------------ | ------------ | --------------------------------------------------------------------- |
-| `endpoint`      | `string`                 | —            | REST collection endpoint (passed to `useCrud`)                        |
-| `columns`       | `ListColumn[]`           | —            | Column definitions                                                    |
-| `lookup`        | `string`                 | `'id'`       | Key used as primary key (selection, links, drag)                      |
-| `filters`       | `FilterDescriptor[]`     | `[]`         | Filter dropdown items                                                 |
-| `actions`       | `ActionDescriptor<T>[]`  | `[]`         | Bulk actions shown when rows are selected                             |
-| `tabs`          | `ListTabItem[]`          | `[]`         | Status / segment tab bar                                              |
-| `defaultTab`    | `string`                 | first tab    | Active tab on mount                                                   |
-| `tabQueryParam` | `string`                 | `'tab'`      | Query param used when fetching with a tab                             |
-| `searchable`    | `boolean`                | `true`       | Show the search input                                                 |
-| `draggable`     | `boolean`                | `false`      | Enable drag-reorder rows                                              |
-| `positionField` | `string`                 | `'position'` | Field used for ordering                                               |
-| `editFields`    | `FieldDescriptor<T>[]`   | `[]`         | Inline quick-edit modal field list                                    |
-| `languages`     | `string[]`               | —            | Languages for translatable quick-edit fields                          |
-| `registry`      | `Partial<FieldRegistry>` | —            | Optional registry override (auto-injected otherwise)                  |
-| `detailBase`    | `string`                 | —            | If set, each row shows a link button → `${detailBase}/${row[lookup]}` |
+| Prop            | Type                     | Default      | Description                                                                                                                                                                                                                   |
+| --------------- | ------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `endpoint`      | `string`                 | —            | REST collection endpoint. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations (detail, delete, reorder) automatically use the path without the query string. |
+| `columns`       | `ListColumn[]`           | —            | Column definitions                                                                                                                                                                                                            |
+| `lookup`        | `string`                 | `'id'`       | Key used as primary key (selection, links, drag)                                                                                                                                                                              |
+| `filters`       | `FilterDescriptor[]`     | `[]`         | Filter dropdown items                                                                                                                                                                                                         |
+| `actions`       | `ActionDescriptor<T>[]`  | `[]`         | Bulk actions shown when rows are selected                                                                                                                                                                                     |
+| `tabs`          | `ListTabItem[]`          | `[]`         | Status / segment tab bar                                                                                                                                                                                                      |
+| `defaultTab`    | `string`                 | first tab    | Active tab on mount                                                                                                                                                                                                           |
+| `tabQueryParam` | `string`                 | `'tab'`      | Query param used when fetching with a tab                                                                                                                                                                                     |
+| `searchable`    | `boolean`                | `true`       | Show the search input                                                                                                                                                                                                         |
+| `draggable`     | `boolean`                | `false`      | Enable drag-reorder rows                                                                                                                                                                                                      |
+| `positionField` | `string`                 | `'position'` | Field used for ordering                                                                                                                                                                                                       |
+| `editFields`    | `FieldDescriptor<T>[]`   | `[]`         | Inline quick-edit modal field list                                                                                                                                                                                            |
+| `languages`     | `string[]`               | —            | Languages for translatable quick-edit fields                                                                                                                                                                                  |
+| `registry`      | `Partial<FieldRegistry>` | —            | Optional registry override (auto-injected otherwise)                                                                                                                                                                          |
+| `detailBase`    | `string`                 | —            | If set, each row shows a link button → `${detailBase}/${row[lookup]}`                                                                                                                                                         |
 
 The `registry` prop is **optional** — `<MapoList>` falls back to the global `$mapoFormRegistry` automatically.
 
@@ -120,21 +120,31 @@ const columns: ListColumn[] = [
 
 ## How to: customize a cell
 
-Use the per-cell slot `#cell.<key>` — it receives `{ row }`:
+Use the per-cell slot `#cell.<key>` — it receives `{ item, value }`:
 
 ```vue
 <MapoList :columns="columns" :endpoint="…">
-  <template #cell.status="{ row }">
-    <UBadge :color="row.status === 'published' ? 'success' : 'neutral'">
-      {{ row.status }}
+  <template #cell.status="{ item, value }">
+    <UBadge :color="value === 'published' ? 'success' : 'neutral'">
+      {{ value }}
     </UBadge>
   </template>
 
-  <template #cell.published_at="{ row }">
-    {{ formatDate(row.published_at) }}
+  <template #cell.published_at="{ value }">
+    {{ formatDate(value as string) }}
+  </template>
+
+  <template #cell.is_featured="{ value }">
+    <UIcon v-if="value" name="i-lucide-star" class="text-yellow-500" />
+    <UIcon v-else name="i-lucide-star-off" class="text-muted" />
   </template>
 </MapoList>
 ```
+
+| Binding | Type      | Description                     |
+| ------- | --------- | ------------------------------- |
+| `item`  | `T`       | The full row object             |
+| `value` | `unknown` | The value of `item[column.key]` |
 
 The slot system propagates from `<MapoList>` down to `<MapoListTable>` automatically.
 
@@ -215,7 +225,7 @@ const tabs: ListTabItem[] = [
 />
 ```
 
-The active tab is appended to the endpoint as a query param. Switching tabs clears the current selection and refetches.
+The active tab value is passed as a query param in each `list()` call — it is never baked into the `endpoint` string. Switching tabs resets to page 1, clears the selection, and refetches.
 
 ## How to: enable inline quick-edit
 
@@ -240,6 +250,19 @@ A pencil icon now appears on every row. Click it → the modal renders a `<MapoF
 
 The drag uses `crud.updateOrder(movedId, targetId)` — a single request. The backend (e.g. Camomilla) recomputes positions; the client does not fire one PATCH per moved item, avoiding race conditions and order inversions.
 
+## How to: use a static default sort or filter in the endpoint
+
+Pass query params directly in `endpoint` — they are sent on every `list()` call as base params:
+
+```vue
+<!-- Default ordering baked into the endpoint — no extra prop needed -->
+<MapoList endpoint="/api/news/?ordering=-published_at" :columns="columns" />
+```
+
+Active filters, tabs, pagination, and column sorting are merged **on top** of these base params. CRUD operations (quick-edit detail load, row delete, drag reorder) automatically strip the query string and always call the clean path `/api/news/<id>/`.
+
+> **Before this fix** (pre B2), an endpoint with query params would produce broken mutation URLs like `/api/news/?ordering=-published_at/42/` and quick-edit would open with all fields empty.
+
 ## How to: link rows to a detail page
 
 ```vue
@@ -252,12 +275,15 @@ A link icon appears on each row pointing at `/news/${row[lookup]}`. Combine with
 
 ## Slots
 
-| Slot                  | Source              | Receives            |
-| --------------------- | ------------------- | ------------------- |
-| `#head`               | `<MapoListHead>`    | —                   |
-| `#cell.<key>`         | `<MapoListTable>`   | `{ row }`           |
-| `#head.<key>`         | `<MapoListTable>`   | `{ column }`        |
-| Filter custom widgets | `<MapoListFilters>` | (forwarded by name) |
+| Slot              | Source                | Receives                                 |
+| ----------------- | --------------------- | ---------------------------------------- |
+| `#head`           | `<MapoListHead>`      | —                                        |
+| `#dtable.toolbar` | `<MapoListTable>`     | —                                        |
+| `#dtable.empty`   | `<MapoListTable>`     | —                                        |
+| `#dtable.loading` | `<MapoListTable>`     | —                                        |
+| `#cell.<key>`     | `<MapoListTable>`     | `{ item: T, value: unknown }`            |
+| `#filter.<value>` | `<MapoListFilters>`   | `{ filter, toggleChoice, removeFilter }` |
+| `#qedit.extra`    | `<MapoListQuickEdit>` | `{ model: T }`                           |
 
 All slots are forwarded transparently from `<MapoList>` to its sub-components.
 

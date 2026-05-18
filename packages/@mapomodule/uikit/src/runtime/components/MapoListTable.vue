@@ -12,6 +12,19 @@ import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
 const props = withDefaults(
   defineProps<{
     endpoint: string;
+    /**
+     * Clean endpoint used for detail / delete / updateOrder CRUD operations.
+     * Defaults to `endpoint` with the query string stripped.
+     * Pass this explicitly when `endpoint` carries user-configured query params
+     * (e.g. `?fields=id,title`) that must not be included in mutation URLs.
+     */
+    crudEndpoint?: string;
+    /**
+     * Extra query params merged into every `list()` call (on top of pagination /
+     * sort / search). Used by the parent `MapoList` to pass active filter values
+     * and tab params without baking them into the endpoint string.
+     */
+    filterParams?: Record<string, unknown>;
     columns: ListColumn[];
     lookup?: string;
     searchable?: boolean;
@@ -57,7 +70,13 @@ const slots = useSlots();
 
 const snack = useSnackStore();
 const confirm = useConfirmStore();
-const crud = useCrud<T>(props.endpoint);
+
+// `crudBase` is the clean endpoint path used for detail / delete / updateOrder.
+// It strips any query string from `endpoint` so mutations are never sent to a
+// URL like `/api/case/?fields=id,title/1/`.
+const crudBase =
+  props.crudEndpoint ?? (props.endpoint.split("?")[0] || props.endpoint);
+const crud = useCrud<T>(crudBase);
 
 // --- Data state ---
 const items = ref<T[]>([]) as Ref<T[]>;
@@ -200,7 +219,18 @@ async function onDrop(toIdx: number) {
 async function refresh() {
   loading.value = true;
   try {
-    const params: Record<string, string | number> = {
+    // Extract any query params the caller baked into the endpoint (e.g. ?fields=id,title).
+    const qIdx = props.endpoint.indexOf("?");
+    const endpointParams =
+      qIdx >= 0
+        ? Object.fromEntries(
+            new URLSearchParams(props.endpoint.slice(qIdx + 1)),
+          )
+        : {};
+
+    const params: Record<string, unknown> = {
+      ...endpointParams,
+      ...(props.filterParams ?? {}),
       page: pagination.value.pageIndex + 1,
       page_size: pagination.value.pageSize,
     };
@@ -209,6 +239,7 @@ async function refresh() {
       params.ordering = sorting.value
         .map((s) => `${s.desc ? "-" : ""}${s.id}`)
         .join(",");
+
     const res = await crud.list(params as Record<string, string>);
     if (res && typeof res === "object" && "results" in res) {
       items.value = (res as { results: T[]; count: number }).results;
@@ -224,19 +255,26 @@ async function refresh() {
   }
 }
 
-// Also watch `props.endpoint` so that filter changes (which mutate the URL in the parent)
-// trigger a fresh fetch and reset to page 1.
+// Serialize filterParams to detect deep changes without a deep watcher on the array.
+const filterParamsKey = computed(() =>
+  JSON.stringify(props.filterParams ?? {}),
+);
+
+// Watch all sources that should trigger a refresh.
+// When the endpoint or filter context changes, reset to page 1 first.
 watch(
   [
     () => props.endpoint,
+    filterParamsKey,
     () => pagination.value.pageIndex,
     () => pagination.value.pageSize,
     sorting,
     search,
   ],
-  ([newEndpoint], [oldEndpoint]) => {
-    // When the endpoint itself changes (filters applied/removed) reset to page 1.
-    if (newEndpoint !== oldEndpoint && pagination.value.pageIndex !== 0) {
+  ([newEndpoint, newFilters], [oldEndpoint, oldFilters]) => {
+    const contextChanged =
+      newEndpoint !== oldEndpoint || newFilters !== oldFilters;
+    if (contextChanged && pagination.value.pageIndex !== 0) {
       pagination.value = { ...pagination.value, pageIndex: 0 };
     } else {
       refresh();
@@ -447,7 +485,7 @@ const sortingOptions = computed(() => ({
     <MapoListQuickEdit
       v-if="editFields.length > 0"
       v-model:open="quickEditOpen"
-      :endpoint="endpoint"
+      :endpoint="crudBase"
       :item-id="quickEditId"
       :edit-fields="editFields"
       :lookup="lookup"
