@@ -11,6 +11,7 @@
  *  5. Focus Mode portal (pulsante ↗ su ogni item repeater)
  *  6. Bulk Actions nel repeater
  *  7. useFormDraft (auto-save localStorage con banner ripristino)
+ *  8. Nested tabs — tab: string[] o 'a/b' (C2)
  */
 
 import { ref } from "vue";
@@ -44,10 +45,18 @@ interface TestModel {
     avatar_color: string;
     active: boolean;
   }>;
-  // Sezione 5: tab con groups
+  // Sezione 5: tab con groups e nested tabs (C2)
   address: string;
   city: string;
   country: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_country: string;
+  // Sezione 6: subtab dentro group (C2)
+  meta_title: string;
+  meta_description: string;
+  og_title: string;
+  og_image: string;
 }
 
 const model = ref<TestModel>({
@@ -64,6 +73,13 @@ const model = ref<TestModel>({
   address: "",
   city: "",
   country: "",
+  shipping_address: "",
+  shipping_city: "",
+  shipping_country: "",
+  meta_title: "",
+  meta_description: "",
+  og_title: "",
+  og_image: "",
 });
 
 const errors = ref<Record<string, string[]>>({});
@@ -228,31 +244,31 @@ const teamMemberDescriptor: RepeaterDescriptor<TestModel> = {
   },
 };
 
-// ─── 3. Fields con tab (griglia + sidebar) ────────────────────────────────────
+// ─── 3. Fields con tab annidati (C2) ──────────────────────────────────────────
+// Dimostra tab: string[] — "Fatturazione" e "Spedizione" sono sub-tab di "Indirizzo".
+// tab: 'Indirizzo/Fatturazione' è la forma equivalente con slash.
 
 const addressFields: FieldDescriptor<TestModel>[] = [
+  // Sub-tab: Indirizzo > Fatturazione
   {
     key: "address",
     type: "text",
-    label: "Indirizzo",
-    tab: "Indirizzo",
-    group: "Recapito",
+    label: "Indirizzo di fatturazione",
+    tab: ["Indirizzo", "Fatturazione"],
     cols: 12,
   },
   {
     key: "city",
     type: "text",
     label: "Città",
-    tab: "Indirizzo",
-    group: "Recapito",
+    tab: ["Indirizzo", "Fatturazione"],
     cols: 6,
   },
   {
     key: "country",
     type: "select",
     label: "Paese",
-    tab: "Indirizzo",
-    group: "Recapito",
+    tab: ["Indirizzo", "Fatturazione"],
     cols: 6,
     attrs: {
       items: [
@@ -262,6 +278,74 @@ const addressFields: FieldDescriptor<TestModel>[] = [
         { label: "Spagna", value: "ES" },
       ],
     },
+  },
+  // Sub-tab: Indirizzo > Spedizione (slash-separated form)
+  {
+    key: "shipping_address",
+    type: "text",
+    label: "Indirizzo di spedizione",
+    tab: "Indirizzo/Spedizione",
+    cols: 12,
+  },
+  {
+    key: "shipping_city",
+    type: "text",
+    label: "Città",
+    tab: "Indirizzo/Spedizione",
+    cols: 6,
+  },
+  {
+    key: "shipping_country",
+    type: "select",
+    label: "Paese",
+    tab: "Indirizzo/Spedizione",
+    cols: 6,
+    attrs: {
+      items: [
+        { label: "Italia", value: "IT" },
+        { label: "Francia", value: "FR" },
+        { label: "Germania", value: "DE" },
+        { label: "Spagna", value: "ES" },
+      ],
+    },
+  },
+];
+
+// ─── 4. Fields con subtab dentro group (C2) ──────────────────────────────────
+// Dimostra subtab: string — crea una tab bar DENTRO il group card "SEO".
+
+const seoFields: FieldDescriptor<TestModel>[] = [
+  // subtab: 'Base' dentro group: 'SEO'
+  {
+    key: "meta_title",
+    type: "text",
+    label: "Meta title",
+    group: "SEO",
+    subtab: "Base",
+    cols: 12,
+  },
+  {
+    key: "meta_description",
+    type: "textarea",
+    label: "Meta description",
+    group: "SEO",
+    subtab: "Base",
+  },
+  // subtab: 'Social' dentro group: 'SEO'
+  {
+    key: "og_title",
+    type: "text",
+    label: "OG title",
+    group: "SEO",
+    subtab: "Social",
+    cols: 12,
+  },
+  {
+    key: "og_image",
+    type: "text",
+    label: "OG image URL",
+    group: "SEO",
+    subtab: "Social",
   },
 ];
 
@@ -348,6 +432,13 @@ async function save() {
               address: '',
               city: '',
               country: '',
+              shipping_address: '',
+              shipping_city: '',
+              shipping_country: '',
+              meta_title: '',
+              meta_description: '',
+              og_title: '',
+              og_image: '',
             }
           "
         >
@@ -548,10 +639,15 @@ async function save() {
         </h2>
       </div>
       <p class="text-sm text-gray-500">
-        Fields con
-        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs">tab</code> e
-        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs">group</code>: tab
-        bar in cima, group collassabili dentro ogni tab.
+        Nested tabs —
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >tab: ['Indirizzo', 'Fatturazione']</code
+        >
+        e
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >tab: 'Indirizzo/Spedizione'</code
+        >
+        producono un tab bar annidato dentro il tab "Indirizzo".
       </p>
       <MapoForm v-model="model" :fields="addressFields" :errors="errors" />
     </section>
@@ -559,13 +655,41 @@ async function save() {
     <UDivider />
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         SEZIONE 6 — Snapshot model (debug)
+         SEZIONE 6 — Subtab dentro group (C2)
     ════════════════════════════════════════════════════════════════════════ -->
     <section class="space-y-3">
       <div class="flex items-center gap-3">
         <span
           class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500"
           >6</span
+        >
+        <h2 class="text-base font-semibold text-gray-800">
+          Subtab dentro group card
+        </h2>
+      </div>
+      <p class="text-sm text-gray-500">
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >subtab: 'Base'</code
+        >
+        e
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >subtab: 'Social'</code
+        >
+        creano una tab bar DENTRO il group card "SEO".
+      </p>
+      <MapoForm v-model="model" :fields="seoFields" :errors="errors" />
+    </section>
+
+    <UDivider />
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEZIONE 7 — Snapshot model (debug)
+    ════════════════════════════════════════════════════════════════════════ -->
+    <section class="space-y-3">
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500"
+          >7</span
         >
         <h2 class="text-base font-semibold text-gray-800">
           Model snapshot (debug)

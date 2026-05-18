@@ -126,28 +126,54 @@ provideCurrentLang(currentLangRef);
 interface GroupEntry {
   label?: string;
   fields: FieldDescriptor<T>[];
+  subtabs: Map<string, FieldDescriptor<T>[]>;
 }
 interface TabEntry {
   name: string;
   label?: string;
   groups: Map<string, GroupEntry>;
+  children: Map<string, TabEntry>;
+}
+
+function getOrCreateTab(map: Map<string, TabEntry>, name: string): TabEntry {
+  if (!map.has(name)) {
+    map.set(name, { name, groups: new Map(), children: new Map() });
+  }
+  return map.get(name)!;
 }
 
 const grouped = computed<Map<string, TabEntry>>(() => {
   const tabs = new Map<string, TabEntry>();
 
   for (const field of props.fields) {
-    const tabName = field.tab ?? "__default__";
+    // Normalise: 'a/b', ['a','b'], or 'a' all become a string[]
+    const rawTab = field.tab;
+    const tabPath: string[] = !rawTab
+      ? ["__default__"]
+      : Array.isArray(rawTab)
+        ? rawTab
+        : rawTab.split("/");
     const groupName = field.group ?? "__flat__";
 
-    if (!tabs.has(tabName)) {
-      tabs.set(tabName, { name: tabName, groups: new Map() });
+    // Walk/create the nested TabEntry tree
+    let currentMap = tabs;
+    for (let i = 0; i < tabPath.length - 1; i++) {
+      const parent = getOrCreateTab(currentMap, tabPath[i]);
+      currentMap = parent.children;
     }
-    const tab = tabs.get(tabName)!;
-    if (!tab.groups.has(groupName)) {
-      tab.groups.set(groupName, { fields: [] });
+    const leaf = getOrCreateTab(currentMap, tabPath[tabPath.length - 1]);
+    if (!leaf.groups.has(groupName)) {
+      leaf.groups.set(groupName, { fields: [], subtabs: new Map() });
     }
-    tab.groups.get(groupName)!.fields.push(field);
+    const grp = leaf.groups.get(groupName)!;
+    if (field.subtab) {
+      if (!grp.subtabs.has(field.subtab)) {
+        grp.subtabs.set(field.subtab, []);
+      }
+      grp.subtabs.get(field.subtab)!.push(field);
+    } else {
+      grp.fields.push(field);
+    }
   }
 
   return tabs;
@@ -184,7 +210,11 @@ const tabList = computed<TabEntry[]>(() => [...grouped.value.values()]);
       <template v-for="[groupName, group] of defaultGroups" :key="groupName">
         <template v-if="groupName !== '__flat__'">
           <slot :name="`group.${groupName}.before`" />
-          <MapoFormGroup :name="groupName" :fields="group.fields">
+          <MapoFormGroup
+            :name="groupName"
+            :fields="group.fields"
+            :subtabs="group.subtabs"
+          >
             <template
               v-for="slotName in fieldSlotNames"
               :key="slotName"
