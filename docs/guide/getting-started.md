@@ -74,28 +74,35 @@ definePageMeta({ middleware: ["auth"] });
 
 ## TypeScript types
 
-Every package exposes a `./types` subpath that re-exports all public TypeScript types. The `mapomodule` meta-package aggregates them all:
+Composables and stores are **auto-imported** — no explicit import is ever needed. Types require an explicit `import type`.
 
 ```ts
-// Preferred — single import from the meta-package
-import type {
-  FieldDescriptor,
-  ListColumn,
-  CrudRepository,
-} from "mapomodule/types";
+// ✅ No import — composables are auto-imported by Nuxt
+const { list } = useCrud<Article>("/api/articles/");
+const snack = useSnackStore();
 
-// Or import from individual packages
+// Types — import from the meta-package aggregator (preferred)
+import type { FieldDescriptor, ListColumn } from "mapomodule/types";
+
+// Or from individual packages when needed
 import type { FieldDescriptor } from "@mapomodule/form/types";
 import type { ListColumn } from "@mapomodule/uikit/types";
+
+// Camomilla types are always package-specific (it's an optional module)
 import type { CamomillaPathRewrite } from "mapo-integrations-camomilla/types";
 ```
 
-`mapomodule/types` includes all types from `@mapomodule/core`, `@mapomodule/store`, `@mapomodule/form`, `@mapomodule/uikit`, and `@mapomodule/utils`. The Camomilla integration types are only available via `mapo-integrations-camomilla/types` directly, since that package is optional.
+`mapomodule/types` aggregates all types from `@mapomodule/core`, `@mapomodule/store`, `@mapomodule/form`, `@mapomodule/uikit`, and `@mapomodule/utils`.
+
+Utility functions from `@mapomodule/utils` (e.g. `debounce`, `deepMerge`) are **not** auto-imported and require explicit imports.
+
+→ See the full **[Import Guide](./imports)** for the complete API → import mapping table.
 
 ---
 
 ## Next steps
 
+- **[Import Guide](./imports)** — full API → import mapping table (composables, types, utils)
 - **[Architecture & Flows](./architecture-flows)** — how SSR hydration, the fetch interceptor, and auth wire together
 - **[Core module](/modules/core)** — full API reference for `useCrud`, `useMapoAuth`, the auth middleware
 - **[Store module](/modules/store)** — auth, snack, confirm, sidebar stores + `usePermissions`
