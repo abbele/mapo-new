@@ -324,11 +324,37 @@ Nested keys like `"translations.it.title"` or `"blocks.0.title"` are resolved au
 
 Override or extend any field's rendering:
 
-| Slot                   | Description                      |
-| ---------------------- | -------------------------------- |
-| `#field.{key}`         | Replace the entire field         |
-| `#field.{key}.label`   | Replace just the label           |
-| `#field.{key}.append`  | Append content after the input   |
-| `#field.{key}.prepend` | Prepend content before the input |
+| Slot                   | Description                                                 |
+| ---------------------- | ----------------------------------------------------------- |
+| `#field.{key}`         | Replace the entire field cell                               |
+| `#field.{key}.before`  | Content injected before the field widget, within its column |
+| `#field.{key}.after`   | Content injected after the field widget, within its column  |
+| `#field.{key}.label`   | Replace just the label                                      |
+| `#field.{key}.append`  | Append content after the input                              |
+| `#field.{key}.prepend` | Prepend content before the input                            |
+| `#field.{key}.hint`    | Helper text below the input                                 |
+
+## Group slots
+
+Inject content around a named group card (fields with `group: 'name'`):
+
+| Slot                   | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `#group.{name}.before` | Rendered immediately before the group card |
+| `#group.{name}.after`  | Rendered immediately after the group card  |
+
+```vue
+<MapoForm v-model="model" :fields="fields">
+  <!-- Tip above the "seo" group card -->
+  <template #group.seo.before>
+    <UAlert color="info" title="These fields are auto-filled if left blank." />
+  </template>
+
+  <!-- Character count below the excerpt field -->
+  <template #field.excerpt.after="{ model }">
+    <p class="text-xs text-muted text-right">{{ model?.excerpt?.length ?? 0 }} / 160</p>
+  </template>
+</MapoForm>
+```
 
 → See also: [CRUD detail / form](./crud-detail), [Advanced form patterns](./form-advanced), [All field types](/uikit/form/add-fields)

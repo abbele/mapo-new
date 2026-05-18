@@ -115,7 +115,9 @@ if (registerValidator) {
 // such as header/footer/actions where they have no meaning.
 const slots = useSlots();
 const fieldSlotNames = computed(() =>
-  Object.keys(slots).filter((name) => name.startsWith("field.")),
+  Object.keys(slots).filter(
+    (name) => name.startsWith("field.") || name.startsWith("group."),
+  ),
 );
 provideCurrentLang(currentLangRef);
 

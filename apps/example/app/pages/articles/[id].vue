@@ -75,10 +75,12 @@ const mainFields: FieldDescriptor<Article>[] = [
 // ─── Descriptor della sidebar ─────────────────────────────────────────────────
 // Vanno nella colonna destra sticky. Stessa sintassi del form principale.
 const sidebarFields: FieldDescriptor<Article>[] = [
+  // group "visibility" — status + is_featured share a group card
   {
     key: "status",
     type: "select",
     label: "Stato",
+    group: "visibility",
     synci18n: true,
     attrs: {
       items: [
@@ -92,8 +94,10 @@ const sidebarFields: FieldDescriptor<Article>[] = [
     key: "is_featured",
     type: "switch",
     label: "In evidenza",
+    group: "visibility",
     synci18n: true,
   },
+  // flat fields (no group)
   {
     key: "priority",
     type: "number",
@@ -140,6 +144,25 @@ const sidebarFields: FieldDescriptor<Article>[] = [
       :sidebar-fields="sidebarFields"
       :languages="['it', 'en']"
       model-name="Articolo"
-    />
+    >
+      <!-- field.*.after — hint below the slug field -->
+      <template #field.slug.after>
+        <p class="mt-1 text-xs text-muted">
+          Usato come URL dell'articolo. Lascia vuoto per generarlo
+          automaticamente.
+        </p>
+      </template>
+
+      <!-- group.*.before — banner above the "visibility" sidebar group -->
+      <template #group.visibility.before>
+        <UAlert
+          color="warning"
+          variant="subtle"
+          icon="i-lucide-eye"
+          title="Visibilità"
+          description="Imposta lo stato su 'Pubblicato' per rendere l'articolo visibile."
+        />
+      </template>
+    </MapoDetail>
   </div>
 </template>

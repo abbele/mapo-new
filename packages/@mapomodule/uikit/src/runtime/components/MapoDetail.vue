@@ -423,12 +423,14 @@ onBeforeUnmount(() => {
 
 // ─── Slot bindings ───────────────────────────────────────────────────────────
 
-// Only forward field-level slots (prefixed with `field.`) to MapoForm.
+// Forward field-level (`field.*`) and group-level (`group.*`) slots to MapoForm.
 // Host-level slots (title, body, side-buttons, etc.) must not be injected into
 // MapoForm to prevent duplicate or recursive rendering.
 const slots = useSlots();
 const formSlotNames = computed(() =>
-  Object.keys(slots).filter((name) => name.startsWith("field.")),
+  Object.keys(slots).filter(
+    (name) => name.startsWith("field.") || name.startsWith("group."),
+  ),
 );
 
 const slotBindings = computed(() => ({
@@ -503,8 +505,10 @@ defineSlots<{
    * Rendered only for existing records (`!isNew`). Override to replace or suppress it.
    */
   "side-danger"(props: SlotBindings): VNode[];
-  /** Per-field form slot. Slot name: `field.{field.key}`. */
+  /** Per-field slot. Slot name: `field.{key}`, `field.{key}.before`, `field.{key}.after`. */
   [K: `field.${string}`]: (props: { model: T; currentLang: string }) => VNode[];
+  /** Per-group slot. Slot name: `group.{name}.before`, `group.{name}.after`. */
+  [K: `group.${string}`]: (props: Record<string, never>) => VNode[];
 }>();
 </script>
 

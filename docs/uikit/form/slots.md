@@ -24,8 +24,8 @@ For every field with `key: 'myField'`, the following slots are available:
 | ------------------------ | ---------------------------------------------------------- |
 | `#field.myField`         | Replaces the entire field component (last-resort override) |
 | `#field.myField.label`   | Replaces the label                                         |
-| `#field.myField.before`  | Before the field (outside the wrapper)                     |
-| `#field.myField.after`   | After the field (outside the wrapper)                      |
+| `#field.myField.before`  | Before the field widget, inside its grid column            |
+| `#field.myField.after`   | After the field widget, inside its grid column             |
 | `#field.myField.prepend` | Inside the field, leading (NUI `leading` slot)             |
 | `#field.myField.append`  | Inside the field, trailing (NUI `trailing` slot)           |
 | `#field.myField.hint`    | Helper text under the field                                |
@@ -162,7 +162,7 @@ Use them to wire interactive UI without re-implementing state tracking:
 
 ## How to: place content above or below a single field
 
-Use `before` / `after` (rendered outside the field wrapper):
+Use `before` / `after` — rendered stacked within the field's grid column:
 
 ```vue
 <template #field.tags.before>
@@ -173,11 +173,34 @@ Use `before` / `after` (rendered outside the field wrapper):
 </template>
 ```
 
+## Per-group slots
+
+For every named group (set via `field.group`), two surrounding slots are available:
+
+| Slot                   | Position                                   |
+| ---------------------- | ------------------------------------------ |
+| `#group.<name>.before` | Rendered immediately before the group card |
+| `#group.<name>.after`  | Rendered immediately after the group card  |
+
+```vue
+<!-- Banner above the SEO group card -->
+<template #group.seo.before>
+  <UAlert color="info" title="These fields are auto-filled if left blank." />
+</template>
+
+<!-- Note below the SEO group card -->
+<template #group.seo.after>
+  <p class="text-xs text-muted">Changes take effect on next publish.</p>
+</template>
+```
+
+> `group.*` slots are forwarded from `MapoForm → MapoFormTabs` but are **not** passed into `MapoFormGroup` itself — they wrap the group from the outside.
+
 ## Automatic propagation
 
 Slots cascade through the hierarchy `MapoForm → MapoFormGroup → MapoFormField`. You **do not** need to redeclare them at each level — drop them on `<MapoForm>` and they reach the right field.
 
-The propagation is whitelisted to `field.*` slots only, so host slots (`#header`, `#footer`, `#actions`) are never injected into intermediate layers.
+The propagation is whitelisted to `field.*` and `group.*` slots only, so host slots (`#header`, `#footer`, `#actions`) are never injected into intermediate layers.
 
 ## How to: combine slots with `descriptor.is`
 
