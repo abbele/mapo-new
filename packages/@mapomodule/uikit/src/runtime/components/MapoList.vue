@@ -58,25 +58,27 @@ const activeFilters = ref<ActiveFilter[]>([]);
 // --- Tabs state ---
 const activeTab = ref(props.defaultTab ?? props.tabs[0]?.value ?? "");
 
-// --- Computed endpoint (with tab param) ---
-const resolvedEndpoint = computed(() => {
-  if (!props.tabs.length || !activeTab.value) return props.endpoint;
-  const sep = props.endpoint.includes("?") ? "&" : "?";
-  return `${props.endpoint}${sep}${props.tabQueryParam}=${activeTab.value}`;
-});
+// --- crudEndpoint: the base path used for detail / delete / updateOrder. ---
+// Strips any query string from the user-supplied endpoint so mutation URLs
+// are never constructed as `/api/case/?fields=id,title/1/`.
+const crudEndpoint = computed(
+  () => props.endpoint.split("?")[0] || props.endpoint,
+);
 
-// --- Filter query params merged into endpoint ---
-const endpointWithFilters = computed(() => {
-  let base = resolvedEndpoint.value;
-  if (!activeFilters.value.length) return base;
-  const sep = base.includes("?") ? "&" : "?";
-  const parts = activeFilters.value.flatMap((f) =>
-    f.active.map(
-      (c) =>
-        `${encodeURIComponent(f.value)}=${encodeURIComponent(String(c.value))}`,
-    ),
-  );
-  return base + sep + parts.join("&");
+// --- filterParams: active tab + active filters as a plain params object. ---
+// Passed directly to MapoListTable instead of being baked into the endpoint
+// string — this is what actually fixes B1 (filters/sorting ignored).
+const filterParams = computed<Record<string, unknown>>(() => {
+  const params: Record<string, unknown> = {};
+  if (props.tabs.length && activeTab.value) {
+    params[props.tabQueryParam] = activeTab.value;
+  }
+  for (const f of activeFilters.value) {
+    if (!f.active.length) continue;
+    params[f.value] =
+      f.active.length === 1 ? f.active[0]!.value : f.active.map((c) => c.value);
+  }
+  return params;
 });
 
 // --- Table ref for refresh ---
@@ -158,7 +160,7 @@ watch([activeTab, activeFilters], () => {
           :actions="actions"
           :selection="selection"
           :selection-query="selectionQuery"
-          :endpoint="endpoint"
+          :endpoint="crudEndpoint"
           :lookup="lookup"
           @action-completed="refresh"
         />
@@ -168,7 +170,9 @@ watch([activeTab, activeFilters], () => {
     <!-- Table -->
     <MapoListTable
       ref="tableRef"
-      :endpoint="endpointWithFilters"
+      :endpoint="endpoint"
+      :crud-endpoint="crudEndpoint"
+      :filter-params="filterParams"
       :columns="columns"
       :lookup="lookup"
       :searchable="searchable"

@@ -3,10 +3,20 @@ import { articles } from "./_store";
 export default defineEventHandler((event) => {
   const query = getQuery(event);
   const search = String(query.search ?? "").toLowerCase();
-  const status = query.status ? String(query.status) : null;
   const page = Math.max(1, Number(query.page ?? 1));
   const pageSize = Math.max(1, Math.min(100, Number(query.page_size ?? 20)));
   const ordering = String(query.ordering ?? "-published_at");
+
+  // status can be a single value or a repeated param (multi-select filter sends status=a&status=b)
+  const statusRaw = query.status;
+  const statusValues = statusRaw
+    ? (Array.isArray(statusRaw) ? statusRaw : [statusRaw]).map(String)
+    : null;
+
+  // is_featured filter: "true" | "false" | undefined
+  const isFeaturedRaw = query.is_featured;
+  const isFeatured =
+    isFeaturedRaw !== undefined ? isFeaturedRaw === "true" : null;
 
   let results = [...articles.values()];
 
@@ -18,8 +28,12 @@ export default defineEventHandler((event) => {
     );
   }
 
-  if (status) {
-    results = results.filter((a) => a.status === status);
+  if (statusValues?.length) {
+    results = results.filter((a) => statusValues.includes(a.status));
+  }
+
+  if (isFeatured !== null) {
+    results = results.filter((a) => a.is_featured === isFeatured);
   }
 
   const desc = ordering.startsWith("-");
