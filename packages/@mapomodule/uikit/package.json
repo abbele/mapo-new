@@ -6,6 +6,10 @@
   "exports": {
     ".": {
       "import": "./dist/module.mjs"
+    },
+    "./types": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.mts"
     }
   },
   "files": [
