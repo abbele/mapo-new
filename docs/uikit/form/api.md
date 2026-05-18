@@ -29,9 +29,9 @@ The main form renderer. Takes a list of `FieldDescriptor` objects and a model, t
 
 ### Slots
 
-| Slot          | Description                                                                        |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `field.{key}` | Override the rendering of a specific field. Receives `{ field: FieldDescriptor }`. |
+| Slot          | Description                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `field.{key}` | Override the rendering of a specific field. Receives `{ field: FieldDescriptor, model: T \| undefined, currentLang: string }`. |
 
 ### Exposed Methods
 
@@ -58,14 +58,14 @@ Low-level wrapper that resolves a `FieldDescriptor` to its registered component,
 
 ### Slots
 
-| Slot                  | Description                                                            |
-| --------------------- | ---------------------------------------------------------------------- |
-| `field.{key}.label`   | Override the field label. Receives `{ descriptor, label }`.            |
-| `field.{key}.before`  | Content rendered before the field wrapper. Receives `{ descriptor }`.  |
-| `field.{key}.prepend` | Content prepended inside the field control. Receives `{ descriptor }`. |
-| `field.{key}.append`  | Content appended inside the field control. Receives `{ descriptor }`.  |
-| `field.{key}.hint`    | Override the hint text. Receives `{ descriptor }`.                     |
-| `field.{key}.after`   | Content rendered after the field wrapper. Receives `{ descriptor }`.   |
+| Slot                  | Description                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `field.{key}.label`   | Override the field label. Receives `{ descriptor, label, model, currentLang }`.            |
+| `field.{key}.before`  | Content rendered before the field wrapper. Receives `{ descriptor, model, currentLang }`.  |
+| `field.{key}.prepend` | Content prepended inside the field control. Receives `{ descriptor, model, currentLang }`. |
+| `field.{key}.append`  | Content appended inside the field control. Receives `{ descriptor, model, currentLang }`.  |
+| `field.{key}.hint`    | Override the hint text. Receives `{ descriptor, model, currentLang }`.                     |
+| `field.{key}.after`   | Content rendered after the field wrapper. Receives `{ descriptor, model, currentLang }`.   |
 
 ---
 
@@ -264,13 +264,13 @@ Foreign key selector with remote search. Supports single and multi-select.
 
 #### `descriptor.attrs`
 
-| Key            | Type      | Default        | Description                                  |
-| -------------- | --------- | -------------- | -------------------------------------------- |
-| `endpoint`     | `string`  | — **required** | API endpoint for option search.              |
-| `itemText`     | `string`  | `'name'`       | Model field to display as label.             |
-| `itemValue`    | `string`  | `'id'`         | Model field to use as value.                 |
-| `multiple`     | `boolean` | `false`        | Allow multi-selection.                       |
-| `returnObject` | `boolean` | `true`         | Emit the full object instead of only the ID. |
+| Key            | Type      | Default        | Description                                                                                                     |
+| -------------- | --------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `endpoint`     | `string`  | — **required** | API endpoint for option search. Relative paths (no leading `/`) are automatically normalized by prepending `/`. |
+| `itemText`     | `string`  | `'name'`       | Model field to display as label.                                                                                |
+| `itemValue`    | `string`  | `'id'`         | Model field to use as value.                                                                                    |
+| `multiple`     | `boolean` | `false`        | Allow multi-selection.                                                                                          |
+| `returnObject` | `boolean` | `true`         | Emit the full object instead of only the ID.                                                                    |
 
 ---
 

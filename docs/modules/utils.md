@@ -65,6 +65,8 @@ objectDiff({ title: "Old", body: "Text" }, { title: "New", body: "Text" });
 // → { title: 'New' }
 ```
 
+Arrays are compared **by content** (deep recursive equality), not by reference. This means a cloned array with identical elements is treated as unchanged — which prevents false-positive `isDirty` flags when the form baseline is built from `deepClone(model)`.
+
 ---
 
 ## `formatDate(date, format?)`
