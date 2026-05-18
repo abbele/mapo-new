@@ -34,6 +34,25 @@ const props = withDefaults(
     registry?: Partial<FieldRegistry>;
     /** Base path for the detail page link on each row. E.g. "/news" → links to "/news/42". */
     detailBase?: string;
+    // Pagination
+    /** Initial page size. Default: 20. */
+    defaultPageSize?: number;
+    /** Page size options shown in the per-page selector. Default: [10, 20, 50, 100]. */
+    pageSizeOptions?: number[];
+    /**
+     * Custom response parser. Replaces the built-in DRF / flat-array detection.
+     * Return `{ items, total }` from any shape your backend returns.
+     * @example (raw) => ({ items: raw.data, total: raw.meta.total })
+     */
+    responseAdapter?: (raw: unknown) => { items: T[]; total: number };
+    /**
+     * Custom pagination query params factory. Replaces default `{ page, page_size }`.
+     * @example ({ page, pageSize }) => ({ offset: (page - 1) * pageSize, limit: pageSize })
+     */
+    paginationParams?: (state: {
+      page: number;
+      pageSize: number;
+    }) => Record<string, unknown>;
   }>(),
   {
     lookup: "id",
@@ -45,6 +64,8 @@ const props = withDefaults(
     draggable: false,
     positionField: "position",
     editFields: () => [],
+    defaultPageSize: 20,
+    pageSizeOptions: () => [10, 20, 50, 100],
   },
 );
 
@@ -182,6 +203,10 @@ watch([activeTab, activeFilters], () => {
       :languages="languages"
       :registry="registry"
       :detail-base="detailBase"
+      :default-page-size="defaultPageSize"
+      :page-size-options="pageSizeOptions"
+      :response-adapter="responseAdapter"
+      :pagination-params="paginationParams"
       @update:selection="selection = $event"
       @update:selection-query="selectionQuery = $event"
     >
