@@ -152,8 +152,9 @@ const fields: FieldDescriptor<Article>[] = [
   },
   { key: "location", type: "map", label: "Posizione", tab: "meta" },
 
-  // Tab "SEO"
-  { key: "seo", type: "seo", tab: "seo" },
+  // Tab "SEO" — nested under "meta" tab as a sub-tab (demonstrates C2)
+  // tab: ['meta', 'seo'] puts this field in meta > seo sub-tab
+  { key: "seo", type: "seo", tab: ["meta", "seo"] },
 
   // Tab "Blocchi"
   {

@@ -5,10 +5,17 @@ import { injectMapoForm } from "../composables/useMapoForm.js";
 import MapoFormGroup from "./MapoFormGroup.vue";
 import MapoFormFlatSection from "./MapoFormFlatSection.vue";
 
+interface GroupEntry {
+  label?: string;
+  fields: FieldDescriptor[];
+  subtabs: Map<string, FieldDescriptor[]>;
+}
+
 interface TabEntry {
   name: string;
   label?: string;
-  groups: Map<string, { label?: string; fields: FieldDescriptor[] }>;
+  groups: Map<string, GroupEntry>;
+  children: Map<string, TabEntry>;
 }
 
 const props = defineProps<{ tabs: TabEntry[] }>();
@@ -17,18 +24,23 @@ defineSlots<Record<string, unknown>>();
 
 const activeTab = ref(props.tabs[0]?.name ?? "");
 
+// Recursively check if a tab (or any of its descendants) contains errors.
+function tabHasErrors(tab: TabEntry, errorKeys: Set<string>): boolean {
+  const directError = [...tab.groups.values()].some((g) =>
+    g.fields.some((f) => errorKeys.has(f.key as string)),
+  );
+  if (directError) return true;
+  return [...tab.children.values()].some((child) =>
+    tabHasErrors(child, errorKeys),
+  );
+}
+
 // Highlight tabs containing errors.
 const form = injectMapoForm()!;
 const tabsWithErrors = computed(() => {
   const errorKeys = new Set(Object.keys(form.errors.value));
   return new Set(
-    props.tabs
-      .filter((tab) =>
-        [...tab.groups.values()].some((g) =>
-          g.fields.some((f) => errorKeys.has(f.key as string)),
-        ),
-      )
-      .map((t) => t.name),
+    props.tabs.filter((tab) => tabHasErrors(tab, errorKeys)).map((t) => t.name),
   );
 });
 </script>
@@ -65,6 +77,7 @@ const tabsWithErrors = computed(() => {
       :key="tab.name"
       class="space-y-5 pt-5"
     >
+      <!-- Direct groups at this level -->
       <template v-for="[groupName, group] of tab.groups" :key="groupName">
         <template v-if="groupName !== '__flat__'">
           <slot :name="`group.${groupName}.before`" />
@@ -72,6 +85,7 @@ const tabsWithErrors = computed(() => {
             :name="groupName"
             :label="group.label"
             :fields="group.fields"
+            :subtabs="group.subtabs"
           >
             <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
               <slot :name="slotName" v-bind="slotProps ?? {}" />
@@ -86,6 +100,16 @@ const tabsWithErrors = computed(() => {
           </template>
         </MapoFormFlatSection>
       </template>
+
+      <!-- Nested sub-tabs (recursive) -->
+      <MapoFormTabs
+        v-if="tab.children.size > 0"
+        :tabs="[...tab.children.values()]"
+      >
+        <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
+          <slot :name="slotName" v-bind="slotProps ?? {}" />
+        </template>
+      </MapoFormTabs>
     </div>
   </div>
 </template>

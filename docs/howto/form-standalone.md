@@ -272,6 +272,46 @@ const fields: FieldDescriptor[] = [
 
 Tab names are displayed as-is. Use readable lowercase strings (`"content"`, `"seo"`, `"meta"`).
 
+### Nested tabs (tab inside tab)
+
+Use an array path (or a `/`-separated string) to place a field inside a sub-tab:
+
+```ts
+const fields: FieldDescriptor[] = [
+  // Top-level "settings" tab
+  { key: "slug", type: "text", tab: "settings" },
+  { key: "status", type: "select", tab: "settings" },
+
+  // "seo" sub-tab nested inside "settings"
+  { key: "meta_title", type: "text", tab: ["settings", "seo"] },
+  { key: "meta_description", type: "textarea", tab: ["settings", "seo"] },
+
+  // Slash-separated form (equivalent)
+  { key: "og_image", type: "file", tab: "settings/social" },
+];
+```
+
+The parent tab ("settings") renders its own direct fields first, then a nested tab bar for its children ("seo", "social"). Error badges propagate up — if a child tab has an error, the parent tab badge lights up too.
+
+### Tabs inside a group card (`subtab`)
+
+Use `subtab` to render a tab bar _inside_ a collapsible group card. All fields sharing the same `group` with different `subtab` values are presented as tabs within that card:
+
+```ts
+const fields: FieldDescriptor[] = [
+  // "SEO" group card — "Basic" and "Social" sub-tabs inside it
+  { key: "meta_title", type: "text", group: "seo", subtab: "basic" },
+  { key: "meta_description", type: "textarea", group: "seo", subtab: "basic" },
+  { key: "og_title", type: "text", group: "seo", subtab: "social" },
+  { key: "og_image", type: "file", group: "seo", subtab: "social" },
+
+  // Fields without subtab render flat above the tab bar in the same group
+  { key: "canonical_url", type: "text", group: "seo" },
+];
+```
+
+`subtab` and `tab` are independent: `subtab` creates tabs inside a group; `tab` (including path arrays) creates top-level or nested tab panels.
+
 ## Responsive columns
 
 Fields share a 12-column grid. Default is full width (`cols: 12`).

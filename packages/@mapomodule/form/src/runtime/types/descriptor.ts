@@ -116,8 +116,25 @@ interface FieldBase<T> {
   synci18n?: boolean;
   /** Group name. Fields sharing the same group are rendered inside a collapsible group card. */
   group?: string;
-  /** Tab name. Fields sharing the same tab are rendered under the same tab panel. */
-  tab?: string;
+  /**
+   * Sub-tab name inside the group card. When set, the field is placed in a
+   * tab bar rendered within its parent group card. Requires `group` to be set.
+   *
+   * @example
+   * { group: 'seo', subtab: 'basic',    key: 'meta_title' }
+   * { group: 'seo', subtab: 'advanced', key: 'og_image'   }
+   * // → "seo" group card shows a "basic" / "advanced" tab bar inside
+   */
+  subtab?: string;
+  /**
+   * Tab name. Fields sharing the same tab are rendered under the same tab panel.
+   *
+   * Supports nested tabs via an array path or a `/`-separated string:
+   * - `tab: 'settings'` — top-level tab (backward-compatible)
+   * - `tab: ['settings', 'seo']` — nested: "seo" sub-tab inside "settings"
+   * - `tab: 'settings/seo'` — equivalent slash-separated form
+   */
+  tab?: string | string[];
   /**
    * Column span (out of 12) for the field wrapper.
    * Accepts a plain number or a responsive breakpoint map `{ sm, md, lg }`.

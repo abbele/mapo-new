@@ -58,6 +58,26 @@ const fields: FieldDescriptor<Article>[] = [
 
 If more than one `tab` is present, tab navigation is rendered with a red badge on tabs that contain errors.
 
+Tabs can be nested using an array path or a `/`-separated string:
+
+```ts
+{ key: "meta_title", type: "text", tab: ["content", "seo"] }
+// equivalent:
+{ key: "meta_title", type: "text", tab: "content/seo" }
+```
+
+The parent tab renders its own direct fields first, then a nested tab bar for its children. Error badges propagate upward.
+
+Use `subtab` to place a tab bar _inside_ a group card instead:
+
+```ts
+// "seo" group card shows a "basic" / "social" tab bar inside it
+{ key: "meta_title", type: "text",     group: "seo", subtab: "basic"  }
+{ key: "og_image",   type: "file",     group: "seo", subtab: "social" }
+```
+
+`subtab` and `tab` are orthogonal — `subtab` organises fields within a group card; `tab` organises fields into top-level (or nested) tab panels.
+
 ## Responsive columns
 
 Every field accepts a `cols` prop (1–12, on a 12-column grid):

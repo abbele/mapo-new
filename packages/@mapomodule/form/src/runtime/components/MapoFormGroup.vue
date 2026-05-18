@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, onUnmounted } from "vue";
+import {
+  ref,
+  computed,
+  provide,
+  watchEffect,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import type { FieldDescriptor } from "../types/index.js";
 import { injectMapoForm } from "../composables/useMapoForm.js";
 import MapoFormField from "./MapoFormField.vue";
@@ -8,6 +15,7 @@ const props = defineProps<{
   name: string;
   label?: string;
   fields: FieldDescriptor[];
+  subtabs?: Map<string, FieldDescriptor[]>;
   initialExpanded?: boolean;
 }>();
 
@@ -15,6 +23,16 @@ const props = defineProps<{
 const globalExpanded: boolean =
   useRuntimeConfig().public.mapoForm?.groups?.expanded ?? true;
 const expanded = ref(props.initialExpanded ?? globalExpanded);
+
+// ─── Sub-tabs inside the group ────────────────────────────────────────────────
+
+const activeSubtab = ref<string>("");
+// Initialise to first subtab when subtabs are provided.
+watchEffect(() => {
+  if (props.subtabs && props.subtabs.size > 0 && !activeSubtab.value) {
+    activeSubtab.value = [...props.subtabs.keys()][0];
+  }
+});
 
 // ─── Field expand ────────────────────────────────────────────────────────────
 
@@ -165,36 +183,106 @@ function colClass(cols: FieldDescriptor["cols"]): string {
     </button>
 
     <!-- Body -->
-    <div v-if="expanded" class="grid grid-cols-12 gap-5 px-5 pb-5 pt-4">
+    <div v-if="expanded">
+      <!-- Flat fields (no subtab) -->
       <div
-        v-for="field in fields"
-        :key="field.key as string"
-        :class="colClass(field.cols)"
+        v-if="fields.length"
+        class="grid grid-cols-12 gap-5 px-5 pb-5 pt-4"
+        :class="{ 'pb-0': subtabs && subtabs.size > 0 }"
       >
-        <slot
-          :name="`field.${field.key as string}.before`"
-          :field="field"
-          :model="model"
-          :current-lang="currentLang"
-        />
-        <slot
-          :name="`field.${field.key as string}`"
-          :field="field"
-          :model="model"
-          :current-lang="currentLang"
+        <div
+          v-for="field in fields"
+          :key="field.key as string"
+          :class="colClass(field.cols)"
         >
-          <MapoFormField :descriptor="field">
-            <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
-              <slot :name="slotName" v-bind="slotProps ?? {}" />
-            </template>
-          </MapoFormField>
-        </slot>
-        <slot
-          :name="`field.${field.key as string}.after`"
-          :field="field"
-          :model="model"
-          :current-lang="currentLang"
-        />
+          <slot
+            :name="`field.${field.key as string}.before`"
+            :field="field"
+            :model="model"
+            :current-lang="currentLang"
+          />
+          <slot
+            :name="`field.${field.key as string}`"
+            :field="field"
+            :model="model"
+            :current-lang="currentLang"
+          >
+            <MapoFormField :descriptor="field">
+              <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
+                <slot :name="slotName" v-bind="slotProps ?? {}" />
+              </template>
+            </MapoFormField>
+          </slot>
+          <slot
+            :name="`field.${field.key as string}.after`"
+            :field="field"
+            :model="model"
+            :current-lang="currentLang"
+          />
+        </div>
+      </div>
+
+      <!-- Sub-tab bar + content (when subtabs are present) -->
+      <div v-if="subtabs && subtabs.size > 0" class="px-5 pb-5 pt-4">
+        <!-- Sub-tab bar -->
+        <div class="flex gap-1 border-b border-gray-200 mb-4">
+          <button
+            v-for="[subtabName] of subtabs"
+            :key="subtabName"
+            type="button"
+            class="relative px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none"
+            :class="[
+              activeSubtab === subtabName
+                ? 'text-primary-600 border-b-2 border-primary-600 -mb-px'
+                : 'text-gray-500 hover:text-gray-700',
+            ]"
+            @click="activeSubtab = subtabName"
+          >
+            {{ subtabName }}
+          </button>
+        </div>
+
+        <!-- Sub-tab fields -->
+        <div
+          v-for="[subtabName, subtabFields] of subtabs"
+          v-show="activeSubtab === subtabName"
+          :key="subtabName"
+          class="grid grid-cols-12 gap-5"
+        >
+          <div
+            v-for="field in subtabFields"
+            :key="field.key as string"
+            :class="colClass(field.cols)"
+          >
+            <slot
+              :name="`field.${field.key as string}.before`"
+              :field="field"
+              :model="model"
+              :current-lang="currentLang"
+            />
+            <slot
+              :name="`field.${field.key as string}`"
+              :field="field"
+              :model="model"
+              :current-lang="currentLang"
+            >
+              <MapoFormField :descriptor="field">
+                <template
+                  v-for="(_, slotName) in $slots"
+                  #[slotName]="slotProps"
+                >
+                  <slot :name="slotName" v-bind="slotProps ?? {}" />
+                </template>
+              </MapoFormField>
+            </slot>
+            <slot
+              :name="`field.${field.key as string}.after`"
+              :field="field"
+              :model="model"
+              :current-lang="currentLang"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
