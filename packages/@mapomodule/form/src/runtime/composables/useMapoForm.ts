@@ -90,7 +90,7 @@ export function provideMapoForm<T extends object>(ctx: MapoFormContext<T>) {
 
 /** Injects the nearest form context, if present. */
 export function injectMapoForm<T extends object>() {
-  return inject<MapoFormContext<T>>(FORM_KEY);
+  return inject<MapoFormContext<T> | undefined>(FORM_KEY, undefined);
 }
 
 /**
