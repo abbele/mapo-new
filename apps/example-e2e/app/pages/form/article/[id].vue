@@ -5,27 +5,34 @@
  * ~136 top-level fields across 5 tabs + sidebar:
  *   Tab 1  Content    — 35 fields (text, editor, color, number, select, switch, slider)
  *   Tab 2  Media      — 15 fields + 4 repeaters (gallery pre-filled ×10, attachments, social_images, embeds)
- *   Tab 3  SEO        — 24 fields + 1 repeater (alternate_urls, visible on hreflang_enabled)
- *   Tab 4  Publishing — 28 fields (fks, m2m, datetime, switch, select)
+ *   Tab 3  SEO        — nested tabs (Meta / Open Graph / Twitter / Technical) — C2
+ *   Tab 4  Publishing — 28 fields; Scheduling group uses subtabs (Dates / Unpublish) — C2
  *   Tab 5  Advanced   — 24 fields + 4 repeaters (contributors pre-filled ×10, footnotes, changelog, awards)
- *   Sidebar           —  7 fields
+ *   Sidebar           — flattenFieldGroups (flat + Assignment group + Quality group) — C3
  *
  * Features exercised:
- *   - 18 visible/show predicates (progressive disclosure)
- *   - 9 repeaters (2 pre-filled via seed)
- *   - 1 map (expandable)
- *   - 6 translatable fields
- *   - 1 synci18n field
- *   - 10 sync validators + 1 async validator (slug)
- *   - 2 onChange callbacks (sponsored → clear sponsor fields, summary_enabled → clear summary)
- *   - Draft auto-save to localStorage (draftKey prop) + banner restore/discard UI
- *   - custom slot: field.slug (URL preview + copy)
- *   - custom slots: title, side-top, body-bottom, side-bottom
- *   - usePatch (PATCH diff on update)
- *   - readonly toggle
+ *   ✅ nested tabs      tab: ['SEO','Meta'] and tab: 'SEO/Twitter' (C2)
+ *   ✅ subtabs in group Scheduling group → subtab: 'Dates' / 'Unpublish' (C2)
+ *   ✅ flattenFieldGroups sidebar with FieldGroupDescriptor (C3)
+ *   ✅ field.*.before/after  field.title.before, field.excerpt.after (C1)
+ *   ✅ group.*.before/after  group.Taxonomy.before, group.Assignment.after (C1)
+ *   ✅ 18 visible/show predicates (progressive disclosure)
+ *   ✅ 9 repeaters (2 pre-filled via seed)
+ *   ✅ 1 map (expandable)
+ *   ✅ 6 translatable fields, 1 synci18n field
+ *   ✅ 10 sync validators + 1 async validator (slug)
+ *   ✅ 2 onChange callbacks
+ *   ✅ draft auto-save to localStorage + banner restore/discard
+ *   ✅ custom slot: field.slug (URL preview + copy)
+ *   ✅ custom slots: title, side-top, body-bottom, side-bottom
+ *   ✅ usePatch (PATCH diff on update), readonly toggle
  */
 import { navigateTo } from "#app";
-import type { FieldDescriptor } from "@mapomodule/form/types";
+import { flattenFieldGroups } from "@mapomodule/form/types";
+import type {
+  FieldDescriptor,
+  FieldGroupDescriptor,
+} from "@mapomodule/form/types";
 
 definePageMeta({
   layout: "mapo-default",
@@ -271,6 +278,25 @@ interface Article {
       subtitle: string;
     };
   };
+  // Nested repeater demo
+  quiz?: {
+    question: string;
+    explanation?: string;
+    answers?: { text: string; is_correct: boolean; feedback?: string }[];
+  }[];
+  // Repeater template variants
+  timeline?: {
+    date: string;
+    title: string;
+    description: string;
+    event_type: string;
+  }[];
+  external_links?: {
+    label: string;
+    url: string;
+    nofollow: boolean;
+    icon?: string;
+  }[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -279,6 +305,10 @@ const LANGUAGES = ["en", "it"];
 
 const isReadonly = ref(false);
 const slotSlug = "field.slug";
+const slotFieldTitleBefore = "field.title.before";
+const slotFieldExcerptAfter = "field.excerpt.after";
+const slotGroupTaxonomyBefore = "group.Taxonomy.before";
+const slotGroupAssignmentAfter = "group.Assignment.after";
 
 // ─── Tab 1: Content (35 fields) ───────────────────────────────────────────────
 
@@ -421,7 +451,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Quote Source URL",
     tab: "Content",
     cols: 12,
-    visible: ({ model }) => !!model.pull_quote,
+    show: ({ model }) => !!model.pull_quote,
     attrs: { placeholder: "https://…" },
   },
 
@@ -458,7 +488,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     tab: "Content",
     cols: 3,
     group: "Cover & Colors",
-    visible: ({ model }) => !!model.background_color,
+    show: ({ model }) => !!model.background_color,
   },
 
   // ── Metrics ──
@@ -513,7 +543,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Difficulty",
     tab: "Content",
     cols: 6,
-    visible: ({ model }) =>
+    show: ({ model }) =>
       ["tutorial", "guide"].includes(model.content_type ?? ""),
     attrs: {
       options: [
@@ -530,7 +560,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Duration (min)",
     tab: "Content",
     cols: 4,
-    visible: ({ model }) => model.content_type === "tutorial",
+    show: ({ model }) => model.content_type === "tutorial",
     attrs: { min: 5, max: 480, step: 5, placeholder: "45" },
   },
   {
@@ -539,7 +569,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Prerequisites",
     tab: "Content",
     cols: 8,
-    visible: ({ model }) => model.content_type === "tutorial",
+    show: ({ model }) => model.content_type === "tutorial",
     attrs: { placeholder: "Vue 3 basics, TypeScript…", rows: 2 },
   },
   {
@@ -548,7 +578,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Rating — Overall",
     tab: "Content",
     cols: 4,
-    visible: ({ model }) => model.content_type === "review",
+    show: ({ model }) => model.content_type === "review",
     attrs: { min: 1, max: 10, step: 1 },
   },
   {
@@ -557,7 +587,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Rating — Design",
     tab: "Content",
     cols: 4,
-    visible: ({ model }) => model.content_type === "review",
+    show: ({ model }) => model.content_type === "review",
     attrs: { min: 1, max: 10, step: 1 },
   },
   {
@@ -566,7 +596,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Rating — Value for Money",
     tab: "Content",
     cols: 4,
-    visible: ({ model }) => model.content_type === "review",
+    show: ({ model }) => model.content_type === "review",
     attrs: { min: 1, max: 10, step: 1 },
   },
   {
@@ -575,7 +605,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Product URL",
     tab: "Content",
     cols: 8,
-    visible: ({ model }) => model.content_type === "review",
+    show: ({ model }) => model.content_type === "review",
     attrs: { placeholder: "https://…" },
   },
   {
@@ -584,7 +614,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Price (€)",
     tab: "Content",
     cols: 4,
-    visible: ({ model }) => model.content_type === "review",
+    show: ({ model }) => model.content_type === "review",
     attrs: { min: 0, step: 0.01 },
   },
   {
@@ -593,7 +623,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Interview Subject",
     tab: "Content",
     cols: 6,
-    visible: ({ model }) => model.content_type === "interview",
+    show: ({ model }) => model.content_type === "interview",
     attrs: { placeholder: "Name of the person being interviewed" },
   },
   {
@@ -602,7 +632,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Interview Date",
     tab: "Content",
     cols: 6,
-    visible: ({ model }) => model.content_type === "interview",
+    show: ({ model }) => model.content_type === "interview",
   },
   {
     key: "opinion_stance",
@@ -610,7 +640,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Stance",
     tab: "Content",
     cols: 12,
-    visible: ({ model }) => model.content_type === "opinion",
+    show: ({ model }) => model.content_type === "opinion",
     attrs: {
       options: [
         { text: "In favour", value: "pro" },
@@ -658,7 +688,7 @@ const contentFields: FieldDescriptor<Article>[] = [
     label: "Summary",
     tab: "Content",
     cols: 12,
-    visible: ({ model }) => !!model.summary_enabled,
+    show: ({ model }) => !!model.summary_enabled,
     translatable: true,
     attrs: { placeholder: "TL;DR — 2–3 sentences…", rows: 3 },
   },
@@ -758,7 +788,7 @@ const mediaFields: FieldDescriptor<Article>[] = [
     tab: "Media",
     cols: 2,
     group: "Video",
-    visible: ({ model }) => !!model.video_autoplay,
+    show: ({ model }) => !!model.video_autoplay,
   },
 
   // ── Audio ──
@@ -812,7 +842,7 @@ const mediaFields: FieldDescriptor<Article>[] = [
     tab: "Media",
     cols: 4,
     group: "Audio",
-    visible: ({ model }) => !!model.audio_chapters,
+    show: ({ model }) => !!model.audio_chapters,
     attrs: { min: 1 },
   },
 
@@ -1007,21 +1037,27 @@ const mediaFields: FieldDescriptor<Article>[] = [
   },
 ];
 
-// ─── Tab 3: SEO (24 fields + 1 repeater) ─────────────────────────────────────
+// ─── Tab 3: SEO — nested tabs (C2) ───────────────────────────────────────────
+//
+//   tab: ['SEO', 'Meta']         → basic SEO meta fields (array notation — C2)
+//   tab: ['SEO', 'Open Graph']   → OG fields
+//   tab: 'SEO/Twitter'           → Twitter/X fields (slash notation — C2)
+//   tab: ['SEO', 'Technical']    → JSON-LD, AMP, Sitemap
 
 const seoFields: FieldDescriptor<Article>[] = [
+  // ── Sub-tab: Meta ────────────────────────────────────────────────────────────
   {
     key: "seo",
     type: "seo",
     label: "Search Engine Preview",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 12,
   },
   {
     key: "focus_keyword",
     type: "text",
     label: "Focus Keyword",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 6,
     attrs: { placeholder: "mapo v2 form engine" },
   },
@@ -1029,7 +1065,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "meta_robots",
     type: "select",
     label: "Meta Robots",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 6,
     attrs: {
       options: [
@@ -1045,7 +1081,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "canonical_url",
     type: "text",
     label: "Canonical URL",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 8,
     validate: (v) => {
       if (!v) return null;
@@ -1062,7 +1098,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "breadcrumb_label",
     type: "text",
     label: "Breadcrumb Label",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 4,
     attrs: { placeholder: "Building Admin UIs…" },
   },
@@ -1070,7 +1106,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "hreflang_enabled",
     type: "switch",
     label: "Hreflang / Alternate URLs",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 12,
   },
   // ── Repeater 5: Alternate URLs (visible when hreflang enabled) ──
@@ -1078,9 +1114,9 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "alternate_urls",
     type: "repeater",
     label: "Alternate Language URLs",
-    tab: "SEO",
+    tab: ["SEO", "Meta"],
     cols: 12,
-    visible: ({ model }) => !!model.hreflang_enabled,
+    show: ({ model }) => !!model.hreflang_enabled,
     fields: [
       {
         key: "lang",
@@ -1119,12 +1155,12 @@ const seoFields: FieldDescriptor<Article>[] = [
     },
   },
 
-  // ── Open Graph ──
+  // ── Sub-tab: Open Graph (array notation — C2) ────────────────────────────────
   {
     key: "og_title",
     type: "text",
     label: "OG Title",
-    tab: "SEO",
+    tab: ["SEO", "Open Graph"],
     cols: 12,
     group: "Open Graph",
     validate: (v) => (v && String(v).length > 95 ? "Max 95 characters." : null),
@@ -1134,7 +1170,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "og_description",
     type: "textarea",
     label: "OG Description",
-    tab: "SEO",
+    tab: ["SEO", "Open Graph"],
     cols: 12,
     group: "Open Graph",
     validate: (v) =>
@@ -1145,7 +1181,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "og_image",
     type: "text",
     label: "OG Image URL",
-    tab: "SEO",
+    tab: ["SEO", "Open Graph"],
     cols: 8,
     group: "Open Graph",
     attrs: { placeholder: "https://… (1200×630 recommended)" },
@@ -1154,7 +1190,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "og_type",
     type: "select",
     label: "OG Type",
-    tab: "SEO",
+    tab: ["SEO", "Open Graph"],
     cols: 4,
     group: "Open Graph",
     attrs: {
@@ -1170,19 +1206,19 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "og_article_section",
     type: "text",
     label: "Article Section",
-    tab: "SEO",
+    tab: ["SEO", "Open Graph"],
     cols: 12,
     group: "Open Graph",
-    visible: ({ model }) => model.og_type === "article",
+    show: ({ model }) => model.og_type === "article",
     attrs: { placeholder: "Tutorials" },
   },
 
-  // ── Twitter / X ──
+  // ── Sub-tab: Twitter (slash notation — C2) ────────────────────────────────
   {
     key: "twitter_card",
     type: "select",
     label: "Card Type",
-    tab: "SEO",
+    tab: "SEO/Twitter",
     cols: 4,
     group: "Twitter / X",
     attrs: {
@@ -1197,7 +1233,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "twitter_title",
     type: "text",
     label: "Twitter Title",
-    tab: "SEO",
+    tab: "SEO/Twitter",
     cols: 8,
     group: "Twitter / X",
     validate: (v) => (v && String(v).length > 70 ? "Max 70 characters." : null),
@@ -1206,7 +1242,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "twitter_description",
     type: "textarea",
     label: "Twitter Description",
-    tab: "SEO",
+    tab: "SEO/Twitter",
     cols: 8,
     group: "Twitter / X",
     validate: (v) =>
@@ -1217,7 +1253,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "twitter_image",
     type: "text",
     label: "Twitter Image URL",
-    tab: "SEO",
+    tab: "SEO/Twitter",
     cols: 4,
     group: "Twitter / X",
     attrs: { placeholder: "https://…" },
@@ -1226,18 +1262,18 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "twitter_site",
     type: "text",
     label: "Twitter @handle",
-    tab: "SEO",
+    tab: "SEO/Twitter",
     cols: 4,
     group: "Twitter / X",
     attrs: { placeholder: "@yourhandle" },
   },
 
-  // ── JSON-LD ──
+  // ── Sub-tab: Technical (array notation — C2) ─────────────────────────────────
   {
     key: "structured_data_type",
     type: "select",
     label: "Schema.org Type",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 6,
     group: "JSON-LD",
     attrs: {
@@ -1254,7 +1290,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "structured_data_custom",
     type: "textarea",
     label: "Custom JSON-LD Override",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 12,
     group: "JSON-LD",
     debounce: 1000,
@@ -1270,7 +1306,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "amp_enabled",
     type: "switch",
     label: "Generate AMP Version",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 12,
     group: "AMP",
   },
@@ -1278,19 +1314,18 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "amp_style",
     type: "textarea",
     label: "AMP Custom CSS",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 12,
     group: "AMP",
-    visible: ({ model }) => !!model.amp_enabled,
+    show: ({ model }) => !!model.amp_enabled,
     attrs: { placeholder: "/* Max 75KB of custom CSS for AMP… */", rows: 4 },
   },
 
-  // ── Sitemap ──
   {
     key: "sitemap_priority",
     type: "slider",
     label: "Sitemap Priority",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 4,
     group: "Sitemap",
     attrs: { min: 0.1, max: 1.0, step: 0.1 },
@@ -1299,7 +1334,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "sitemap_changefreq",
     type: "select",
     label: "Change Frequency",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 4,
     group: "Sitemap",
     attrs: {
@@ -1318,7 +1353,7 @@ const seoFields: FieldDescriptor<Article>[] = [
     key: "sitemap_exclude",
     type: "switch",
     label: "Exclude from Sitemap",
-    tab: "SEO",
+    tab: ["SEO", "Technical"],
     cols: 4,
     group: "Sitemap",
   },
@@ -1349,7 +1384,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Taxonomy",
-    visible: ({ model }) => !!model.category,
+    show: ({ model }) => !!model.category,
     attrs: {
       endpoint: "/api/categories",
       itemText: "name",
@@ -1410,7 +1445,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 3,
     group: "Series",
-    visible: ({ model }) => !!model.series,
+    show: ({ model }) => !!model.series,
     attrs: { min: 1 },
   },
   {
@@ -1420,7 +1455,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 3,
     group: "Series",
-    visible: ({ model }) => !!model.series,
+    show: ({ model }) => !!model.series,
     validate: (v, { model }) => {
       const part = model.series_part;
       if (v && part && Number(v) < Number(part))
@@ -1479,7 +1514,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Engagement",
-    visible: ({ model }) => !!model.allow_comments,
+    show: ({ model }) => !!model.allow_comments,
     attrs: {
       options: [
         { text: "Open (no moderation)", value: "open" },
@@ -1528,7 +1563,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 4,
     group: "Promotion",
-    visible: ({ model }) => !!model.sponsored,
+    show: ({ model }) => !!model.sponsored,
     validate: (v, { model }) =>
       model.sponsored && !v ? "Sponsor name is required when sponsored." : null,
     attrs: { placeholder: "Acme Corp" },
@@ -1540,7 +1575,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 4,
     group: "Promotion",
-    visible: ({ model }) => !!model.sponsored,
+    show: ({ model }) => !!model.sponsored,
     attrs: { placeholder: "https://…" },
   },
   {
@@ -1550,7 +1585,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 12,
     group: "Promotion",
-    visible: ({ model }) => !!model.sponsored,
+    show: ({ model }) => !!model.sponsored,
     attrs: { placeholder: "This article is sponsored by Acme Corp…", rows: 2 },
   },
 
@@ -1590,6 +1625,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
       ],
     },
   },
+  // subtab: 'Dates' / 'Unpublish' inside group "Scheduling" — C2
   {
     key: "published_at",
     type: "datetime",
@@ -1597,7 +1633,8 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Scheduling",
-    visible: ({ model }) => model.status === "published",
+    subtab: "Dates",
+    show: ({ model }) => model.status === "published",
   },
   {
     key: "embargo_until",
@@ -1606,6 +1643,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Scheduling",
+    subtab: "Dates",
   },
   {
     key: "expires_at",
@@ -1614,6 +1652,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Scheduling",
+    subtab: "Dates",
   },
   {
     key: "scheduled_unpublish",
@@ -1622,6 +1661,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Scheduling",
+    subtab: "Unpublish",
   },
   {
     key: "unpublish_at",
@@ -1630,7 +1670,8 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 6,
     group: "Scheduling",
-    visible: ({ model }) => !!model.scheduled_unpublish,
+    subtab: "Unpublish",
+    show: ({ model }) => !!model.scheduled_unpublish,
   },
 
   // ── Notifications ──
@@ -1649,7 +1690,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 4,
     group: "Notifications",
-    visible: ({ model }) => !!model.notify_subscribers,
+    show: ({ model }) => !!model.notify_subscribers,
   },
   {
     key: "push_notification_title",
@@ -1658,7 +1699,7 @@ const publishingFields: FieldDescriptor<Article>[] = [
     tab: "Publishing",
     cols: 8,
     group: "Notifications",
-    visible: ({ model }) => !!model.push_notification,
+    show: ({ model }) => !!model.push_notification,
     validate: (v, { model }) =>
       model.push_notification && !v ? "Push title is required." : null,
     attrs: { placeholder: "New article: …" },
@@ -1804,7 +1845,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 6,
     group: "Display",
-    visible: ({ model }) => !!model.template && model.template !== "default",
+    show: ({ model }) => !!model.template && model.template !== "default",
     attrs: {
       options: [
         { text: "Standard", value: "standard" },
@@ -1874,7 +1915,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 4,
     group: "A/B Testing",
-    visible: ({ model }) => !!model.ab_test_enabled,
+    show: ({ model }) => !!model.ab_test_enabled,
     attrs: { placeholder: "variant-b" },
   },
   {
@@ -1884,7 +1925,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 4,
     group: "A/B Testing",
-    visible: ({ model }) => !!model.ab_test_enabled,
+    show: ({ model }) => !!model.ab_test_enabled,
     attrs: { min: 1, max: 99, step: 1 },
   },
   {
@@ -1894,7 +1935,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 12,
     group: "A/B Testing",
-    visible: ({ model }) => !!model.ab_test_enabled,
+    show: ({ model }) => !!model.ab_test_enabled,
     attrs: {
       options: [
         { text: "Clicks on CTA", value: "clicks" },
@@ -1921,7 +1962,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 4,
     group: "Monetization",
-    visible: ({ model }) => !!model.paywall_enabled,
+    show: ({ model }) => !!model.paywall_enabled,
     attrs: {
       options: [
         { text: "Hard (full block)", value: "hard" },
@@ -1937,7 +1978,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 4,
     group: "Monetization",
-    visible: ({ model }) => !!model.paywall_enabled,
+    show: ({ model }) => !!model.paywall_enabled,
     attrs: { min: 100, max: 5000, step: 100 },
   },
   {
@@ -1947,7 +1988,7 @@ const advancedFields: FieldDescriptor<Article>[] = [
     tab: "Advanced",
     cols: 12,
     group: "Monetization",
-    visible: ({ model }) => !!model.paywall_enabled,
+    show: ({ model }) => !!model.paywall_enabled,
     attrs: { placeholder: "Subscribe to keep reading…" },
   },
 
@@ -2160,6 +2201,185 @@ const advancedFields: FieldDescriptor<Article>[] = [
       },
     },
   },
+
+  // ── Repeater 10: Quiz — NESTED REPEATER (answers inside each question) ──────
+  {
+    key: "quiz",
+    type: "repeater",
+    label: "Quiz / Q&A",
+    tab: "Advanced",
+    cols: 12,
+    group: "Quiz",
+    fields: [
+      {
+        key: "question",
+        type: "text",
+        label: "Question",
+        cols: 12,
+        required: true,
+        attrs: { placeholder: "What is the main benefit of MapoDetail?" },
+      },
+      {
+        key: "explanation",
+        type: "textarea",
+        label: "Explanation",
+        cols: 12,
+        attrs: { rows: 2, placeholder: "Context shown after answering…" },
+      },
+      // ── nested repeater ───────────────────────────────────────────────────
+      {
+        key: "answers",
+        type: "repeater",
+        label: "Answer Options",
+        cols: 12,
+        fields: [
+          {
+            key: "text",
+            type: "text",
+            label: "Answer text",
+            cols: 8,
+            required: true,
+          },
+          { key: "is_correct", type: "switch", label: "Correct", cols: 2 },
+          {
+            key: "feedback",
+            type: "text",
+            label: "Feedback",
+            cols: 12,
+            attrs: { placeholder: "Shown after selecting this option…" },
+          },
+        ],
+        attrs: {
+          previewLabel: (item: unknown) => {
+            const a = item as { text?: string; is_correct?: boolean };
+            return `${a.is_correct ? "✓" : "✗"} ${a.text || "—"}`;
+          },
+        },
+      },
+    ],
+    attrs: {
+      confirmDelete: true,
+      previewLabel: (item: unknown) => {
+        const q = item as { question?: string };
+        return q.question?.substring(0, 60) || "Question";
+      },
+    },
+  },
+
+  // ── Repeater 11: Timeline — icon+color miniCard, no thumbnail (template B) ─
+  {
+    key: "timeline",
+    type: "repeater",
+    label: "Timeline",
+    tab: "Advanced",
+    cols: 12,
+    group: "Timeline",
+    fields: [
+      { key: "date", type: "date", label: "Date", cols: 3 },
+      {
+        key: "title",
+        type: "text",
+        label: "Event",
+        cols: 9,
+        required: true,
+        attrs: { placeholder: "Milestone title…" },
+      },
+      {
+        key: "event_type",
+        type: "select",
+        label: "Type",
+        cols: 4,
+        attrs: {
+          options: [
+            { text: "Launch", value: "launch" },
+            { text: "Update", value: "update" },
+            { text: "Fix", value: "fix" },
+            { text: "Breaking", value: "breaking" },
+            { text: "Deprecation", value: "deprecation" },
+          ],
+        },
+      },
+      {
+        key: "description",
+        type: "textarea",
+        label: "Details",
+        cols: 8,
+        attrs: { rows: 2 },
+      },
+    ],
+    attrs: {
+      // miniCard with icon/color but NO thumbnail — different from gallery
+      miniCard: (item: unknown) => {
+        const t = item as {
+          title?: string;
+          event_type?: string;
+          date?: string;
+        };
+        const colorMap: Record<string, string> = {
+          launch: "success",
+          update: "info",
+          fix: "warning",
+          breaking: "error",
+          deprecation: "neutral",
+        };
+        return {
+          title: t.title || "Event",
+          subtitle: t.date || "",
+          statusColor: colorMap[t.event_type ?? ""] ?? "neutral",
+        };
+      },
+      previewLabel: (item: unknown) => {
+        const t = item as { title?: string };
+        return t.title || "Event";
+      },
+      allowDuplicate: false,
+      confirmDelete: true,
+    },
+  },
+
+  // ── Repeater 12: External Links — minimal template (only previewLabel) ─────
+  {
+    key: "external_links",
+    type: "repeater",
+    label: "External Links",
+    tab: "Advanced",
+    cols: 12,
+    group: "External Links",
+    fields: [
+      {
+        key: "label",
+        type: "text",
+        label: "Label",
+        cols: 4,
+        required: true,
+        attrs: { placeholder: "Docs, Demo, Source…" },
+      },
+      {
+        key: "url",
+        type: "text",
+        label: "URL",
+        cols: 6,
+        required: true,
+        attrs: { placeholder: "https://…" },
+      },
+      { key: "nofollow", type: "switch", label: "nofollow", cols: 2 },
+      {
+        key: "icon",
+        type: "text",
+        label: "Icon (lucide name)",
+        cols: 6,
+        attrs: { placeholder: "i-lucide-external-link" },
+      },
+    ],
+    attrs: {
+      // Minimal template — no miniCard, just a simple string label
+      previewLabel: (item: unknown) => {
+        const l = item as { label?: string; url?: string };
+        return l.label ? `${l.label} → ${l.url || "…"}` : l.url || "Link";
+      },
+      showPositionField: true,
+    },
+  },
 ];
 
 // ─── All body fields ───────────────────────────────────────────────────────────
@@ -2172,9 +2392,15 @@ const fields: FieldDescriptor<Article>[] = [
   ...advancedFields,
 ];
 
-// ─── Sidebar fields (7) ────────────────────────────────────────────────────────
+// ─── Sidebar fields — flattenFieldGroups demo (C3) ────────────────────────────
+//
+//   Flat items (status, category) sit at the top level with no group.
+//   "Assignment" and "Quality" are FieldGroupDescriptor objects whose `group`
+//   is automatically propagated to every child — no need to repeat `group` on
+//   each field descriptor.
 
-const sidebarFields: FieldDescriptor<Article>[] = [
+const sidebarFields = flattenFieldGroups<Article>([
+  // ── flat (no group) ──
   {
     key: "status",
     type: "select",
@@ -2202,44 +2428,58 @@ const sidebarFields: FieldDescriptor<Article>[] = [
       returnObject: false,
     },
   },
+
+  // ── group: "Assignment" (FieldGroupDescriptor — C3) ──
   {
-    key: "review_assigned_to",
-    type: "fks",
-    label: "Assigned To",
-    attrs: {
-      endpoint: "/api/profiles",
-      itemText: "name",
-      itemValue: "id",
-      returnObject: false,
-    },
+    group: "Assignment",
+    fields: [
+      {
+        key: "review_assigned_to",
+        type: "fks",
+        label: "Assigned To",
+        attrs: {
+          endpoint: "/api/profiles",
+          itemText: "name",
+          itemValue: "id",
+          returnObject: false,
+        },
+      },
+      {
+        key: "internal_notes",
+        type: "textarea",
+        label: "Internal Notes",
+        attrs: { placeholder: "Notes visible only to editors…", rows: 3 },
+      },
+    ],
   },
+
+  // ── group: "Quality" (FieldGroupDescriptor — C3) ──
   {
-    key: "internal_notes",
-    type: "textarea",
-    label: "Internal Notes",
-    attrs: { placeholder: "Notes visible only to editors…", rows: 3 },
+    group: "Quality",
+    fields: [
+      {
+        key: "editorial_score",
+        type: "slider",
+        label: "Editorial Score",
+        attrs: { min: 1, max: 10, step: 1 },
+      },
+      {
+        key: "content_warning",
+        type: "switch",
+        label: "Content Warning",
+      },
+      {
+        key: "content_warning_text",
+        type: "text",
+        label: "Warning Text",
+        show: ({ model }: { model: Article }) => !!model.content_warning,
+        validate: (v: unknown, { model }: { model: Article }) =>
+          model.content_warning && !v ? "Warning text is required." : null,
+        attrs: { placeholder: "This article contains…" },
+      },
+    ],
   },
-  {
-    key: "editorial_score",
-    type: "slider",
-    label: "Editorial Score",
-    attrs: { min: 1, max: 10, step: 1 },
-  },
-  {
-    key: "content_warning",
-    type: "switch",
-    label: "Content Warning",
-  },
-  {
-    key: "content_warning_text",
-    type: "text",
-    label: "Warning Text",
-    visible: ({ model }) => !!model.content_warning,
-    validate: (v, { model }) =>
-      model.content_warning && !v ? "Warning text is required." : null,
-    attrs: { placeholder: "This article contains…" },
-  },
-];
+]);
 </script>
 
 <template>
@@ -2247,7 +2487,7 @@ const sidebarFields: FieldDescriptor<Article>[] = [
     <!-- Readonly demo toggle -->
     <div class="flex items-center justify-end mb-3 gap-2">
       <span class="text-xs text-muted">Read-only demo</span>
-      <UToggle v-model="isReadonly" size="sm" color="warning" />
+      <USwitch v-model="isReadonly" size="sm" color="warning" />
     </div>
 
     <MapoDetail
@@ -2358,6 +2598,46 @@ const sidebarFields: FieldDescriptor<Article>[] = [
             </div>
           </div>
         </UCard>
+      </template>
+
+      <!-- ─── field.title.before — C1: inject content above the title widget ── -->
+      <template #[slotFieldTitleBefore]>
+        <div class="flex items-center gap-1.5 text-xs text-muted mb-1">
+          <UIcon name="i-lucide-type" class="size-3 shrink-0" />
+          <span>Headline — keep under 70 characters for optimal SEO.</span>
+        </div>
+      </template>
+
+      <!-- ─── field.excerpt.after — C1: char counter below the excerpt widget ─ -->
+      <template #[slotFieldExcerptAfter]="{ model }">
+        <p
+          class="text-xs text-right mt-0.5"
+          :class="
+            (model.excerpt?.length ?? 0) > 900 ? 'text-warning' : 'text-muted'
+          "
+        >
+          {{ model.excerpt?.length ?? 0 }} / 1000
+        </p>
+      </template>
+
+      <!-- ─── group.Taxonomy.before — C1: alert above the Taxonomy group card ─ -->
+      <template #[slotGroupTaxonomyBefore]>
+        <UAlert
+          icon="i-lucide-info"
+          color="info"
+          variant="soft"
+          title="Taxonomy tip"
+          description="Selecting a Category unlocks the Subcategory field. Tags help readers discover related content."
+          class="mb-2"
+        />
+      </template>
+
+      <!-- ─── group.Assignment.after — C1: note below the Assignment group card -->
+      <template #[slotGroupAssignmentAfter]>
+        <p class="text-xs text-muted mt-1 flex items-center gap-1">
+          <UIcon name="i-lucide-lock" class="size-3 shrink-0" />
+          Internal notes are never visible to readers.
+        </p>
       </template>
 
       <!-- ─── field.slug: URL preview + copy ───────────────────────────────── -->
