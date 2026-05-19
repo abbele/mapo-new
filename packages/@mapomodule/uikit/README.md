@@ -59,22 +59,22 @@ When installed via `mapomodule`, configure under `mapo.uikit` instead.
 
 #### List engine
 
-| Component           | Description                                                                   |
-| ------------------- | ----------------------------------------------------------------------------- |
-| `MapoList`          | Full list shell: composes head, filters, actions, tabs, table, and quick-edit |
-| `MapoListHead`      | Title, search bar, and primary action button row                              |
-| `MapoListFilters`   | Filter panel driven by `FieldDescriptor[]` from `@mapomodule/form`            |
-| `MapoListActions`   | Bulk-action toolbar (delete, reorder) — appears on selection                  |
-| `MapoListTabs`      | Tabbed status filter via `meta.tabs`                                          |
-| `MapoListTable`     | Data table with server-side pagination, sort, selection, and drag reorder     |
-| `MapoListQuickEdit` | Quick-edit modal driven by the same `FieldDescriptor[]` as the detail form    |
+| Component           | Description                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MapoList`          | Full list shell: composes head, filters, actions, tabs, table, and quick-edit. URL state (page, sort, search, filters, tab) synced automatically. |
+| `MapoListHead`      | Title, search bar, and primary action button row                                                                                                  |
+| `MapoListFilters`   | Filter panel driven by `FieldDescriptor[]` from `@mapomodule/form`                                                                                |
+| `MapoListActions`   | Bulk-action toolbar (delete, reorder) — appears on selection                                                                                      |
+| `MapoListTabs`      | Tabbed status filter via `meta.tabs`                                                                                                              |
+| `MapoListTable`     | Data table with server-side pagination, sort, selection, and drag reorder. Pass `permissionModel` to gate edit/delete row actions.                |
+| `MapoListQuickEdit` | Quick-edit modal driven by the same `FieldDescriptor[]` as the detail form                                                                        |
 
 #### Detail shell
 
-| Component              | Description                                                                                                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `MapoDetail`           | Two-column detail shell: `useCrud` lifecycle, differential PATCH, error mapping, draft auto-save (`:draft="true"`) |
-| `MapoDetailLangSwitch` | Language tabs with per-language error badge — syncs the `?lang=` query param                                       |
+| Component              | Description                                                                                                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MapoDetail`           | Two-column detail shell: `useCrud` lifecycle, differential PATCH, error mapping, draft auto-save (`:draft="true"`). Supports permission gating (`permissionModel`), multipart control (`multipart`), live preview (`previewField`), and backend-derived languages (`forceLanguages`). |
+| `MapoDetailLangSwitch` | Language tabs with per-language error badge — syncs the `?lang=` query param                                                                                                                                                                                                          |
 
 ### Layout slots (`mapo-default`)
 

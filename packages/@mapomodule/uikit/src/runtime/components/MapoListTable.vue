@@ -6,8 +6,15 @@ import type { SortingState, PaginationState } from "@tanstack/vue-table";
 import type { ListColumn } from "../types/list.js";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
+import { usePermissions } from "@mapomodule/store";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
 import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import { debounce } from "@mapomodule/utils";
+import {
+  useRoute,
+  useRouter,
+  // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
+} from "#imports";
 
 const props = withDefaults(
   defineProps<{
@@ -54,6 +61,12 @@ const props = withDefaults(
     registry?: Partial<FieldRegistry>;
     /** Base path for the detail page. If set, each row shows a link button → `${detailBase}/${item[lookup]}`. */
     detailBase?: string;
+    /**
+     * Django model name for permission gating (e.g. `"article"`).
+     * When provided, the edit and delete row buttons are hidden when the user
+     * lacks the corresponding `change` / `delete` permission.
+     */
+    permissionModel?: string;
   }>(),
   {
     lookup: "id",
@@ -92,6 +105,10 @@ const slots = useSlots();
 const snack = useSnackStore();
 const confirm = useConfirmStore();
 
+// --- URL state (read once on mount, write on change) ---
+const route = useRoute();
+const router = useRouter();
+
 // `crudBase` is the clean endpoint path used for detail / delete / updateOrder.
 // It strips any query string from `endpoint` so mutations are never sent to a
 // URL like `/api/case/?fields=id,title/1/`.
@@ -99,22 +116,43 @@ const crudBase =
   props.crudEndpoint ?? (props.endpoint.split("?")[0] || props.endpoint);
 const crud = useCrud<T>(crudBase);
 
+// --- Permissions ---
+const { canChange, canDelete: canDeletePerm } = usePermissions();
+const canEditRow = computed(
+  () => !props.permissionModel || canChange(props.permissionModel),
+);
+const canDeleteRow = computed(
+  () => !props.permissionModel || canDeletePerm(props.permissionModel),
+);
+
 // --- Data state ---
 const items = ref<T[]>([]) as Ref<T[]>;
 const total = ref(0);
 const loading = ref(false);
 
-// --- Pagination ---
+// --- Pagination (restored from URL) ---
 const pagination = ref<PaginationState>({
-  pageIndex: 0,
-  pageSize: props.defaultPageSize,
+  pageIndex: route.query.page ? Math.max(0, Number(route.query.page) - 1) : 0,
+  pageSize: route.query.page_size
+    ? Number(route.query.page_size)
+    : props.defaultPageSize,
 });
 
-// --- Sorting ---
-const sorting = ref<SortingState>([]);
+// --- Sorting (restored from URL) ---
+const sorting = ref<SortingState>(
+  route.query.ordering
+    ? String(route.query.ordering)
+        .split(",")
+        .map((o) => ({
+          id: o.startsWith("-") ? o.slice(1) : o,
+          desc: o.startsWith("-"),
+        }))
+    : [],
+);
 
-// --- Search ---
-const search = ref("");
+// --- Search (restored from URL) ---
+const search = ref(route.query.search ? String(route.query.search) : "");
+
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 function onSearchInput(val: string) {
   if (searchTimer) clearTimeout(searchTimer);
@@ -123,6 +161,29 @@ function onSearchInput(val: string) {
     pagination.value = { ...pagination.value, pageIndex: 0 };
   }, 350);
 }
+
+// Write pagination / sorting / search to the URL (debounced to avoid history spam).
+const writeUrlState = debounce(() => {
+  const query: Record<string, string | undefined> = {
+    ...(route.query as Record<string, string>),
+  };
+  const page = pagination.value.pageIndex + 1;
+  if (page > 1) query.page = String(page);
+  else delete query.page;
+  if (pagination.value.pageSize !== props.defaultPageSize)
+    query.page_size = String(pagination.value.pageSize);
+  else delete query.page_size;
+  if (search.value) query.search = search.value;
+  else delete query.search;
+  if (sorting.value.length)
+    query.ordering = sorting.value
+      .map((s: { id: string; desc: boolean }) => `${s.desc ? "-" : ""}${s.id}`)
+      .join(",");
+  else delete query.ordering;
+  router.replace({ query });
+}, 150);
+
+watch([pagination, search, sorting], writeUrlState, { deep: true });
 
 // --- Row selection ---
 // Selection is keyed by primary key (lookup), not by row index, so pagination/sort/refresh
@@ -403,29 +464,37 @@ const tableColumns = computed<TableColumn<T>[]>(() => {
   cols.push({
     id: "__actions__",
     header: "",
-    cell: ({ row }: { row: { original: T } }) =>
-      h("div", { class: "flex items-center gap-1 justify-end" }, [
-        // Quick edit modal
-        ...(props.editFields.length > 0
-          ? [
-              h(UButton, {
-                size: "xs",
-                variant: "ghost",
-                color: "neutral",
-                icon: "i-lucide-pencil",
-                onClick: () =>
-                  openQuickEdit(row.original[props.lookup] as string | number),
-              }),
-            ]
-          : []),
-        h(UButton, {
-          size: "xs",
-          variant: "ghost",
-          color: "error",
-          icon: "i-lucide-trash-2",
-          onClick: () => deleteRow(row.original),
-        }),
-      ]),
+    cell: ({ row }: { row: { original: T } }) => {
+      const buttons: ReturnType<typeof h>[] = [];
+      if (props.editFields.length > 0 && canEditRow.value) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            color: "neutral",
+            icon: "i-lucide-pencil",
+            onClick: () =>
+              openQuickEdit(row.original[props.lookup] as string | number),
+          }),
+        );
+      }
+      if (canDeleteRow.value) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            color: "error",
+            icon: "i-lucide-trash-2",
+            onClick: () => deleteRow(row.original),
+          }),
+        );
+      }
+      return h(
+        "div",
+        { class: "flex items-center gap-1 justify-end" },
+        buttons,
+      );
+    },
     meta: { class: { th: "text-right", td: "text-right" } },
   } as TableColumn<T>);
 

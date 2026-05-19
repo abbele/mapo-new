@@ -61,27 +61,28 @@ That single component renders a paginated table, a search input, a filter dropdo
 
 ## Props
 
-| Prop               | Type                                                     | Default          | Description                                                                                                                                                                                                                   |
-| ------------------ | -------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `endpoint`         | `string`                                                 | —                | REST collection endpoint. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations (detail, delete, reorder) automatically use the path without the query string. |
-| `columns`          | `ListColumn<T>[]`                                        | —                | Column definitions. Pass the model type as generic (`ListColumn<News>[]`) to enforce that `key` is a real property of `T`.                                                                                                    |
-| `lookup`           | `string`                                                 | `'id'`           | Key used as primary key (selection, links, drag)                                                                                                                                                                              |
-| `filters`          | `FilterDescriptor[]`                                     | `[]`             | Filter dropdown items                                                                                                                                                                                                         |
-| `actions`          | `ActionDescriptor<T>[]`                                  | `[]`             | Bulk actions shown when rows are selected                                                                                                                                                                                     |
-| `tabs`             | `ListTabItem[]`                                          | `[]`             | Status / segment tab bar                                                                                                                                                                                                      |
-| `defaultTab`       | `string`                                                 | first tab        | Active tab on mount                                                                                                                                                                                                           |
-| `tabQueryParam`    | `string`                                                 | `'tab'`          | Query param used when fetching with a tab                                                                                                                                                                                     |
-| `searchable`       | `boolean`                                                | `true`           | Show the search input                                                                                                                                                                                                         |
-| `draggable`        | `boolean`                                                | `false`          | Enable drag-reorder rows                                                                                                                                                                                                      |
-| `positionField`    | `string`                                                 | `'position'`     | Field used for ordering                                                                                                                                                                                                       |
-| `editFields`       | `FieldDescriptor<T>[]`                                   | `[]`             | Inline quick-edit modal field list                                                                                                                                                                                            |
-| `languages`        | `string[]`                                               | —                | Languages for translatable quick-edit fields                                                                                                                                                                                  |
-| `registry`         | `Partial<FieldRegistry>`                                 | —                | Optional registry override (auto-injected otherwise)                                                                                                                                                                          |
-| `detailBase`       | `string`                                                 | —                | If set, each row shows a link button → `${detailBase}/${row[lookup]}`                                                                                                                                                         |
-| `defaultPageSize`  | `number`                                                 | `20`             | Initial page size on mount                                                                                                                                                                                                    |
-| `pageSizeOptions`  | `number[]`                                               | `[10,20,50,100]` | Options in the per-page selector                                                                                                                                                                                              |
-| `responseAdapter`  | `(raw: unknown) => { items: T[]; total: number }`        | —                | Custom response parser — replaces built-in DRF / flat-array detection                                                                                                                                                         |
-| `paginationParams` | `(state: { page, pageSize }) => Record<string, unknown>` | —                | Custom pagination params factory — replaces default `{ page, page_size }`                                                                                                                                                     |
+| Prop               | Type                                                     | Default          | Description                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `endpoint`         | `string`                                                 | —                | REST collection endpoint. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations (detail, delete, reorder) automatically use the path without the query string.        |
+| `columns`          | `ListColumn<T>[]`                                        | —                | Column definitions. Pass the model type as generic (`ListColumn<News>[]`) to enforce that `key` is a real property of `T`.                                                                                                           |
+| `lookup`           | `string`                                                 | `'id'`           | Key used as primary key (selection, links, drag)                                                                                                                                                                                     |
+| `filters`          | `FilterDescriptor[]`                                     | `[]`             | Filter dropdown items                                                                                                                                                                                                                |
+| `actions`          | `ActionDescriptor<T>[]`                                  | `[]`             | Bulk actions shown when rows are selected                                                                                                                                                                                            |
+| `tabs`             | `ListTabItem[]`                                          | `[]`             | Status / segment tab bar                                                                                                                                                                                                             |
+| `defaultTab`       | `string`                                                 | first tab        | Active tab on mount                                                                                                                                                                                                                  |
+| `tabQueryParam`    | `string`                                                 | `'tab'`          | Query param used when fetching with a tab                                                                                                                                                                                            |
+| `searchable`       | `boolean`                                                | `true`           | Show the search input                                                                                                                                                                                                                |
+| `draggable`        | `boolean`                                                | `false`          | Enable drag-reorder rows                                                                                                                                                                                                             |
+| `positionField`    | `string`                                                 | `'position'`     | Field used for ordering                                                                                                                                                                                                              |
+| `editFields`       | `FieldDescriptor<T>[]`                                   | `[]`             | Inline quick-edit modal field list                                                                                                                                                                                                   |
+| `languages`        | `string[]`                                               | —                | Languages for translatable quick-edit fields                                                                                                                                                                                         |
+| `registry`         | `Partial<FieldRegistry>`                                 | —                | Optional registry override (auto-injected otherwise)                                                                                                                                                                                 |
+| `detailBase`       | `string`                                                 | —                | If set, each row shows a link button → `${detailBase}/${row[lookup]}`                                                                                                                                                                |
+| `defaultPageSize`  | `number`                                                 | `20`             | Initial page size on mount                                                                                                                                                                                                           |
+| `pageSizeOptions`  | `number[]`                                               | `[10,20,50,100]` | Options in the per-page selector                                                                                                                                                                                                     |
+| `responseAdapter`  | `(raw: unknown) => { items: T[]; total: number }`        | —                | Custom response parser — replaces built-in DRF / flat-array detection                                                                                                                                                                |
+| `paginationParams` | `(state: { page, pageSize }) => Record<string, unknown>` | —                | Custom pagination params factory — replaces default `{ page, page_size }`                                                                                                                                                            |
+| `permissionModel`  | `string`                                                 | —                | Django model label (e.g. `"news.article"`) used to gate edit and delete row actions. When set, the pencil/trash icons are hidden if the current user lacks `change_*` / `delete_*` permissions. Omit to keep actions always visible. |
 
 The `registry` prop is **optional** — `<MapoList>` falls back to the global `$mapoFormRegistry` automatically.
 
@@ -163,6 +164,57 @@ Use the per-cell slot `#cell.<key>` — it receives `{ item, value }`:
 | `value` | `T[keyof T]` | The value of `item[column.key]` — a union of all value types of `T` |
 
 The slot system propagates from `<MapoList>` down to `<MapoListTable>` automatically.
+
+## How to: gate row actions with permissions
+
+Pass the Django app-model label to hide edit/delete buttons for users who lack the corresponding permissions:
+
+```vue
+<MapoList
+  endpoint="/api/news/"
+  :columns="columns"
+  permission-model="news.article"
+/>
+```
+
+The table reads permissions from `usePermissions()` (which proxies `useAuthStore`). For each row:
+
+- The **pencil** (quick-edit) button is shown only when the user has `change_article`.
+- The **trash** (delete) button is shown only when the user has `delete_article`.
+- Superusers always see both buttons regardless of the model label.
+
+Omit `permissionModel` to preserve the previous behavior (buttons always visible).
+
+---
+
+## How to: URL state sync (pagination, sort, search, filters, tabs)
+
+Pagination, sort order, search query, active filters, and the active tab are all stored in the URL automatically. The user can bookmark or share a filtered/paginated view and it will restore exactly.
+
+```
+/news?page=3&page_size=50&search=vue&ordering=-published_at&f_status=published&tab=active
+```
+
+URL params written by `<MapoList>` and `<MapoListTable>`:
+
+| Param             | Written by      | Description                                     |
+| ----------------- | --------------- | ----------------------------------------------- |
+| `page`            | `MapoListTable` | Current page number (1-based)                   |
+| `page_size`       | `MapoListTable` | Active page size                                |
+| `search`          | `MapoListTable` | Current search query                            |
+| `ordering`        | `MapoListTable` | Active sort; comma-separated, `-` prefix = desc |
+| `f_<filterKey>`   | `MapoList`      | Active filter value(s); see encoding below      |
+| `<tabQueryParam>` | `MapoList`      | Active tab value (default param name: `tab`)    |
+
+State is read from the URL once on mount and written back via `router.replace` (no extra history entries).
+
+### Filter URL encoding
+
+- **Choice filter** — `?f_status=published` (single) or `?f_status=draft,published` (multi)
+- **Datepicker range** — `?f_published_at=2024-01-01,2024-12-31`; expanded to `published_at__gte=2024-01-01&published_at__lte=2024-12-31` when sent to the backend
+- **Dotted-path key** — `filter.value = "category.slug"` is rewritten to `category__slug` in backend params (Django double-underscore notation)
+
+---
 
 ## How to: add filters
 
