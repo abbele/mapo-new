@@ -54,21 +54,25 @@ The page now supports:
 
 ## Props
 
-| Prop            | Type                   | Default       | Description                                                                                   |
-| --------------- | ---------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| `endpoint`      | `string`               | —             | REST endpoint for `useCrud`                                                                   |
-| `id`            | `string \| number`     | —             | Record id; pass `'new'` for create mode                                                       |
-| `fields`        | `FieldDescriptor<T>[]` | —             | Body form fields                                                                              |
-| `sidebarFields` | `FieldDescriptor<T>[]` | `[]`          | Sidebar form fields                                                                           |
-| `languages`     | `string[]`             | `[]`          | Translation language codes (e.g. `['it', 'en']`)                                              |
-| `modelName`     | `string`               | —             | Human-readable name for the page title                                                        |
-| `sidebarCols`   | `number`               | `4`           | Sidebar column span on a 12-col grid                                                          |
-| `sticky`        | `boolean`              | `true`        | Keep the sidebar sticky while scrolling                                                       |
-| `usePatch`      | `boolean`              | `true`        | Send PATCH (diff only) on update; otherwise PUT                                               |
-| `readonly`      | `boolean`              | `false`       | Force read-only mode                                                                          |
-| `registry`      | `FieldRegistry`        | auto-injected | Optional registry override                                                                    |
-| `draft`         | `boolean`              | `false`       | Enable auto-save draft to localStorage. Key is auto-generated as `${endpoint}:${id}`.         |
-| `draftKey`      | `string`               | —             | Custom localStorage key for draft persistence. Requires `draft: true`. Prefix: `mapo:draft:`. |
+| Prop              | Type                             | Default       | Description                                                                                                                                                                                           |
+| ----------------- | -------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `endpoint`        | `string`                         | —             | REST endpoint for `useCrud`                                                                                                                                                                           |
+| `id`              | `string \| number`               | —             | Record id; pass `'new'` for create mode                                                                                                                                                               |
+| `fields`          | `FieldDescriptor<T>[]`           | —             | Body form fields                                                                                                                                                                                      |
+| `sidebarFields`   | `FieldDescriptor<T>[]`           | `[]`          | Sidebar form fields                                                                                                                                                                                   |
+| `languages`       | `string[]`                       | `[]`          | Translation language codes (e.g. `['it', 'en']`)                                                                                                                                                      |
+| `modelName`       | `string`                         | —             | Human-readable name for the page title                                                                                                                                                                |
+| `sidebarCols`     | `number`                         | `4`           | Sidebar column span on a 12-col grid                                                                                                                                                                  |
+| `sticky`          | `boolean`                        | `true`        | Keep the sidebar sticky while scrolling                                                                                                                                                               |
+| `usePatch`        | `boolean`                        | `true`        | Send PATCH (diff only) on update; otherwise PUT                                                                                                                                                       |
+| `readonly`        | `boolean`                        | `false`       | Force read-only mode                                                                                                                                                                                  |
+| `registry`        | `FieldRegistry`                  | auto-injected | Optional registry override                                                                                                                                                                            |
+| `draft`           | `boolean`                        | `false`       | Enable auto-save draft to localStorage. Key is auto-generated as `${endpoint}:${id}`.                                                                                                                 |
+| `draftKey`        | `string`                         | —             | Custom localStorage key for draft persistence. Requires `draft: true`. Prefix: `mapo:draft:`.                                                                                                         |
+| `multipart`       | `"auto" \| "force" \| "disable"` | `"auto"`      | Controls multipart/form-data upload behaviour. `"auto"` uses multipart only when the model contains a `File` or `Blob`; `"force"` always uses it; `"disable"` never does.                             |
+| `permissionModel` | `string`                         | —             | Django model label (e.g. `"news.article"`). When set, save buttons are hidden if the user lacks `add_*` / `change_*`, and the delete card is hidden without `delete_*`. Superusers are never blocked. |
+| `previewField`    | `string`                         | —             | Model field that holds a public URL. When set a **Preview** button appears in the sidebar; clicking it opens a sandboxed iframe modal.                                                                |
+| `forceLanguages`  | `string[]`                       | —             | Override the language list regardless of the `languages` prop or the `lang_info` embedded by the backend. Useful for per-model language subsets.                                                      |
 
 The `registry` prop is optional — `<MapoDetail>` resolves `$mapoFormRegistry` automatically.
 
@@ -344,6 +348,8 @@ interface DetailSlotProps<T> {
   isSaving: boolean;
   isDeleting: boolean;
   isDirty: boolean;
+  readonly: boolean; // true when the form is read-only (forced or permission-denied)
+  canDelete: boolean; // false when permissionModel is set and the user lacks delete_*
   draftBanner: {
     savedAt: Date;
     restore: () => void;
@@ -373,6 +379,93 @@ interface DetailSlotProps<T> {
 | `#field.<key>.before` / `#field.<key>.after`             | Content injected before / after the field widget within its grid column                                                                                    |
 | `#field.<key>.label` / `.hint` / `.append` / `.prepend`  | UFormField sub-slots forwarded to `<MapoForm>`                                                                                                             |
 | `#group.<name>.before` / `#group.<name>.after`           | Content injected before / after a named group card                                                                                                         |
+
+## How to: gate with permissions
+
+Pass the Django app-model label to automatically hide the save buttons and delete card for users who lack the necessary permissions:
+
+```vue
+<MapoDetail
+  endpoint="/api/articles/"
+  :id="route.params.id"
+  :fields="fields"
+  permission-model="news.article"
+/>
+```
+
+Behaviour:
+
+- **Create mode** (`id === 'new'`) — save buttons are hidden if the user lacks `add_article`.
+- **Edit mode** — save buttons are hidden if the user lacks `change_article`.
+- **Delete card** — hidden if the user lacks `delete_article`.
+- Superusers bypass all permission checks.
+
+The `readonly` and `canDelete` bindings are also exposed on every slot so you can conditionally render extra UI based on the effective permission:
+
+```vue
+<MapoDetail permission-model="news.article" …>
+  <template #body-top="{ readonly }">
+    <UAlert v-if="readonly" color="warning" title="Read-only — you don't have edit permission." />
+  </template>
+</MapoDetail>
+```
+
+---
+
+## How to: preview the published page
+
+Pass the model field that contains the public URL and a **Preview** button appears in the sidebar. Clicking it opens a sandboxed iframe so the editor can see the live page without leaving the admin:
+
+```vue
+<MapoDetail
+  endpoint="/api/articles/"
+  :id="route.params.id"
+  :fields="fields"
+  preview-field="absolute_url"
+/>
+```
+
+The URL is read reactively from `model[previewField]`. If the value is `null`, empty, or not a string the button is not shown.
+
+---
+
+## How to: auto-derive languages from the backend
+
+When the backend embeds language information in the fetched model (e.g. Camomilla embeds `lang_info.site_languages`), you can skip the `languages` prop entirely and let `<MapoDetail>` pick them up automatically:
+
+```vue
+<!-- No :languages prop needed — derived from lang_info in the response -->
+<MapoDetail endpoint="/api/articles/" :id="route.params.id" :fields="fields" />
+```
+
+Language priority chain:
+
+1. `forceLanguages` prop (always wins)
+2. `languages` prop (non-empty array)
+3. `lang_info.site_languages` from the fetched model
+
+Use `forceLanguages` when you need to restrict the editor to a subset of the site languages for a specific model:
+
+```vue
+<!-- Only English and Italian, regardless of the backend language list -->
+<MapoDetail :force-languages="['en', 'it']" … />
+```
+
+---
+
+## How to: control multipart uploads
+
+`multipart` defaults to `"auto"` — the component detects `File` / `Blob` values in the model and switches to `multipart/form-data` automatically. Override when needed:
+
+```vue
+<!-- Always use multipart (e.g. model has a file field not detectable as File) -->
+<MapoDetail multipart="force" … />
+
+<!-- Never use multipart (e.g. backend only accepts JSON) -->
+<MapoDetail multipart="disable" … />
+```
+
+---
 
 ## Pitfalls
 

@@ -21,6 +21,8 @@ import {
   // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
 } from "#imports";
 import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form/types";
+import { usePermissions } from "@mapomodule/store";
+import type { MultipartPolicy } from "@mapomodule/core";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +64,31 @@ const props = withDefaults(
      * Falls back to `${endpoint}:${id}` when omitted.
      */
     draftKey?: string;
+    /**
+     * Multipart upload policy passed to every CRUD mutation.
+     * - `"auto"` (default): sends FormData only when File/Blob fields are present.
+     * - `"force"`: always sends FormData.
+     * - `"disable"`: always sends JSON.
+     */
+    multipart?: MultipartPolicy;
+    /**
+     * Django model name for permission gating (e.g. `"article"`).
+     * When provided, Save/Create is hidden for users lacking `add`/`change`,
+     * and Delete is hidden for users lacking `delete`.
+     * Superusers are never restricted.
+     */
+    permissionModel?: string;
+    /**
+     * Field name on the model whose value is used as the preview URL.
+     * When set, a "Preview" button appears in the sidebar that opens the URL in an iframe modal.
+     */
+    previewField?: string;
+    /**
+     * Override the language list regardless of what `lang_info.site_languages`
+     * returns from the backend. Takes precedence over both `languages` prop and
+     * the auto-derived list.
+     */
+    forceLanguages?: string[];
   }>(),
   {
     sidebarFields: () => [],
@@ -74,6 +101,10 @@ const props = withDefaults(
     registry: null,
     draft: false,
     draftKey: undefined,
+    multipart: "auto",
+    permissionModel: undefined,
+    previewField: undefined,
+    forceLanguages: undefined,
   },
 );
 
@@ -151,6 +182,50 @@ const isDirty = computed(
     Object.keys(objectDiff(backup.value, model.value)).length > 0,
 );
 const mainCols = computed(() => 12 - props.sidebarCols);
+
+// ─── Languages (auto-derive from lang_info) ──────────────────────────────────
+// Backends like Camomilla embed site_languages inside the fetched model.
+// We read them after the first successful fetch so the host page doesn't need
+// to hard-code the language list. forceLanguages > props.languages > derived.
+const derivedLangs = ref<string[]>([]);
+const activeLangs = computed<string[]>(() => {
+  if (props.forceLanguages?.length) return props.forceLanguages;
+  if (props.languages.length) return props.languages;
+  return derivedLangs.value;
+});
+watch(
+  activeLangs,
+  (langs) => {
+    if (!currentLang.value && langs.length) currentLang.value = langs[0]!;
+  },
+  { immediate: true },
+);
+
+// ─── Permissions ─────────────────────────────────────────────────────────────
+// When permissionModel is set, save/create buttons are hidden for users who
+// lack the add (new) or change (existing) permission, and the delete button is
+// hidden for users who lack the delete permission.
+const { canAdd, canChange, canDelete: canDeletePerm } = usePermissions();
+const effectiveReadonly = computed(() => {
+  if (props.readonly) return true;
+  if (!props.permissionModel) return false;
+  return isNew.value
+    ? !canAdd(props.permissionModel)
+    : !canChange(props.permissionModel);
+});
+const canDeleteItem = computed(
+  () => !props.permissionModel || canDeletePerm(props.permissionModel),
+);
+
+// ─── Preview ─────────────────────────────────────────────────────────────────
+// When previewField is set, the value of that field on the model is used as the
+// URL opened in an iframe modal via the Preview button in the sidebar.
+const previewOpen = ref(false);
+const previewUrl = computed<string | null>(() => {
+  if (!props.previewField) return null;
+  const url = (model.value as Record<string, unknown>)[props.previewField];
+  return typeof url === "string" ? url : null;
+});
 
 // When all sidebarFields are flat (no group), we wrap them in a UCard for visual structure.
 // When groups are present, MapoFormGroup already renders its own card-like container.
@@ -259,6 +334,19 @@ async function fetchModel() {
   try {
     model.value = await crud.detail(props.id);
     backup.value = deepClone(model.value) as T;
+    // Auto-derive languages from the backend response when the host page does
+    // not hard-code them. Camomilla embeds site_languages inside lang_info.
+    const langInfo = (model.value as Record<string, unknown>)?.lang_info as
+      | Record<string, unknown>
+      | undefined;
+    const siteLangs = langInfo?.site_languages as string[] | undefined;
+    if (
+      siteLangs?.length &&
+      !props.languages.length &&
+      !props.forceLanguages?.length
+    ) {
+      derivedLangs.value = siteLangs;
+    }
     checkDraft();
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response
@@ -291,19 +379,24 @@ async function save(andBack = false) {
   errors.value = {};
   isSaving.value = true;
   try {
+    const multipartOpts = { multipart: props.multipart };
     let result: T;
     if (isNew.value) {
-      result = await crud.create(model.value);
+      result = await crud.create(model.value, undefined, multipartOpts);
     } else if (props.usePatch) {
       const patch = getPatch();
       result = await crud.partialUpdate(
         model.value.id as string | number,
         patch,
+        undefined,
+        multipartOpts,
       );
     } else {
       result = await crud.update(
         model.value.id as string | number,
         model.value,
+        undefined,
+        multipartOpts,
       );
     }
     Object.assign(model.value, result);
@@ -392,21 +485,21 @@ onBeforeRouteLeave(
   },
 );
 
-// @ts-expect-error — Event is a global type not defined in node environments
 function preventWindowClose(e: Event) {
   if (isDirty.value && typeof globalThis !== "undefined") {
     e.preventDefault();
     if ("returnValue" in e) {
-      // @ts-expect-error — returnValue is specific to BeforeUnloadEvent
-      (e as any).returnValue = "";
+      (e as BeforeUnloadEvent).returnValue = "";
     }
   }
 }
 
 onMounted(() => {
   if (typeof globalThis !== "undefined" && "addEventListener" in globalThis) {
-    // @ts-expect-error — addEventListener exists at runtime
-    (globalThis as any).addEventListener("beforeunload", preventWindowClose);
+    (globalThis as typeof globalThis & EventTarget).addEventListener(
+      "beforeunload",
+      preventWindowClose,
+    );
   }
   fetchModel();
 });
@@ -416,8 +509,10 @@ onBeforeUnmount(() => {
     typeof globalThis !== "undefined" &&
     "removeEventListener" in globalThis
   ) {
-    // @ts-expect-error — removeEventListener exists at runtime
-    (globalThis as any).removeEventListener("beforeunload", preventWindowClose);
+    (globalThis as typeof globalThis & EventTarget).removeEventListener(
+      "beforeunload",
+      preventWindowClose,
+    );
   }
 });
 
@@ -443,6 +538,8 @@ const slotBindings = computed(() => ({
   isDeleting: isDeleting.value,
   isDirty: isDirty.value,
   draftBanner: draftBanner.value,
+  readonly: effectiveReadonly.value,
+  canDelete: canDeleteItem.value,
   save,
   deleteItem,
   back,
@@ -464,6 +561,8 @@ type SlotBindings = {
   isDeleting: boolean;
   isDirty: boolean;
   draftBanner: DraftBannerState;
+  readonly: boolean;
+  canDelete: boolean;
   save: (andBack?: boolean) => Promise<void>;
   deleteItem: () => Promise<void>;
   back: () => void;
@@ -581,9 +680,9 @@ defineSlots<{
           v-bind="slotBindings"
         >
           <MapoDetailLangSwitch
-            v-if="languages && languages.length > 1"
+            v-if="activeLangs.length > 1"
             v-model="currentLang"
-            :langs="languages"
+            :langs="activeLangs"
             :errors="errors"
           />
         </slot>
@@ -602,10 +701,10 @@ defineSlots<{
             v-model="model"
             :fields="fields"
             :errors="errors"
-            :languages="languages"
+            :languages="activeLangs"
             :current-lang="currentLang"
             :registry="registry"
-            :readonly="readonly"
+            :readonly="effectiveReadonly"
           >
             <template
               v-for="slotName in formSlotNames"
@@ -644,9 +743,9 @@ defineSlots<{
                   v-bind="slotBindings"
                 >
                   <UButton
+                    v-if="!effectiveReadonly"
                     block
                     :loading="isSaving"
-                    :disabled="readonly"
                     icon="i-lucide-save"
                     @click="save(true)"
                   >
@@ -659,10 +758,10 @@ defineSlots<{
                   v-bind="slotBindings"
                 >
                   <UButton
+                    v-if="!effectiveReadonly"
                     block
                     variant="soft"
                     :loading="isSaving"
-                    :disabled="readonly"
                     icon="i-lucide-save"
                     @click="save(false)"
                   >
@@ -719,10 +818,10 @@ defineSlots<{
                 v-model="model"
                 :fields="sidebarFields"
                 :errors="errors"
-                :languages="languages"
+                :languages="activeLangs"
                 :current-lang="currentLang"
                 :registry="registry"
-                :readonly="readonly"
+                :readonly="effectiveReadonly"
               >
                 <template
                   v-for="slotName in formSlotNames"
@@ -741,10 +840,10 @@ defineSlots<{
               v-model="model"
               :fields="sidebarFields"
               :errors="errors"
-              :languages="languages"
+              :languages="activeLangs"
               :current-lang="currentLang"
               :registry="registry"
-              :readonly="readonly"
+              :readonly="effectiveReadonly"
             >
               <slot
                 :name="slotName"
@@ -758,8 +857,76 @@ defineSlots<{
             name="side-bottom"
             v-bind="slotBindings"
           />
+
+          <!-- Preview button — shown when previewField resolves to a URL -->
+          <UButton
+            v-if="previewUrl"
+            block
+            variant="outline"
+            color="neutral"
+            icon="i-lucide-eye"
+            @click="previewOpen = true"
+          >
+            Preview
+          </UButton>
+
+          <!-- Danger zone: delete action, visually separated from save actions -->
+          <slot
+            name="side-danger"
+            v-bind="slotBindings"
+          >
+            <UCard v-if="!isNew && canDeleteItem">
+              <slot
+                name="button-delete"
+                v-bind="slotBindings"
+              >
+                <UButton
+                  block
+                  color="error"
+                  variant="soft"
+                  :loading="isDeleting"
+                  icon="i-lucide-trash-2"
+                  @click="deleteItem"
+                >
+                  Delete
+                </UButton>
+              </slot>
+            </UCard>
+          </slot>
         </div>
       </div>
     </div>
+
+    <!-- Preview iframe modal -->
+    <UModal
+      v-if="previewField"
+      v-model:open="previewOpen"
+      :ui="{ width: 'max-w-5xl' }"
+    >
+      <template #content>
+        <div
+          class="flex flex-col"
+          style="height: 80vh"
+        >
+          <div
+            class="flex items-center justify-between px-4 py-2 border-b border-default"
+          >
+            <span class="text-sm font-medium truncate">{{ previewUrl }}</span>
+            <UButton
+              size="xs"
+              variant="ghost"
+              color="neutral"
+              icon="i-lucide-x"
+              @click="previewOpen = false"
+            />
+          </div>
+          <iframe
+            :src="previewUrl ?? ''"
+            class="flex-1 w-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

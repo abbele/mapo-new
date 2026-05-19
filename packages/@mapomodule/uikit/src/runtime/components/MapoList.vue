@@ -10,6 +10,12 @@ import type {
   ListTabItem,
 } from "../types/list.js";
 import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import { debounce } from "@mapomodule/utils";
+import {
+  useRoute,
+  useRouter,
+  // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
+} from "#imports";
 
 const props = withDefaults(
   defineProps<{
@@ -69,26 +75,86 @@ const props = withDefaults(
   },
 );
 
+// --- URL state (read once on mount, then write on change) ---
+const route = useRoute();
+const router = useRouter();
+
 // --- Selection state ---
 const selection = ref<T[] | "all">([]) as Ref<T[] | "all">;
 const selectionQuery = ref(new URLSearchParams());
 
-// --- Filters state ---
-const activeFilters = ref<ActiveFilter[]>([]);
+// --- Tabs state (restored from URL) ---
+function restoreTabFromUrl(): string {
+  const urlTab = route.query[props.tabQueryParam] as string | undefined;
+  if (urlTab && props.tabs.some((t) => t.value === urlTab)) return urlTab;
+  return props.defaultTab ?? props.tabs[0]?.value ?? "";
+}
+const activeTab = ref(restoreTabFromUrl());
 
-// --- Tabs state ---
-const activeTab = ref(props.defaultTab ?? props.tabs[0]?.value ?? "");
+// --- Filters state (restored from URL) ---
+function restoreFiltersFromUrl(): ActiveFilter[] {
+  const result: ActiveFilter[] = [];
+  for (const fd of props.filters) {
+    const urlVal = route.query[`f_${fd.value}`];
+    if (!urlVal) continue;
+    const rawValue = String(urlVal);
+    let active: FilterChoice[];
+    if (fd.datepicker) {
+      const parts = rawValue.split(",");
+      if (parts.length === 2) {
+        active = [
+          {
+            text: parts
+              .map((d) => new Date(d).toLocaleDateString())
+              .join(" → "),
+            value: rawValue,
+          },
+        ];
+      } else continue;
+    } else {
+      const rawValues = rawValue.split(",");
+      active = rawValues
+        .map((rv) => fd.choices?.find((c) => String(c.value) === rv))
+        .filter(Boolean) as FilterChoice[];
+    }
+    if (active.length) result.push({ ...fd, active });
+  }
+  return result;
+}
+const activeFilters = ref<ActiveFilter[]>(restoreFiltersFromUrl());
 
-// --- crudEndpoint: the base path used for detail / delete / updateOrder. ---
-// Strips any query string from the user-supplied endpoint so mutation URLs
-// are never constructed as `/api/case/?fields=id,title/1/`.
+// Write current tab + filter state back to URL (debounced to avoid history spam).
+const writeUrlState = debounce(() => {
+  const query: Record<string, string | undefined> = {
+    ...(route.query as Record<string, string>),
+  };
+  // Tab
+  if (props.tabs.length) {
+    if (activeTab.value) query[props.tabQueryParam] = activeTab.value;
+    else delete query[props.tabQueryParam];
+  }
+  // Remove stale f_ params, then re-write current ones
+  for (const k of Object.keys(query)) {
+    if (k.startsWith("f_")) delete query[k];
+  }
+  for (const f of activeFilters.value) {
+    if (!f.active.length) continue;
+    query[`f_${f.value}`] = f.active.map((c) => String(c.value)).join(",");
+  }
+  router.replace({ query });
+}, 150);
+
+watch([activeTab, activeFilters], writeUrlState, { deep: true });
+
+// --- crudEndpoint: base path for mutations (no query string). ---
 const crudEndpoint = computed(
   () => props.endpoint.split("?")[0] || props.endpoint,
 );
 
-// --- filterParams: active tab + active filters as a plain params object. ---
-// Passed directly to MapoListTable instead of being baked into the endpoint
-// string — this is what actually fixes B1 (filters/sorting ignored).
+// --- filterParams: active tab + active filters → backend query params. ---
+// 4.3: datepicker range values are expanded into __gte / __lte pairs.
+// 4.6: dotted-path filter keys (e.g. "category.slug") are rewritten to
+//       Django-style double-underscore notation ("category__slug").
 const filterParams = computed<Record<string, unknown>>(() => {
   const params: Record<string, unknown> = {};
   if (props.tabs.length && activeTab.value) {
@@ -96,7 +162,16 @@ const filterParams = computed<Record<string, unknown>>(() => {
   }
   for (const f of activeFilters.value) {
     if (!f.active.length) continue;
-    params[f.value] =
+    const key = f.value.replace(/\./g, "__");
+    if (f.datepicker && f.active.length === 1) {
+      const parts = String(f.active[0]!.value).split(",");
+      if (parts.length === 2) {
+        params[`${key}__gte`] = parts[0];
+        params[`${key}__lte`] = parts[1];
+        continue;
+      }
+    }
+    params[key] =
       f.active.length === 1 ? f.active[0]!.value : f.active.map((c) => c.value);
   }
   return params;
