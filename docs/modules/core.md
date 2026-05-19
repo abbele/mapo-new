@@ -338,4 +338,4 @@ This is the v2 equivalent of Vuex `nuxtServerInit`. See [Architecture Flows](/gu
 
 ## Known limitations
 
-See [Known Limitations](/guide/known-limitations) for active TODOs, including the `installModule` deprecation notice and the subpath import workaround required by `nuxt-module-builder`.
+See [Known Limitations](/guide/known-limitations) for active TODOs, including notes on the current `installModule`/`moduleDependencies` hybrid strategy and the subpath import workaround required by `nuxt-module-builder`.

@@ -114,6 +114,8 @@ export default defineNuxtModule({
 }) satisfies NuxtModule;
 ```
 
+Nuxt 4.1 introduced `moduleDependencies`, and Mapo uses it in compatible modules (for example `@mapomodule/store` for Pinia). The `mapomodule` meta-module currently keeps resolver-based `installModule` for pnpm strict transitive resolution compatibility.
+
 This means `mapomodule` in `modules[]` is now sufficient to install the entire Mapo stack — no need to list `@mapomodule/core` or `@mapomodule/store` separately.
 
 ---
