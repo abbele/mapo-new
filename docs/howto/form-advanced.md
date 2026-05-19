@@ -386,4 +386,75 @@ Use it in any form:
 
 Unknown types show a yellow placeholder in development — so typos are immediately visible.
 
+## Hierarchical field authoring with `flattenFieldGroups`
+
+When a form has many fields, repeating `group: 'seo'` or `tab: 'content'` on every descriptor becomes noisy. `flattenFieldGroups` lets you author descriptors as a nested tree and flattens them into the `FieldDescriptor[]` array the form engine expects.
+
+```ts
+import { flattenFieldGroups } from "@mapomodule/form/types";
+import type {
+  FieldGroupDescriptor,
+  FieldDescriptor,
+} from "@mapomodule/form/types";
+import type { Article } from "~/types/api";
+
+const fields: FieldDescriptor<Article>[] = flattenFieldGroups<Article>([
+  // Flat descriptors pass through unchanged
+  {
+    key: "title",
+    type: "text",
+    label: "Title",
+    tab: "content",
+    required: true,
+  },
+  { key: "body", type: "editor", label: "Body", tab: "content" },
+
+  // FieldGroupDescriptor — group and tab are propagated to all children
+  {
+    group: "seo",
+    tab: "seo",
+    fields: [
+      { key: "seo_title", type: "text", label: "SEO Title" },
+      { key: "seo_description", type: "textarea", label: "SEO Description" },
+      { key: "og_image", type: "file", label: "OG Image" },
+    ],
+  },
+
+  // Nested groups: the outer tab propagates inward
+  {
+    group: "publishing",
+    tab: "content",
+    fields: [
+      { key: "published_at", type: "datetime", label: "Publish date", cols: 6 },
+      { key: "is_draft", type: "switch", label: "Draft", cols: 6 },
+    ],
+  },
+]);
+```
+
+**Propagation rules:**
+
+- A field already declaring `group` keeps its own value — the parent's `group` is not applied.
+- Same for `tab`: a field's explicit `tab` wins over the parent's.
+- Groups can be arbitrarily nested; the function recurses until every item is a leaf `FieldDescriptor`.
+
+### `FieldGroupDescriptor` shape
+
+```ts
+interface FieldGroupDescriptor<T = Record<string, unknown>> {
+  group: string;
+  tab?: string | string[]; // propagated to children that don't have their own tab
+  fields: Array<FieldDescriptor<T> | FieldGroupDescriptor<T>>;
+}
+```
+
+### Import
+
+```ts
+import { flattenFieldGroups } from "@mapomodule/form/types";
+import type { FieldGroupDescriptor } from "@mapomodule/form/types";
+// or via the meta-package
+import { flattenFieldGroups } from "mapomodule/types";
+```
+
 → See also: [Standalone form](./form-standalone), [Custom fields reference](/uikit/form/custom-fields), [Registry reference](/uikit/form/registry)

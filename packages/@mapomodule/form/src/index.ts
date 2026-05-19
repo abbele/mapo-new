@@ -21,6 +21,8 @@ export {
   lessThan,
   matches,
 } from "./runtime/composables/useProgressiveDisclosure.js";
+export { flattenFieldGroups } from "./runtime/utils/flattenFieldGroups.js";
+export type { FieldGroupDescriptor } from "./runtime/utils/flattenFieldGroups.js";
 export { KnownFieldType } from "./runtime/types/index.js";
 export type {
   FieldType,
