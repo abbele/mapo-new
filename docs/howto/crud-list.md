@@ -37,13 +37,13 @@ The example below covers everything: typed model, columns, filters, tabs, bulk a
 
 ```vue
 <script setup lang="ts">
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
+import type { FieldDescriptor } from "@mapomodule/form/types";
 import type {
   FilterDescriptor,
   ActionDescriptor,
   ListColumn,
   ListTabItem,
-} from "@mapomodule/uikit/runtime/types/list.js";
+} from "mapomodule/types";
 
 definePageMeta({
   layout: "mapo-default",
@@ -62,7 +62,7 @@ interface Article {
 }
 
 // ── Columns ───────────────────────────────────────────────────────────────────
-const columns: ListColumn[] = [
+const columns: ListColumn<Article>[] = [
   {
     key: "id",
     label: "ID",
@@ -192,29 +192,101 @@ const quickEditFields: FieldDescriptor<Article>[] = [
 </template>
 ```
 
+## Typed columns
+
+Pass your model type to `ListColumn<T>` for key-safety — TypeScript will catch misspelled column keys at compile time:
+
+```ts
+import type { ListColumn } from "mapomodule/types";
+
+interface Article {
+  id: number;
+  title: string;
+  status: "draft" | "published" | "archived";
+  published_at: string | null;
+}
+
+// ✅ Type-safe: 'title' is checked against Article
+const columns: ListColumn<Article>[] = [
+  { key: "id", label: "ID", sortable: false },
+  { key: "title", label: "Title", sortable: true },
+  { key: "status", label: "Status", sortable: true },
+  { key: "published_at", label: "Published", sortable: true },
+  // ❌ { key: 'tiitle', label: 'Title' }  ← TypeScript error: typo caught
+];
+```
+
+---
+
 ## Custom cell rendering
 
-Use `#cell.{key}` slots to override how any column renders:
+Use `#cell.{key}` slots to override how any column renders. The slot receives `{ item, value }` where `item` is the full row object and `value` is the cell value:
 
 ```vue
 <MapoList endpoint="/api/articles" :columns="columns">
-  <template #cell.status="{ row }">
+  <template #cell.status="{ item }">
     <UBadge
-      :color="row.status === 'published' ? 'success' : row.status === 'archived' ? 'neutral' : 'warning'"
+      :color="item.status === 'published' ? 'success' : item.status === 'archived' ? 'neutral' : 'warning'"
       variant="subtle"
       size="xs"
     >
-      {{ row.status }}
+      {{ item.status }}
     </UBadge>
   </template>
 
-  <template #cell.published_at="{ row }">
+  <template #cell.published_at="{ item }">
     <span class="text-sm text-muted">
-      {{ row.published_at ? new Date(row.published_at).toLocaleDateString() : '—' }}
+      {{ item.published_at ? new Date(item.published_at).toLocaleDateString() : '—' }}
     </span>
   </template>
 </MapoList>
 ```
+
+### Row actions via a custom cell
+
+`MapoList` has no dedicated row-action API — the idiomatic pattern is a custom cell at the end of the column list:
+
+```ts
+const columns: ListColumn<Article>[] = [
+  { key: "title", label: "Title" },
+  { key: "status", label: "Status" },
+  { key: "actions" as keyof Article, label: "" }, // sentinel column
+];
+```
+
+```vue
+<MapoList endpoint="/api/articles" :columns="columns">
+  <template #cell.actions="{ item }">
+    <div class="flex justify-end gap-1">
+      <UButton
+        size="xs"
+        variant="ghost"
+        icon="i-lucide-pencil"
+        :to="`/articles/${item.id}`"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="error"
+        icon="i-lucide-trash-2"
+        @click="deleteRow(item)"
+      />
+    </div>
+  </template>
+</MapoList>
+```
+
+## Listening to list events
+
+`MapoList` exposes `refresh()` via a template ref. Selection state is managed internally; to react to selection changes, use the `update:selection` event on the underlying `MapoListTable` if you need direct access. For most use cases, bulk `actions` are sufficient.
+
+```vue
+<script setup lang="ts">
+const listRef = ref<{ refresh: () => void } | null>(null);
+</script>
+```
+
+---
 
 ## Programmatic refresh
 
@@ -260,4 +332,22 @@ async function afterBulkOperation() {
 | `#cell.{key}`     | Override a specific column's cell rendering |
 | `#filter.{value}` | Custom filter UI for a specific filter key  |
 
-→ See also: [CRUD detail / form](./crud-detail)
+## Import reference
+
+```ts
+// Types
+import type {
+  ListColumn,
+  FilterDescriptor,
+  FilterChoice,
+  ActiveFilter,
+  ActionDescriptor,
+  ActionContext,
+  ListTabItem,
+} from "mapomodule/types";
+
+// Or from the specific package
+import type { ListColumn } from "@mapomodule/uikit/types";
+```
+
+→ See also: [CRUD detail / form](./crud-detail), [Import Guide](/guide/imports)
