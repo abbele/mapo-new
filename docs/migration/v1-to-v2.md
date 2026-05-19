@@ -312,6 +312,159 @@ export default defineNuxtPlugin(() => {
 
 See [Custom fields →](/uikit/form/custom-fields) for the per-page registry override and `descriptor.is` escape hatches.
 
+### Legacy `is:` components → v2 field equivalents
+
+In v1 a field descriptor could use `is: 'ComponentName'` to render a fully custom field component (e.g. `is: 'AnimatedTitleFields'`). In v2 the same data is expressed as multiple standard `FieldDescriptor` objects — no custom component needed.
+
+**Group / tab structural change:**
+
+| v1 concept                        | v2 equivalent                          |
+| --------------------------------- | -------------------------------------- |
+| Top-level `group` (renders a tab) | `tab: 'name'` on each field            |
+| Nested group inside a group       | `group: 'name'` on each field          |
+| Sidebar group                     | `sidebarFields` prop on `<MapoDetail>` |
+
+**Component mapping:**
+
+| Legacy `is:`                           | v2 fields                                                             |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| `AnimatedTitleFields`                  | 3 × `type: 'text'`: `pre_title`, `underline_title`, `post_title`      |
+| `CTAField`                             | 2 × `type: 'text'`: `title`, `link`                                   |
+| `IconSelect` with `coloredIconChoices` | `type: 'select'` + `attrs.items` array                                |
+| `Prefooter`                            | `type: 'media'` + `type: 'media'` + `type: 'switch'` + `type: 'text'` |
+
+**Before (v1):**
+
+```ts
+// Descriptor with is: pointing to a monolithic component
+{ label: 'Hero', is: 'AnimatedTitleFields', field: 'hero' }
+// → renders one widget that internally manages pre_title / underline_title / post_title
+
+{ label: 'CTA', is: 'CTAField', field: 'cta' }
+// → one widget managing title + link
+
+{ label: 'Icona', is: 'IconSelect', field: 'icon', coloredIconChoices: true }
+
+// Top-level groups were tabs in the UI:
+groups: [
+  { name: 'Contenuto', fields: [ ... ] },      // → top-level tab
+  {
+    name: 'SEO',
+    groups: [                                   // → nested group inside tab
+      { name: 'Meta', fields: [ ... ] },
+    ],
+  },
+]
+```
+
+**After (v2):**
+
+```ts
+import type { FieldDescriptor } from "@mapomodule/form/types";
+import { KnownFieldType } from "@mapomodule/form/types";
+
+interface PageModel {
+  hero_pre_title: string;
+  hero_underline_title: string;
+  hero_post_title: string;
+  cta_title: string;
+  cta_link: string;
+  icon: string;
+  prefooter_bg: string | null;
+  prefooter_logo: string | null;
+  prefooter_dark_mode: boolean;
+  prefooter_tagline: string;
+}
+
+const fields: FieldDescriptor<PageModel>[] = [
+  // ── AnimatedTitleFields → 3 plain text fields (tab: 'contenuto') ─────────
+  {
+    key: "hero_pre_title",
+    type: "text",
+    label: "Pre-titolo",
+    tab: "contenuto",
+    cols: 12,
+  },
+  {
+    key: "hero_underline_title",
+    type: "text",
+    label: "Titolo",
+    tab: "contenuto",
+    cols: 12,
+  },
+  {
+    key: "hero_post_title",
+    type: "text",
+    label: "Post-titolo",
+    tab: "contenuto",
+    cols: 12,
+  },
+
+  // ── CTAField → 2 plain text fields ───────────────────────────────────────
+  {
+    key: "cta_title",
+    type: "text",
+    label: "Testo CTA",
+    tab: "contenuto",
+    cols: 8,
+  },
+  {
+    key: "cta_link",
+    type: "text",
+    label: "URL CTA",
+    tab: "contenuto",
+    cols: 4,
+  },
+
+  // ── IconSelect with coloredIconChoices → select + items ──────────────────
+  {
+    key: "icon",
+    type: KnownFieldType.Select,
+    label: "Icona",
+    tab: "contenuto",
+    attrs: {
+      items: [
+        { label: "🔵 Primario", value: "primary" },
+        { label: "🟡 Accent", value: "accent" },
+        { label: "⚫ Neutro", value: "neutral" },
+      ],
+    },
+  },
+
+  // ── Prefooter → media + media + switch + text (group card) ───────────────
+  {
+    key: "prefooter_bg",
+    type: "media",
+    label: "Sfondo",
+    tab: "contenuto",
+    group: "prefooter",
+  },
+  {
+    key: "prefooter_logo",
+    type: "media",
+    label: "Logo",
+    tab: "contenuto",
+    group: "prefooter",
+  },
+  {
+    key: "prefooter_dark_mode",
+    type: "switch",
+    label: "Dark mode",
+    tab: "contenuto",
+    group: "prefooter",
+  },
+  {
+    key: "prefooter_tagline",
+    type: "text",
+    label: "Tagline",
+    tab: "contenuto",
+    group: "prefooter",
+  },
+];
+```
+
+> **Tip:** use [`flattenFieldGroups`](/uikit/form/advanced#hierarchical-field-authoring-with-flattenFieldGroups) when you have many fields sharing the same `tab` / `group` — it lets you author them as a nested tree and avoid repeating the same keys on every descriptor.
+
 ### Component override: `MapoOverride*` folder → `app/mapooverride/`
 
 ```
