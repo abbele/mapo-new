@@ -15,13 +15,13 @@
  *    NOT "/api/mock/articles?ordering=-id/<id>/", which was the broken pre-fix behavior.
  */
 
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
+import type { FieldDescriptor } from "@mapomodule/form/types";
 import type {
   FilterDescriptor,
   ActionDescriptor,
   ListColumn,
   ListTabItem,
-} from "@mapomodule/uikit/runtime/types/list.js";
+} from "mapomodule/types";
 
 definePageMeta({
   label: "Articles",
@@ -64,6 +64,9 @@ const columns: ListColumn<Article>[] = [
     sortable: true,
     class: "w-20 text-center",
   },
+  // Sentinel column for row actions (I1: row actions pattern).
+  // No API prop — use #cell.actions slot with custom buttons.
+  { key: "actions" as keyof Article, label: "", class: "w-20" },
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -260,6 +263,18 @@ const listRef = ref<{ refresh: () => void } | null>(null);
         >
           {{ value }}
         </UBadge>
+      </template>
+
+      <!-- Row actions — I1: sentinel column + #cell.actions slot pattern -->
+      <template #cell.actions="{ item }">
+        <div class="flex justify-end gap-1">
+          <UButton
+            size="xs"
+            variant="ghost"
+            icon="i-lucide-pencil"
+            :to="`/articles/${item.id}`"
+          />
+        </div>
       </template>
     </MapoList>
   </div>

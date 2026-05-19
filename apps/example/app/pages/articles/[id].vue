@@ -1,31 +1,24 @@
 <script setup lang="ts">
 /**
- * Pagina di dettaglio/modifica articolo — powered by MapoDetail.
+ * Pagina di dettaglio articolo — demo completa di MapoDetail.
  *
- * ✅ Cosa ottieni GRATIS con <MapoDetail>:
- *  - Fetch automatico dell'oggetto tramite useCrud (endpoint + id)
- *  - Salvataggio con PATCH differenziale (solo i campi modificati viaggiano sul wire)
- *  - Unsaved changes guard: dialog di conferma se l'utente naviga via con modifiche pendenti
- *  - window.beforeunload per chiusura tab
- *  - Errori 400 dal backend → automaticamente mappati sui singoli field
- *  - Layout responsive 2 colonne (main + sidebar sticky)
- *  - Lang switch con badge rosso sulle lingue con errori
- *  - Snack di successo/errore
- *  - Confirm dialog per il delete
- *
- * ✅ Cosa definisci tu:
- *  - endpoint: la base URL del tuo CRUD REST
- *  - id: l'id del record (o "new" per la creazione)
- *  - fields: i descriptor del form principale
- *  - sidebarFields: i descriptor della colonna laterale
- *  - languages: le lingue disponibili per i campi translatable
- *
- * ✅ Ogni campo è un semplice oggetto:
- *    { key: 'title', type: 'text', label: 'Titolo', translatable: true }
- *  — niente Vuetify, niente v-model manuale, niente binding di errori.
+ * Feature dimostrate:
+ *  ✅ Tab semplici          (tab: 'contenuto')
+ *  ✅ Tab innestate         (tab: ['seo', 'base'] e tab: 'seo/social' — C2)
+ *  ✅ Subtab dentro group   (subtab: 'Base' / 'Social' dentro group: 'seo' — C2)
+ *  ✅ Group dentro tab      (group + tab combined)
+ *  ✅ flattenFieldGroups    (FieldGroupDescriptor per la sidebar — C3)
+ *  ✅ field.*.before/after  (hint sotto slug, counter per excerpt — C1)
+ *  ✅ group.*.before/after  (alert sopra il group "visibility" — C1)
+ *  ✅ Slot sidebar          (#side-bottom per debug/preview)
+ *  ✅ translatable + synci18n (lingue it/en)
  */
 
-import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
+import { flattenFieldGroups } from "@mapomodule/form/types";
+import type {
+  FieldDescriptor,
+  FieldGroupDescriptor,
+} from "@mapomodule/form/types";
 
 definePageMeta({
   layout: "mapo-default",
@@ -38,66 +31,144 @@ interface Article {
   id: number;
   title: string;
   slug: string;
+  excerpt: string;
   body: string;
   status: string;
   is_featured: boolean;
   published_at: string | null;
   priority: number;
-  translations: Record<string, { title?: string; body?: string }>;
+  seo_title: string;
+  seo_description: string;
+  og_title: string;
+  og_image: string;
+  translations: Record<
+    string,
+    { title?: string; body?: string; excerpt?: string }
+  >;
 }
 
-// ─── Descriptor del form principale ──────────────────────────────────────────
-// translatable: true → il valore viene letto/scritto dentro model.translations[lang].*
-// synci18n: true    → il valore è uguale per tutte le lingue (non tradotto)
+// ─── Campi principali ────────────────────────────────────────────────────────
+//
+// Struttura tab:
+//   "Contenuto"          → title, slug, excerpt, body
+//   "SEO" / "Base"       → seo_title, seo_description  (tab: array — C2)
+//   "SEO" / "Social"     → og_title, og_image           (tab: slash — C2)
+//
+// Il group "seo" dentro il tab "SEO/Base" ha subtab interni (subtab: ... — C2).
+// Mostra group + nested tabs + subtab inside group tutti insieme.
 const mainFields: FieldDescriptor<Article>[] = [
+  // ── Tab "Contenuto" ──────────────────────────────────────────────────────
   {
     key: "title",
     type: "text",
     label: "Titolo",
-    translatable: true, // it: translations.it.title / en: translations.en.title
+    tab: "contenuto",
+    translatable: true,
     required: true,
   },
   {
     key: "slug",
     type: "text",
     label: "Slug",
-    synci18n: true, // campo shared tra tutte le lingue
+    tab: "contenuto",
+    synci18n: true,
     attrs: { placeholder: "my-article-slug" },
   },
   {
-    key: "body",
-    type: "editor", // Tiptap WYSIWYG — basta "editor" nel type
-    label: "Contenuto",
+    key: "excerpt",
+    type: "textarea",
+    label: "Estratto",
+    tab: "contenuto",
     translatable: true,
+    cols: 12,
+    attrs: { rows: 3, placeholder: "Breve descrizione dell'articolo…" },
+  },
+  {
+    key: "body",
+    type: "editor",
+    label: "Contenuto",
+    tab: "contenuto",
+    translatable: true,
+  },
+
+  // ── Tab annidato "SEO > Base" — forma array (C2) ─────────────────────────
+  // tab: ['SEO', 'Base'] crea un sub-tab "Base" dentro il tab "SEO".
+  {
+    key: "seo_title",
+    type: "text",
+    label: "SEO Title",
+    tab: ["SEO", "Base"],
+    group: "meta",
+    subtab: "Titolo",
+    cols: 12,
+    attrs: { placeholder: "Titolo per i motori di ricerca" },
+  },
+  {
+    key: "seo_description",
+    type: "textarea",
+    label: "SEO Description",
+    tab: ["SEO", "Base"],
+    group: "meta",
+    subtab: "Titolo",
+    attrs: {
+      rows: 3,
+      placeholder: "Descrizione per i motori di ricerca (max 160 car.)",
+    },
+  },
+
+  // ── Tab annidato "SEO > Social" — forma slash (C2) ───────────────────────
+  // tab: 'SEO/Social' è equivalente a tab: ['SEO', 'Social']. Stesso risultato.
+  {
+    key: "og_title",
+    type: "text",
+    label: "OG Title",
+    tab: "SEO/Social",
+    group: "og",
+    subtab: "Facebook",
+    cols: 12,
+  },
+  {
+    key: "og_image",
+    type: "text",
+    label: "OG Image URL",
+    tab: "SEO/Social",
+    group: "og",
+    subtab: "Facebook",
+    attrs: { placeholder: "https://…" },
   },
 ];
 
-// ─── Descriptor della sidebar ─────────────────────────────────────────────────
-// Vanno nella colonna destra sticky. Stessa sintassi del form principale.
-const sidebarFields: FieldDescriptor<Article>[] = [
-  // group "visibility" — status + is_featured share a group card
+// ─── Sidebar (flattenFieldGroups — C3) ───────────────────────────────────────
+//
+// flattenFieldGroups trasforma un albero FieldGroupDescriptor in FieldDescriptor[].
+// Il group "visibility" viene propagato a status e is_featured senza ripeterlo
+// su ogni campo. I campi flat (priority, published_at) passano invariati.
+const sidebarFields: FieldDescriptor<Article>[] = flattenFieldGroups<Article>([
   {
-    key: "status",
-    type: "select",
-    label: "Stato",
     group: "visibility",
-    synci18n: true,
-    attrs: {
-      items: [
-        { label: "Bozza", value: "draft" },
-        { label: "Pubblicato", value: "published" },
-        { label: "Archiviato", value: "archived" },
-      ],
-    },
-  },
-  {
-    key: "is_featured",
-    type: "switch",
-    label: "In evidenza",
-    group: "visibility",
-    synci18n: true,
-  },
-  // flat fields (no group)
+    fields: [
+      {
+        key: "status",
+        type: "select",
+        label: "Stato",
+        synci18n: true,
+        attrs: {
+          items: [
+            { label: "Bozza", value: "draft" },
+            { label: "Pubblicato", value: "published" },
+            { label: "Archiviato", value: "archived" },
+          ],
+        },
+      },
+      {
+        key: "is_featured",
+        type: "switch",
+        label: "In evidenza",
+        synci18n: true,
+      },
+    ],
+  } satisfies FieldGroupDescriptor<Article>,
+  // Campi flat — passano inalterati (nessun group ereditato)
   {
     key: "priority",
     type: "number",
@@ -111,32 +182,11 @@ const sidebarFields: FieldDescriptor<Article>[] = [
     label: "Data pubblicazione",
     synci18n: true,
   },
-];
+]);
 </script>
 
 <template>
   <div class="p-6">
-    <!--
-      MapoDetail fa tutto il lavoro pesante:
-        - endpoint + id → fetch automatico on mount
-        - :fields → form principale (colonna larga)
-        - :sidebar-fields → form laterale (colonna sticky)
-        - :languages → abilita il lang switch e la modalità translatable
-        - :registry → il registry globale dei field type (iniettato dal plugin)
-
-      Per creare un nuovo articolo basta mettere id="new" — MapoDetail
-      usa POST invece di PATCH e poi fa redirect all'id restituito dal backend.
-
-      Vuoi sovrascrivere un bottone? Usa gli slot:
-        <template #button-save="{ save, isSaving }">
-          <MyCustomButton @click="save(false)" :loading="isSaving" />
-        </template>
-
-      Vuoi aggiungere contenuto in fondo alla sidebar?
-        <template #side-bottom="{ model }">
-          <pre>{{ model }}</pre>
-        </template>
-    -->
     <MapoDetail
       endpoint="/api/mock/articles"
       :id="id"
@@ -145,7 +195,13 @@ const sidebarFields: FieldDescriptor<Article>[] = [
       :languages="['it', 'en']"
       model-name="Articolo"
     >
-      <!-- field.*.after — hint below the slug field -->
+      <!--
+        ── Slot field.*.after ────────────────────────────────────────────────
+        Inietta contenuto dentro la colonna del campo, sotto il widget.
+        Riceve { field, model, currentLang }.
+      -->
+
+      <!-- Hint sotto lo slug (C1: field.slug.after) -->
       <template #field.slug.after>
         <p class="mt-1 text-xs text-muted">
           Usato come URL dell'articolo. Lascia vuoto per generarlo
@@ -153,7 +209,31 @@ const sidebarFields: FieldDescriptor<Article>[] = [
         </p>
       </template>
 
-      <!-- group.*.before — banner above the "visibility" sidebar group -->
+      <!-- Counter caratteri per l'estratto (C1: field.excerpt.after) -->
+      <template #field.excerpt.after="{ model }">
+        <p
+          class="mt-1 text-right text-xs"
+          :class="
+            (model?.excerpt?.length ?? 0) > 160 ? 'text-error' : 'text-muted'
+          "
+        >
+          {{ model?.excerpt?.length ?? 0 }} / 160
+        </p>
+      </template>
+
+      <!-- Hint sopra il seo_title (C1: field.seo_title.before) -->
+      <template #field.seo_title.before>
+        <p class="mb-1 text-xs text-muted">
+          Se vuoto viene usato il titolo dell'articolo.
+        </p>
+      </template>
+
+      <!--
+        ── Slot group.*.before / group.*.after ──────────────────────────────
+        Wrappano l'intera group card dall'esterno.
+      -->
+
+      <!-- Alert sopra il group "visibility" (C1: group.visibility.before) -->
       <template #group.visibility.before>
         <UAlert
           color="warning"
@@ -162,6 +242,36 @@ const sidebarFields: FieldDescriptor<Article>[] = [
           title="Visibilità"
           description="Imposta lo stato su 'Pubblicato' per rendere l'articolo visibile."
         />
+      </template>
+
+      <!-- Nota sotto il group "meta" (C1: group.meta.after) -->
+      <template #group.meta.after>
+        <p class="mt-2 text-xs text-muted">
+          I meta tag vengono usati dai motori di ricerca per indicizzare
+          l'articolo.
+        </p>
+      </template>
+
+      <!--
+        ── Slot sidebar (#side-bottom) ────────────────────────────────────────
+        Contenuto extra in fondo alla colonna sidebar sticky.
+        Utile per debug, statistiche, link veloci.
+      -->
+      <template #side-bottom="{ model }">
+        <div
+          class="rounded-lg border border-default p-3 text-xs text-muted space-y-1"
+        >
+          <p class="font-medium text-default">Debug model</p>
+          <p>
+            Status: <strong>{{ model?.status ?? "—" }}</strong>
+          </p>
+          <p>
+            Featured: <strong>{{ model?.is_featured ? "sì" : "no" }}</strong>
+          </p>
+          <p>
+            Priority: <strong>{{ model?.priority ?? "—" }}</strong>
+          </p>
+        </div>
       </template>
     </MapoDetail>
   </div>

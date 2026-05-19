@@ -73,10 +73,10 @@ export function flattenFieldGroups<T = Record<string, unknown>>(
       const field = item as FieldDescriptor<T>;
       const merged: FieldDescriptor<T> = { ...field };
       if (_inheritedGroup && !merged.group) {
-        (merged as Record<string, unknown>).group = _inheritedGroup;
+        Object.assign(merged, { group: _inheritedGroup });
       }
       if (_inheritedTab && !merged.tab) {
-        (merged as Record<string, unknown>).tab = _inheritedTab;
+        Object.assign(merged, { tab: _inheritedTab });
       }
       result.push(merged);
     }
