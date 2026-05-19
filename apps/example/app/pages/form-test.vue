@@ -12,10 +12,16 @@
  *  6. Bulk Actions nel repeater
  *  7. useFormDraft (auto-save localStorage con banner ripristino)
  *  8. Nested tabs — tab: string[] o 'a/b' (C2)
+ *  9. flattenFieldGroups — authoring gerarchico (C3)
  */
 
 import { ref } from "vue";
-import type { FieldDescriptor, RepeaterDescriptor } from "@mapomodule/form";
+import type {
+  FieldDescriptor,
+  RepeaterDescriptor,
+  FieldGroupDescriptor,
+} from "@mapomodule/form/types";
+import { flattenFieldGroups } from "@mapomodule/form/types";
 
 definePageMeta({
   label: "Form Test",
@@ -57,6 +63,11 @@ interface TestModel {
   meta_description: string;
   og_title: string;
   og_image: string;
+  // Sezione 7: flattenFieldGroups (C3)
+  company_website: string;
+  company_email: string;
+  billing_address: string;
+  billing_city: string;
 }
 
 const model = ref<TestModel>({
@@ -80,6 +91,10 @@ const model = ref<TestModel>({
   meta_description: "",
   og_title: "",
   og_image: "",
+  company_website: "",
+  company_email: "",
+  billing_address: "",
+  billing_city: "",
 });
 
 const errors = ref<Record<string, string[]>>({});
@@ -349,6 +364,34 @@ const seoFields: FieldDescriptor<TestModel>[] = [
   },
 ];
 
+// ─── 5. flattenFieldGroups (C3) ───────────────────────────────────────────────
+// Stessa struttura, scritta in forma gerarchica invece che flat.
+// flattenFieldGroups propaga group/tab ai campi figli.
+
+const flattenedFields = flattenFieldGroups<TestModel>([
+  // Campo flat — passa invariato
+  { key: "company_website", type: "text", label: "Sito web", cols: 12 },
+  // Gruppo gerarchico — group + tab propagati a tutti i figli
+  {
+    group: "Contatti aziendali",
+    fields: [
+      {
+        key: "company_email",
+        type: "text",
+        label: "Email aziendale",
+        cols: 12,
+      },
+    ],
+  },
+  {
+    group: "Indirizzo fatturazione",
+    fields: [
+      { key: "billing_address", type: "text", label: "Via", cols: 12 },
+      { key: "billing_city", type: "text", label: "Città", cols: 6 },
+    ],
+  },
+]);
+
 // ─── useFormDraft ─────────────────────────────────────────────────────────────
 
 const hasDraftBanner = ref(false);
@@ -439,6 +482,10 @@ async function save() {
               meta_description: '',
               og_title: '',
               og_image: '',
+              company_website: '',
+              company_email: '',
+              billing_address: '',
+              billing_city: '',
             }
           "
         >
@@ -683,13 +730,48 @@ async function save() {
     <UDivider />
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         SEZIONE 7 — Snapshot model (debug)
+         SEZIONE 7 — flattenFieldGroups (C3)
+    ════════════════════════════════════════════════════════════════════════ -->
+    <section class="space-y-3">
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-600"
+          >7</span
+        >
+        <h2 class="text-base font-semibold text-gray-800">
+          <code class="font-mono text-sm">flattenFieldGroups</code> — authoring
+          gerarchico
+        </h2>
+      </div>
+      <p class="text-sm text-gray-500">
+        I campi sono definiti come albero
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >FieldGroupDescriptor</code
+        >
+        e appiattiti in
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >FieldDescriptor[]</code
+        >
+        da
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs"
+          >flattenFieldGroups()</code
+        >. Il risultato è identico a scrivere
+        <code class="rounded bg-gray-100 px-1 py-0.5 text-xs">group: 'x'</code>
+        su ogni campo manualmente.
+      </p>
+      <MapoForm v-model="model" :fields="flattenedFields" :errors="errors" />
+    </section>
+
+    <UDivider />
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEZIONE 8 — Snapshot model (debug)
     ════════════════════════════════════════════════════════════════════════ -->
     <section class="space-y-3">
       <div class="flex items-center gap-3">
         <span
           class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500"
-          >7</span
+          >8</span
         >
         <h2 class="text-base font-semibold text-gray-800">
           Model snapshot (debug)
