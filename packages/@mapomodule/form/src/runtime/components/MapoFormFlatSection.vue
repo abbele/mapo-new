@@ -147,12 +147,6 @@ function colClass(cols: FieldDescriptor["cols"]): string {
       :class="colClass(field.cols)"
     >
       <slot
-        :name="`field.${field.key as string}.before`"
-        :field="field"
-        :model="model"
-        :current-lang="currentLang"
-      />
-      <slot
         :name="`field.${field.key as string}`"
         :field="field"
         :model="model"
@@ -164,12 +158,6 @@ function colClass(cols: FieldDescriptor["cols"]): string {
           </template>
         </MapoFormField>
       </slot>
-      <slot
-        :name="`field.${field.key as string}.after`"
-        :field="field"
-        :model="model"
-        :current-lang="currentLang"
-      />
     </div>
   </div>
 </template>

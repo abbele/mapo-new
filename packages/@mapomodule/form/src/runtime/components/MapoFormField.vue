@@ -280,6 +280,7 @@ function toggleExpand() {
     <slot
       :name="`field.${descriptor.key as string}.before`"
       :descriptor="descriptor"
+      :model="model"
     />
 
     <div
@@ -291,6 +292,7 @@ function toggleExpand() {
       <slot
         :name="`field.${descriptor.key as string}.prepend`"
         :descriptor="descriptor"
+        :model="model"
       />
 
       <component
@@ -313,6 +315,7 @@ function toggleExpand() {
       <slot
         :name="`field.${descriptor.key as string}.append`"
         :descriptor="descriptor"
+        :model="model"
       />
     </div>
 
@@ -320,6 +323,7 @@ function toggleExpand() {
     <slot
       :name="`field.${descriptor.key as string}.hint`"
       :descriptor="descriptor"
+      :model="model"
     />
 
     <!-- Errori -->
@@ -336,6 +340,7 @@ function toggleExpand() {
     <slot
       :name="`field.${descriptor.key as string}.after`"
       :descriptor="descriptor"
+      :model="model"
     />
   </div>
 </template>

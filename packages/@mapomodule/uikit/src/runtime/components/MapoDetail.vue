@@ -21,7 +21,7 @@ import {
   // @ts-expect-error — #imports is a Nuxt virtual module resolved at app build time
 } from "#imports";
 import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form/types";
-import { usePermissions } from "@mapomodule/store";
+import { usePermissions } from "@mapomodule/store/runtime/composables/usePermissions";
 import type { MultipartPolicy } from "@mapomodule/core";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
