@@ -6,9 +6,9 @@ import type { SortingState, PaginationState } from "@tanstack/vue-table";
 import type { ListColumn } from "../types/list.js";
 import { useSnackStore } from "@mapomodule/store/runtime/stores/snack";
 import { useConfirmStore } from "@mapomodule/store/runtime/stores/confirm";
-import { usePermissions } from "@mapomodule/store";
+import { usePermissions } from "@mapomodule/store/runtime/composables/usePermissions";
 import { useCrud } from "@mapomodule/core/runtime/api/crud";
-import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form/types";
 import { debounce } from "@mapomodule/utils";
 import {
   useRoute,

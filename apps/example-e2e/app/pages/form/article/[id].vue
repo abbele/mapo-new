@@ -301,7 +301,28 @@ interface Article {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const LANGUAGES = ["en", "it"];
+const LANGUAGES = [
+  "en",
+  "it",
+  "fr",
+  "de",
+  "es",
+  "pt",
+  "nl",
+  "pl",
+  "ru",
+  "ja",
+  "zh",
+  "ko",
+  "ar",
+  "tr",
+  "sv",
+  "da",
+  "fi",
+  "no",
+  "cs",
+  "hu",
+];
 
 const isReadonly = ref(false);
 const slotSlug = "field.slug";

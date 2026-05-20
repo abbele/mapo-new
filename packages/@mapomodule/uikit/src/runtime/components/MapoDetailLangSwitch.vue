@@ -74,7 +74,13 @@ const selectItems = computed(() =>
 
 const selectValue = computed({
   get: () => props.modelValue,
-  set: (v: string) => selectLang(v),
+  set: (v: unknown) => {
+    const lang =
+      typeof v === "object" && v !== null
+        ? (v as { value: string }).value
+        : (v as string);
+    selectLang(lang);
+  },
 });
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
@@ -113,6 +119,9 @@ watch(
     size="sm"
     class="w-40 mb-4"
   >
+    <template #default>
+      {{ selectValue.toUpperCase() }}
+    </template>
     <template #leading>
       <span
         v-if="hasErrors(modelValue)"
@@ -124,7 +133,7 @@ watch(
   <!-- Tab bar — used when langs <= langThreshold -->
   <div
     v-else
-    class="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 mb-4 scrollbar-none"
+    class="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 mt-2 mb-4 scrollbar-none"
   >
     <button
       v-for="lang in langs"
