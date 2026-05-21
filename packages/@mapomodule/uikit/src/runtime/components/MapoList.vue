@@ -9,7 +9,7 @@ import type {
   ActionDescriptor,
   ListTabItem,
 } from "../types/list.js";
-import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form";
+import type { FieldDescriptor, FieldRegistry } from "@mapomodule/form/types";
 import { debounce } from "@mapomodule/utils";
 import {
   useRoute,
