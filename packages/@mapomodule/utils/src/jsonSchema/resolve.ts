@@ -32,6 +32,7 @@ export function resolveSchema(
   // Cycle guard: self-referential schemas (e.g. nested comments, tree categories)
   // would recurse infinitely. Return a stripped-down object node instead.
   if (seen.has(schema) || depth > MAX_RESOLVE_DEPTH) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { $ref: _ref, anyOf: _ao, oneOf: _oo, ...rest } = schema;
     return { type: "object", ...rest };
   }
@@ -43,6 +44,7 @@ export function resolveSchema(
       .replace(/^#\/definitions\//, "");
     const resolved = defs[refPath];
     if (!resolved) return { type: "string", title: refPath };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { $ref: _ref, ...rest } = schema;
     return { ...resolveSchema(resolved, defs, seen, depth + 1), ...rest };
   }
