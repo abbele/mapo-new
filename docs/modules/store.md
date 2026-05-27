@@ -90,14 +90,20 @@ This map is what the `permissions` route middleware reads against `route.meta.pe
 
 ## `useSnackStore`
 
-Global snackbar / toast notification.
+Global snackbar / toast notification queue. Multiple toasts can be active simultaneously — each `show()` call appends to the queue.
 
 ```ts
 const snack = useSnackStore();
 
 snack.show("Saved!", "success");
 snack.show("Error", "error", 5000);
-snack.clear();
+
+snack.dismiss(); // remove the last message
+snack.dismiss(id); // remove a specific message by id
+snack.dismissAll(); // clear all messages
+
+snack.messages; // SnackMessage[] — full queue
+snack.current; // SnackMessage | null — last message (getter, for backward compat)
 ```
 
 You can also call this through the `useMapo()` facade:

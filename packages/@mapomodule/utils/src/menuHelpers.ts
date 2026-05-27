@@ -43,11 +43,14 @@ export function buildRouteTree(routes: RouteRecordNormalized[]): MenuNode[] {
     const { label, parent } = route.meta ?? {};
     if (!label) continue;
     const node = nodeMap.get(route.path)!;
-    if (parent && nodeMap.has(parent)) {
-      nodeMap.get(parent)!.children.push(node);
-    } else {
-      roots.push(node);
+    if (parent) {
+      const parentKey = String(parent).startsWith("/") ? parent : `/${parent}`;
+      if (nodeMap.has(parentKey)) {
+        nodeMap.get(parentKey)!.children.push(node);
+        continue;
+      }
     }
+    roots.push(node);
   }
 
   return roots;
