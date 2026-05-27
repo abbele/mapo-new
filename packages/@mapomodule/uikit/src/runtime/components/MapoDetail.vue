@@ -613,10 +613,7 @@ defineSlots<{
 
 <template>
   <!-- Loading state -->
-  <div
-    v-if="isLoading"
-    class="flex items-center justify-center py-24"
-  >
+  <div v-if="isLoading" class="flex items-center justify-center py-24">
     <UIcon
       name="i-lucide-loader-2"
       class="w-8 h-8 animate-spin text-gray-400"
@@ -625,10 +622,7 @@ defineSlots<{
 
   <div v-else>
     <!-- Draft banner -->
-    <slot
-      name="draft-banner"
-      v-bind="slotBindings"
-    >
+    <slot name="draft-banner" v-bind="slotBindings">
       <Transition name="slide-down">
         <UAlert
           v-if="draftBanner"
@@ -640,11 +634,7 @@ defineSlots<{
           description="You have a local draft that was not saved. Do you want to restore it or discard it?"
         >
           <template #actions>
-            <UButton
-              size="xs"
-              color="warning"
-              @click="draftBanner?.restore()"
-            >
+            <UButton size="xs" color="warning" @click="draftBanner?.restore()">
               Restore draft
             </UButton>
             <UButton
@@ -661,10 +651,7 @@ defineSlots<{
     </slot>
 
     <!-- Title -->
-    <slot
-      name="title"
-      v-bind="slotBindings"
-    >
+    <slot name="title" v-bind="slotBindings">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         {{ isNew ? "New" : "Edit" }}
         <span v-if="modelName"> {{ modelName }}</span>
@@ -675,10 +662,7 @@ defineSlots<{
       <!-- Main column -->
       <div :class="[mainColsClass, 'space-y-4']">
         <!-- Lang switch -->
-        <slot
-          name="body-lang"
-          v-bind="slotBindings"
-        >
+        <slot name="body-lang" v-bind="slotBindings">
           <MapoDetailLangSwitch
             v-if="activeLangs.length > 1"
             v-model="currentLang"
@@ -687,16 +671,10 @@ defineSlots<{
           />
         </slot>
 
-        <slot
-          name="body-top"
-          v-bind="slotBindings"
-        />
+        <slot name="body-top" v-bind="slotBindings" />
 
         <!-- Main form -->
-        <slot
-          name="body"
-          v-bind="slotBindings"
-        >
+        <slot name="body" v-bind="slotBindings">
           <MapoForm
             v-model="model"
             :fields="fields"
@@ -711,37 +689,22 @@ defineSlots<{
               :key="slotName"
               #[slotName]="slotProps"
             >
-              <slot
-                :name="slotName"
-                v-bind="slotProps ?? {}"
-              />
+              <slot :name="slotName" v-bind="slotProps ?? {}" />
             </template>
           </MapoForm>
         </slot>
 
-        <slot
-          name="body-bottom"
-          v-bind="slotBindings"
-        />
+        <slot name="body-bottom" v-bind="slotBindings" />
       </div>
 
       <!-- Sidebar column -->
       <div :class="sidebarColsClass">
-        <div
-          :style="sidebarStyle"
-          class="space-y-4"
-        >
+        <div :style="sidebarStyle" class="space-y-4">
           <!-- Action buttons -->
-          <slot
-            name="side-buttons"
-            v-bind="slotBindings"
-          >
+          <slot name="side-buttons" v-bind="slotBindings">
             <UCard>
               <div class="flex flex-col gap-2">
-                <slot
-                  name="button-save"
-                  v-bind="slotBindings"
-                >
+                <slot name="button-save" v-bind="slotBindings">
                   <UButton
                     v-if="!effectiveReadonly"
                     block
@@ -753,10 +716,7 @@ defineSlots<{
                   </UButton>
                 </slot>
 
-                <slot
-                  name="button-savecontinue"
-                  v-bind="slotBindings"
-                >
+                <slot name="button-savecontinue" v-bind="slotBindings">
                   <UButton
                     v-if="!effectiveReadonly"
                     block
@@ -769,10 +729,7 @@ defineSlots<{
                   </UButton>
                 </slot>
 
-                <slot
-                  name="button-back"
-                  v-bind="slotBindings"
-                >
+                <slot name="button-back" v-bind="slotBindings">
                   <UButton
                     block
                     variant="ghost"
@@ -783,10 +740,7 @@ defineSlots<{
                   </UButton>
                 </slot>
 
-                <slot
-                  name="button-delete"
-                  v-bind="slotBindings"
-                >
+                <slot name="button-delete" v-bind="slotBindings">
                   <UButton
                     v-if="!isNew"
                     block
@@ -804,10 +758,7 @@ defineSlots<{
             </UCard>
           </slot>
 
-          <slot
-            name="side-top"
-            v-bind="slotBindings"
-          />
+          <slot name="side-top" v-bind="slotBindings" />
 
           <!-- Sidebar fields form.
                Flat fields (no group) get a UCard wrapper for visual structure.
@@ -828,10 +779,7 @@ defineSlots<{
                   :key="slotName"
                   #[slotName]="slotProps"
                 >
-                  <slot
-                    :name="slotName"
-                    v-bind="slotProps ?? {}"
-                  />
+                  <slot :name="slotName" v-bind="slotProps ?? {}" />
                 </template>
               </MapoForm>
             </UCard>
@@ -845,18 +793,17 @@ defineSlots<{
               :registry="registry"
               :readonly="effectiveReadonly"
             >
-              <slot
-                :name="slotName"
-                v-bind="slotProps ?? {}"
-              />
-            </mapoform>
+              <template
+                v-for="slotName in formSlotNames"
+                :key="slotName"
+                #[slotName]="slotProps"
+              >
+                <slot :name="slotName as any" v-bind="slotProps ?? {}" />
+              </template>
+            </MapoForm>
           </template>
-          </MapoForm>
 
-          <slot
-            name="side-bottom"
-            v-bind="slotBindings"
-          />
+          <slot name="side-bottom" v-bind="slotBindings" />
 
           <!-- Preview button — shown when previewField resolves to a URL -->
           <UButton
@@ -871,15 +818,9 @@ defineSlots<{
           </UButton>
 
           <!-- Danger zone: delete action, visually separated from save actions -->
-          <slot
-            name="side-danger"
-            v-bind="slotBindings"
-          >
+          <slot name="side-danger" v-bind="slotBindings">
             <UCard v-if="!isNew && canDeleteItem">
-              <slot
-                name="button-delete"
-                v-bind="slotBindings"
-              >
+              <slot name="button-delete" v-bind="slotBindings">
                 <UButton
                   block
                   color="error"
@@ -904,10 +845,7 @@ defineSlots<{
       :ui="{ width: 'max-w-5xl' }"
     >
       <template #content>
-        <div
-          class="flex flex-col"
-          style="height: 80vh"
-        >
+        <div class="flex flex-col" style="height: 80vh">
           <div
             class="flex items-center justify-between px-4 py-2 border-b border-default"
           >
