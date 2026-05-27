@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 import { useMapoAuth } from "@mapomodule/core/runtime/auth/useMapoAuth";
-import { useSidebarStore } from "@mapomodule/store/runtime/stores/sidebar";
 
 withDefaults(
   defineProps<{
@@ -12,7 +11,6 @@ withDefaults(
 );
 
 const auth = useAuthStore();
-const sidebar = useSidebarStore();
 const { logout } = useMapoAuth();
 </script>
 
