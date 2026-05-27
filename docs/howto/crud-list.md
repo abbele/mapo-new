@@ -1,0 +1,263 @@
+# CRUD list view
+
+Build a full-featured resource list page using `<MapoList>`. The component handles server-side pagination, search, sorting, filters, tabs, bulk actions, and inline quick-edit — all from declarative props.
+
+## Minimal example
+
+```vue
+<script setup lang="ts">
+definePageMeta({
+  layout: "mapo-default",
+  middleware: ["auth"],
+  label: "Articles",
+  icon: "i-lucide-newspaper",
+});
+</script>
+
+<template>
+  <div class="p-6">
+    <MapoList
+      endpoint="/api/articles"
+      detail-base="/articles"
+      :columns="[
+        { key: 'title', label: 'Title', sortable: true },
+        { key: 'status', label: 'Status' },
+      ]"
+    />
+  </div>
+</template>
+```
+
+`endpoint` is the REST base URL — `MapoList` appends `?page=1&search=…&ordering=…` automatically.  
+`detail-base` is the prefix for row clicks — clicking row with `id: 42` navigates to `/articles/42`.
+
+## Full example
+
+The example below covers everything: typed model, columns, filters, tabs, bulk actions, and quick-edit fields.
+
+```vue
+<script setup lang="ts">
+import type { FieldDescriptor } from "@mapomodule/form/runtime/types/index.js";
+import type {
+  FilterDescriptor,
+  ActionDescriptor,
+  ListColumn,
+  ListTabItem,
+} from "@mapomodule/uikit/runtime/types/list.js";
+
+definePageMeta({
+  layout: "mapo-default",
+  middleware: ["auth"],
+  label: "Articles",
+  icon: "i-lucide-newspaper",
+});
+
+interface Article {
+  id: number;
+  title: string;
+  status: "draft" | "published" | "archived";
+  is_featured: boolean;
+  published_at: string | null;
+  priority: number;
+}
+
+// ── Columns ───────────────────────────────────────────────────────────────────
+const columns: ListColumn[] = [
+  {
+    key: "id",
+    label: "ID",
+    sortable: false,
+    class: "w-14 font-mono text-xs text-muted",
+  },
+  { key: "title", label: "Title", sortable: true },
+  { key: "status", label: "Status", sortable: true },
+  { key: "published_at", label: "Published", sortable: true },
+  {
+    key: "priority",
+    label: "Priority",
+    sortable: true,
+    class: "w-20 text-center",
+  },
+];
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+const filters: FilterDescriptor[] = [
+  {
+    value: "status",
+    text: "Status",
+    multiple: true,
+    choices: [
+      { text: "Published", value: "published", icon: "i-lucide-circle-check" },
+      { text: "Draft", value: "draft", icon: "i-lucide-pencil" },
+      { text: "Archived", value: "archived", icon: "i-lucide-archive" },
+    ],
+  },
+];
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+// Each tab appends ?status=<value> to the endpoint. Empty value = no filter.
+const tabs: ListTabItem[] = [
+  { text: "All", value: "" },
+  { text: "Published", value: "published" },
+  { text: "Drafts", value: "draft" },
+  { text: "Archived", value: "archived" },
+];
+
+// ── Bulk actions ─────────────────────────────────────────────────────────────
+const actions: ActionDescriptor<Article>[] = [
+  {
+    label: "Mark as published",
+    permissions: "change_article", // only shown if user has this permission
+    handleMultiple: true,
+    handler: async ({ selection }) => {
+      if (!selection) return;
+      await Promise.all(
+        selection.map((a) =>
+          $fetch(`/api/articles/${a.id}`, {
+            method: "PATCH",
+            body: { status: "published" },
+          }),
+        ),
+      );
+    },
+  },
+  {
+    label: "Delete selected",
+    permissions: "delete_article",
+    handleMultiple: true,
+    dangerous: true, // confirm dialog with red button
+    handler: async ({ selection }) => {
+      if (!selection) return;
+      await Promise.all(
+        selection.map((a) =>
+          $fetch(`/api/articles/${a.id}`, { method: "DELETE" }),
+        ),
+      );
+    },
+  },
+];
+
+// ── Quick-edit fields ─────────────────────────────────────────────────────────
+// Same FieldDescriptor syntax as MapoDetail.
+// Shown in a modal when the user clicks the pencil icon on a row.
+const quickEditFields: FieldDescriptor<Article>[] = [
+  {
+    key: "status",
+    type: "select",
+    label: "Status",
+    attrs: {
+      items: [
+        { label: "Published", value: "published" },
+        { label: "Draft", value: "draft" },
+        { label: "Archived", value: "archived" },
+      ],
+    },
+  },
+  { key: "is_featured", type: "switch", label: "Featured" },
+  {
+    key: "priority",
+    type: "number",
+    label: "Priority",
+    attrs: { min: 1, max: 100 },
+  },
+  { key: "published_at", type: "datetime", label: "Publication date" },
+];
+</script>
+
+<template>
+  <div class="p-6">
+    <MapoList
+      endpoint="/api/articles"
+      detail-base="/articles"
+      :columns="columns"
+      :filters="filters"
+      :tabs="tabs"
+      tab-query-param="status"
+      :actions="actions"
+      :edit-fields="quickEditFields"
+      lookup="id"
+      :searchable="true"
+    >
+      <!-- Custom page header with "New" button -->
+      <template #head>
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-2xl font-semibold">Articles</h1>
+          <UButton icon="i-lucide-plus" to="/articles/new" size="sm">
+            New article
+          </UButton>
+        </div>
+      </template>
+    </MapoList>
+  </div>
+</template>
+```
+
+## Custom cell rendering
+
+Use `#cell.{key}` slots to override how any column renders:
+
+```vue
+<MapoList endpoint="/api/articles" :columns="columns">
+  <template #cell.status="{ row }">
+    <UBadge
+      :color="row.status === 'published' ? 'success' : row.status === 'archived' ? 'neutral' : 'warning'"
+      variant="subtle"
+      size="xs"
+    >
+      {{ row.status }}
+    </UBadge>
+  </template>
+
+  <template #cell.published_at="{ row }">
+    <span class="text-sm text-muted">
+      {{ row.published_at ? new Date(row.published_at).toLocaleDateString() : '—' }}
+    </span>
+  </template>
+</MapoList>
+```
+
+## Programmatic refresh
+
+Expose a ref and call `refresh()` from outside the component:
+
+```vue
+<script setup lang="ts">
+const listRef = ref<{ refresh: () => void } | null>(null);
+
+async function afterBulkOperation() {
+  await doSomething();
+  listRef.value?.refresh();
+}
+</script>
+
+<template>
+  <MapoList ref="listRef" endpoint="/api/articles" :columns="columns" />
+</template>
+```
+
+## Props reference
+
+| Prop              | Type                 | Description                         |
+| ----------------- | -------------------- | ----------------------------------- |
+| `endpoint`        | `string`             | REST base URL                       |
+| `detail-base`     | `string`             | Prefix for row-click navigation     |
+| `columns`         | `ListColumn[]`       | Column definitions                  |
+| `filters`         | `FilterDescriptor[]` | Filter chips                        |
+| `tabs`            | `ListTabItem[]`      | Tab navigation                      |
+| `tab-query-param` | `string`             | Query param name for active tab     |
+| `actions`         | `ActionDescriptor[]` | Bulk actions                        |
+| `edit-fields`     | `FieldDescriptor[]`  | Quick-edit modal fields             |
+| `lookup`          | `string`             | Primary key field (default: `"id"`) |
+| `searchable`      | `boolean`            | Show search input                   |
+
+## Slots reference
+
+| Slot              | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `#head`           | Above the table — page title, toolbar       |
+| `#dtable.toolbar` | Extra controls next to the search input     |
+| `#dtable.empty`   | Custom empty state                          |
+| `#cell.{key}`     | Override a specific column's cell rendering |
+| `#filter.{value}` | Custom filter UI for a specific filter key  |
+
+→ See also: [CRUD detail / form](./crud-detail)
