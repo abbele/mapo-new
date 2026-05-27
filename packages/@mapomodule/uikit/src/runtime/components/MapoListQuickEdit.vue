@@ -7,16 +7,27 @@ import { useCrud } from "@mapomodule/core/runtime/api/crud";
 const props = withDefaults(
   defineProps<{
     open: boolean;
-    endpoint: string;
+    endpoint?: string;
     itemId?: string | number | null;
     editFields?: FieldDescriptor<T>[];
     lookup?: string;
     languages?: string[];
     registry?: Partial<FieldRegistry>;
+    /**
+     * Offline mode: skip backend detail/save calls. The form is seeded from
+     * `localItem`, and `saved` emits the locally edited model so the parent
+     * can splice it back into its array.
+     */
+    offline?: boolean;
+    /** Seed item for offline mode (clone is taken to avoid mutating parent state). */
+    localItem?: T | null;
   }>(),
   {
+    endpoint: "",
     lookup: "id",
     editFields: () => [],
+    offline: false,
+    localItem: null,
   },
 );
 
@@ -52,6 +63,13 @@ watch(
       model.value = {} as T;
       return;
     }
+    // Offline: seed from the locally-passed item (cloned), no detail() call.
+    if (props.offline) {
+      model.value = props.localItem
+        ? (JSON.parse(JSON.stringify(props.localItem)) as T)
+        : ({} as T);
+      return;
+    }
     loading.value = true;
     try {
       model.value = await crud.detail(id as string | number);
@@ -67,6 +85,14 @@ watch(
 async function save() {
   saving.value = true;
   try {
+    // Offline: no backend roundtrip — emit the locally edited model and let
+    // the parent splice it back into the source array.
+    if (props.offline) {
+      snack.show("Saved", "success");
+      emit("saved", { ...model.value } as T);
+      isOpen.value = false;
+      return;
+    }
     const result =
       props.itemId != null
         ? await crud.partialUpdate(props.itemId as string | number, model.value)

@@ -19,7 +19,21 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    endpoint: string;
+    endpoint?: string;
+    /**
+     * Offline mode: pass a local array to drive the list entirely in memory.
+     * Search, filters, sort, pagination, drag-reorder and delete all happen
+     * client-side. Mutations emit `update:items` so the parent owns the array.
+     * When set, `endpoint` is ignored.
+     */
+    items?: T[];
+    /**
+     * Hybrid mode: with `endpoint` set and `clientSide: true`, the list fetches
+     * the full dataset ONCE and runs search/filter/sort/pagination locally.
+     * Mutations (delete, drag, quick-edit) still hit the backend, then refetch.
+     * Ignored when `items` is provided.
+     */
+    clientSide?: boolean;
     columns: ListColumn<T>[];
     lookup?: string;
     // Filters
@@ -61,6 +75,9 @@ const props = withDefaults(
     }) => Record<string, unknown>;
   }>(),
   {
+    endpoint: "",
+    items: undefined,
+    clientSide: false,
     lookup: "id",
     filters: () => [],
     actions: () => [],
@@ -74,6 +91,10 @@ const props = withDefaults(
     pageSizeOptions: () => [10, 20, 50, 100],
   },
 );
+
+const emit = defineEmits<{
+  "update:items": [value: T[]];
+}>();
 
 // --- URL state (read once on mount, then write on change) ---
 const route = useRoute();
@@ -148,7 +169,7 @@ watch([activeTab, activeFilters], writeUrlState, { deep: true });
 
 // --- crudEndpoint: base path for mutations (no query string). ---
 const crudEndpoint = computed(
-  () => props.endpoint.split("?")[0] || props.endpoint,
+  () => (props.endpoint ?? "").split("?")[0] || (props.endpoint ?? ""),
 );
 
 // --- filterParams: active tab + active filters → backend query params. ---
@@ -267,6 +288,8 @@ watch([activeTab, activeFilters], () => {
     <MapoListTable
       ref="tableRef"
       :endpoint="endpoint"
+      :items="items"
+      :client-side="clientSide"
       :crud-endpoint="crudEndpoint"
       :filter-params="filterParams"
       :columns="columns"
@@ -284,6 +307,7 @@ watch([activeTab, activeFilters], () => {
       :pagination-params="paginationParams"
       @update:selection="selection = $event"
       @update:selection-query="selectionQuery = $event"
+      @update:items="emit('update:items', $event)"
     >
       <template v-for="(_, name) in $slots" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps ?? {}" />

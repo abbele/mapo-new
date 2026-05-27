@@ -62,7 +62,10 @@ Current implementation status of all Mapo v2 features relative to the legacy v1 
 | Feature                                    | Notes                                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `<MapoList>` shell                         | Composes `<MapoListHead>`, `<MapoListFilters>`, `<MapoListActions>`, `<MapoListTabs>`, `<MapoListTable>`, `<MapoListQuickEdit>` |
-| Server-side pagination / search / ordering | Filters, tabs, and pagination all pass as `list()` params — never baked into the endpoint string                                |
+| Server-side pagination / search / ordering | Default mode: filters, tabs, and pagination all pass as `list()` params — never baked into the endpoint string                  |
+| Offline mode (`v-model:items`)             | No backend: search / filter / tab / sort / paginate / drag-reorder / delete / quick-edit all run in memory on the parent array  |
+| Hybrid mode (`client-side` prop)           | Single fetch on mount; filters / sort / paginate run client-side. Mutations (delete, drag, quick-edit) hit BE then refetch      |
+| Multi-column sort (offline / hybrid)       | Sorting columns applied in order, each as a tiebreaker for the previous one (matches TanStack default)                          |
 | Filters + sorting work simultaneously      | Active filters are preserved when sorting; sorting is preserved when filters change (B1 fix)                                    |
 | `endpoint` with static query params        | Params in the endpoint URL (e.g. `?ordering=-date`) are passed to `list()` calls; CRUD ops use the clean path (B2 fix)          |
 | Selection keyed by `lookup`                | Paging or sorting does not move selections                                                                                      |
