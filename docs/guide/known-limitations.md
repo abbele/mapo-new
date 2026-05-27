@@ -4,17 +4,41 @@ This page documents known technical debts, workarounds, and planned improvements
 
 ---
 
-## `installModule` deprecation warning
+## `installModule` deprecation warning (active in selected modules)
 
-**Affects**: `@mapomodule/store/src/module.ts`, `mapomodule/src/module.ts`
+**Affects**: `mapomodule/src/module.ts`, `@mapomodule/core/src/module.ts`
 
 **Status**: Low risk, functional
 
-Both modules call `await installModule('@pinia/nuxt')` and `await installModule('@mapomodule/core')` respectively. Recent `@nuxt/kit` typings mark `installModule` as deprecated with a hint message, but it still works correctly at runtime and no replacement pattern exists yet for "module installs another module" in Nuxt 4.
+Nuxt 4.1 introduced `moduleDependencies` as the replacement for many `installModule()` use cases, and Mapo adopts it where compatible (for example in `@mapomodule/uikit`).
 
-**Workaround in use**: Continue using `installModule` — the deprecation is a hint, not a breaking change.
+However, in the current pnpm strict monorepo setup, the meta-module `mapomodule` still needs resolver-based transitive installs (`resolver.resolvePath(...) + installModule(...)`) so consuming apps are not forced to declare every `@mapomodule/*` package explicitly.
 
-**TODO**: Monitor [nuxt/kit](https://github.com/nuxt/nuxt) for an official replacement. When one lands, update both module files.
+This means deprecation warnings can still appear in these two files, but runtime behavior is correct.
+
+## Nuxt 4.1+ `moduleDependencies` feature
+
+**Affects**: currently used in `@mapomodule/uikit/src/module.ts` for `@nuxt/ui` dependency declaration
+
+**Status**: Active
+
+Mapo now declares module dependencies with `moduleDependencies` instead of calling `installModule()` in `setup()`.
+
+What this provides:
+
+- explicit dependency graph between modules
+- optional semver constraints (`version`)
+- per-dependency config merge controls:
+  - `defaults`: apply only when user config is missing
+  - `overrides`: force values over `nuxt.options`
+- cleaner setup code with fewer runtime checks
+
+For Mapo specifically:
+
+- keep `moduleDependencies` where module names resolve reliably in consumer apps
+- keep resolver-based `installModule` where transitive local package resolution is still required
+
+This hybrid strategy preserves the public API and pnpm strict compatibility while progressively adopting Nuxt 4.1+ patterns.
 
 ---
 

@@ -139,12 +139,13 @@ The main sidebar shell. Used internally by `mapo-default` layout — you typical
 
 **Slots:**
 
-| Slot         | Description                                               |
-| ------------ | --------------------------------------------------------- |
-| `logo`       | Replaces the default Mapo logo and title in the header    |
-| `nav-top`    | Content injected above the main navigation list           |
-| `nav-bottom` | Content injected below the main navigation list           |
-| `footer`     | Replaces the entire footer section (user avatar + logout) |
+| Slot           | Description                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| `logo`         | Replaces the default Mapo logo and title in the header                                                |
+| `nav-top`      | Content injected above the main navigation list                                                       |
+| `nav-bottom`   | Content injected below the main navigation list                                                       |
+| `footer-extra` | Content between the footer nav (sidebarFooter routes) and the user profile row — add extra links here |
+| `footer`       | Replaces the entire user profile row at the very bottom                                               |
 
 Example — custom logo:
 
@@ -155,6 +156,19 @@ Example — custom logo:
       <img src="~/assets/logo.svg" class="h-6" />
       <span>Acme</span>
     </NuxtLink>
+  </template>
+</MapoSidebar>
+```
+
+Example — custom footer with `MapoSidebarProfile` and `MapoLogoutButton`:
+
+```vue
+<!-- Use MapoSidebarProfile standalone or override the footer slot entirely -->
+<MapoSidebar>
+  <template #footer>
+    <MapoSidebarProfile :mini="sidebar.mini" />
+    <!-- or replace completely with a custom logout button -->
+    <MapoLogoutButton icon-only size="xs" />
   </template>
 </MapoSidebar>
 ```

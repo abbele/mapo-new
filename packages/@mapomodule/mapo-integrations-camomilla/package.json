@@ -6,6 +6,10 @@
   "exports": {
     ".": {
       "import": "./dist/module.mjs"
+    },
+    "./types": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.mts"
     }
   },
   "files": [
@@ -14,7 +18,7 @@
   "scripts": {
     "dev": "nuxt-module-build build --stub --watch",
     "build": "nuxt-module-build build",
-    "prepare": "nuxt-module-build build --stub",
+    "prepare": "nuxt-module-build build",
     "dev:prepare": "nuxt-module-build build --stub",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"

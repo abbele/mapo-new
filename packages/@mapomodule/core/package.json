@@ -7,8 +7,14 @@
     ".": {
       "import": "./dist/module.mjs"
     },
+    "./types": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.mts"
+    },
     "./runtime/*": {
-      "import": "./dist/runtime/*.js"
+      "types": "./src/runtime/*",
+      "import": "./dist/runtime/*.js",
+      "default": "./src/runtime/*"
     }
   },
   "files": [
@@ -17,7 +23,7 @@
   "scripts": {
     "dev": "nuxt-module-build build --stub --watch",
     "build": "nuxt-module-build build",
-    "prepare": "nuxt-module-build build --stub",
+    "prepare": "nuxt-module-build build",
     "dev:prepare": "nuxt-module-build build --stub",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
