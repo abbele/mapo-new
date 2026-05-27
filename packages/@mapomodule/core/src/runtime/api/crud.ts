@@ -23,10 +23,7 @@ export function useCrud<T>(
     path: string,
     options: Record<string, unknown>,
   ): Promise<R> {
-    return useMapoFetch()(
-      path,
-      options as Parameters<ReturnType<typeof useMapoFetch>>[1],
-    ) as Promise<R>;
+    return useMapoFetch().fetch(path, options as never) as Promise<R>;
   }
 
   return {

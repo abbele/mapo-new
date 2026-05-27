@@ -7,8 +7,14 @@
     ".": {
       "import": "./dist/module.mjs"
     },
+    "./types": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.mts"
+    },
     "./runtime/*": {
-      "import": "./dist/runtime/*.js"
+      "types": "./src/runtime/*",
+      "import": "./dist/runtime/*.js",
+      "default": "./src/runtime/*"
     }
   },
   "files": [

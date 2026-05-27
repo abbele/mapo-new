@@ -39,6 +39,14 @@ In practice, prefer `mapomodule` as the single entry point — it installs `@map
 
 All composables are auto-imported in the Nuxt app — no explicit imports needed.
 
+| Composable            | Description                                             |
+| --------------------- | ------------------------------------------------------- |
+| `useCrud<T>()`        | CRUD repository factory                                 |
+| `useMapoAuth()`       | Login / logout / fetchUser                              |
+| `useMapo()`           | Facade aggregating the most common composables          |
+| `useCanAccessRoute()` | Checks if the current user can access a route by perms  |
+| `useMapoFetch()`      | Returns the `$mapoFetch` instance (auth-aware `$fetch`) |
+
 ---
 
 ## Boot plugins
@@ -211,6 +219,38 @@ const confirmed = await confirm.open({
 
 ---
 
+## `useMapoFetch()`
+
+Returns the global `$mapoFetch` instance together with a centralized `loading` indicator. `loading` tracks **all** in-flight `$mapoFetch` requests across the entire app — it is maintained by plugin-level `onRequest`/`onResponse` interceptors, so it reflects raw `useNuxtApp().$mapoFetch` calls too, not just calls made through this composable.
+
+```ts
+const { fetch, loading } = useMapoFetch();
+
+async function submit(data: unknown) {
+  await fetch("/api/articles/", { method: "POST", body: data });
+}
+```
+
+```vue
+<template>
+  <!-- loading is true while ANY $mapoFetch request is in flight -->
+  <UButton :loading="loading" @click="submit(payload)">Save</UButton>
+</template>
+```
+
+`useMapoFetch` is auto-imported — no manual import needed. `loading` is a `ComputedRef<boolean>` that handles concurrent calls correctly (stays `true` until the last in-flight request completes).
+
+You can also access the loading state directly from anywhere without destructuring:
+
+```ts
+const { $mapoFetchLoading } = useNuxtApp();
+// use $mapoFetchLoading in a template or composable
+```
+
+> **vs `useCrud`**: prefer `useCrud<T>()` for standard REST resources — it adds typed methods, multipart handling, and differential PATCH. Use `useMapoFetch` for one-off calls or non-REST endpoints.
+
+---
+
 ## Route middleware
 
 Three named route middleware are registered automatically:
@@ -298,4 +338,4 @@ This is the v2 equivalent of Vuex `nuxtServerInit`. See [Architecture Flows](/gu
 
 ## Known limitations
 
-See [Known Limitations](/guide/known-limitations) for active TODOs, including the `installModule` deprecation notice and the subpath import workaround required by `nuxt-module-builder`.
+See [Known Limitations](/guide/known-limitations) for active TODOs, including notes on the current `installModule`/`moduleDependencies` hybrid strategy and the subpath import workaround required by `nuxt-module-builder`.

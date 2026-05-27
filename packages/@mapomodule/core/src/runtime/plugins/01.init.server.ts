@@ -9,7 +9,7 @@ import { setActivePinia } from "pinia";
 import type { Pinia } from "pinia";
 import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
 import { useSidebarStore } from "@mapomodule/store/runtime/stores/sidebar";
-import type { MapoUser } from "@mapomodule/store";
+import type { MapoUser } from "@mapomodule/store/runtime/types";
 import { CoreCookieEnum } from "../types";
 
 export default defineNuxtPlugin({

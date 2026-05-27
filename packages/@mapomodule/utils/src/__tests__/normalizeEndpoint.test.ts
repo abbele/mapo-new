@@ -29,4 +29,20 @@ describe("normalizeEndpoint", () => {
   it("handles empty string", () => {
     expect(normalizeEndpoint("")).toBe("//");
   });
+
+  it("preserves query string without adding trailing slash after ?", () => {
+    expect(normalizeEndpoint("/api/articles/?fields=id,title")).toBe(
+      "/api/articles/?fields=id,title",
+    );
+  });
+
+  it("adds trailing slash before query string when path has no trailing slash", () => {
+    expect(normalizeEndpoint("/api/articles?fields=id,title")).toBe(
+      "/api/articles/?fields=id,title",
+    );
+  });
+
+  it("adds leading slash when path with query string has no leading slash", () => {
+    expect(normalizeEndpoint("api/articles/?q=1")).toBe("/api/articles/?q=1");
+  });
 });

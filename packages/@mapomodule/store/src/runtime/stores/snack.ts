@@ -6,8 +6,13 @@ let _nextId = 0;
 
 export const useSnackStore = defineStore("mapo-snack", {
   state: () => ({
-    current: null as SnackMessage | null,
+    messages: [] as SnackMessage[],
   }),
+
+  getters: {
+    current: (state): SnackMessage | null =>
+      state.messages[state.messages.length - 1] ?? null,
+  },
 
   actions: {
     show(
@@ -15,11 +20,19 @@ export const useSnackStore = defineStore("mapo-snack", {
       type: SnackType = SnackTypeEnum.Info,
       duration = 4000,
     ) {
-      this.current = { id: ++_nextId, message, type, duration };
+      this.messages.push({ id: ++_nextId, message, type, duration });
     },
 
-    dismiss() {
-      this.current = null;
+    dismiss(id?: number) {
+      if (id !== undefined) {
+        this.messages = this.messages.filter((m) => m.id !== id);
+      } else {
+        this.messages.pop();
+      }
+    },
+
+    dismissAll() {
+      this.messages = [];
     },
   },
 });
