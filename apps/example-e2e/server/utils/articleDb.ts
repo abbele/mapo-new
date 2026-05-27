@@ -1,6 +1,11 @@
 // In-memory database for the article stress-test example.
 // All data is reset on server restart.
 
+export interface ListResponse<T> {
+  results: T[];
+  count: number;
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -759,17 +764,154 @@ const articles: Article[] = [
   },
 ];
 
-let nextId = 3;
+// Generate 30+ more articles for stress testing
+const baseArticles = [...articles];
+for (let i = 0; i < 35; i++) {
+  const statuses: Article["status"][] = [
+    "draft",
+    "review",
+    "ready",
+    "published",
+    "archived",
+  ];
+  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+  const randomFeatured = Math.random() > 0.8;
+  const randomReadingTime = Math.floor(Math.random() * 20) + 3;
+  const randomCategory =
+    categories[Math.floor(Math.random() * categories.length)];
+  const randomPublishedAt =
+    randomStatus === "published"
+      ? new Date(
+          Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000,
+        ).toISOString()
+      : null;
+
+  baseArticles.push({
+    id: 100 + i,
+    title: `Article ${100 + i}: ${["Vue 3", "Nuxt 4", "TypeScript", "Performance", "Design", "API", "Testing", "DevOps"][Math.floor(Math.random() * 8)]} Tips & Tricks`,
+    slug: `article-${100 + i}-tips-tricks`,
+    excerpt: `Learn advanced ${randomCategory.name.toLowerCase()} patterns and best practices for production applications.`,
+    body: "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>",
+    cover_color: [
+      "#3b82f6",
+      "#10b981",
+      "#f97316",
+      "#8b5cf6",
+      "#ef4444",
+      "#ec4899",
+    ][Math.floor(Math.random() * 6)],
+    seo: {
+      title: `Article ${100 + i} | Blog`,
+      description: `Learn advanced tips for ${randomCategory.name.toLowerCase()}.`,
+    },
+    category: randomCategory.id,
+    tags: [
+      tags[Math.floor(Math.random() * tags.length)].id,
+      tags[Math.floor(Math.random() * tags.length)].id,
+    ],
+    status: randomStatus,
+    featured: randomFeatured,
+    allow_comments: true,
+    reading_time: randomReadingTime,
+    location: null,
+    gallery: [],
+    priority: Math.floor(Math.random() * 10),
+    published_at: randomPublishedAt,
+    created_at: new Date(
+      Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+    updated_at: new Date().toISOString(),
+  } as Article);
+}
+
+articles.push(...baseArticles.slice(3));
+
+let nextId = 200;
 
 // ─── CRUD helpers ─────────────────────────────────────────────────────────────
 
-export function getArticles(search?: string): Article[] {
-  if (!search) return articles;
-  const q = search.toLowerCase();
-  return articles.filter(
-    (a) =>
-      a.title.toLowerCase().includes(q) || a.slug.toLowerCase().includes(q),
-  );
+export interface GetArticlesOptions {
+  search?: string;
+  status?: string;
+  featured?: boolean;
+  category?: number;
+  page?: number;
+  page_size?: number;
+  ordering?: string;
+  published_at__gte?: string;
+  published_at__lte?: string;
+}
+
+export function getArticles(
+  options: GetArticlesOptions = {},
+): ListResponse<Article> {
+  let results = [...articles];
+
+  // Filter by search
+  if (options.search) {
+    const q = options.search.toLowerCase();
+    results = results.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) || a.slug.toLowerCase().includes(q),
+    );
+  }
+
+  // Filter by status
+  if (options.status) {
+    const statuses = options.status.split(",");
+    results = results.filter((a) => statuses.includes(a.status));
+  }
+
+  // Filter by featured
+  if (options.featured !== undefined) {
+    results = results.filter((a) => a.featured === options.featured);
+  }
+
+  // Filter by category
+  if (options.category) {
+    results = results.filter((a) => a.category === options.category);
+  }
+
+  // Filter by date range
+  if (options.published_at__gte) {
+    const gte = new Date(options.published_at__gte).getTime();
+    results = results.filter(
+      (a) => a.published_at && new Date(a.published_at).getTime() >= gte,
+    );
+  }
+  if (options.published_at__lte) {
+    const lte = new Date(options.published_at__lte).getTime();
+    results = results.filter(
+      (a) => a.published_at && new Date(a.published_at).getTime() <= lte,
+    );
+  }
+
+  // Sort by ordering
+  if (options.ordering) {
+    const [field, desc] = options.ordering.startsWith("-")
+      ? [options.ordering.slice(1), true]
+      : [options.ordering, false];
+
+    results.sort((a, b) => {
+      const aVal = (a as Record<string, any>)[field];
+      const bVal = (b as Record<string, any>)[field];
+
+      if (aVal < bVal) return desc ? 1 : -1;
+      if (aVal > bVal) return desc ? -1 : 1;
+      return 0;
+    });
+  }
+
+  // Pagination
+  const page = options.page ?? 1;
+  const page_size = options.page_size ?? 20;
+  const start = (page - 1) * page_size;
+  const end = start + page_size;
+
+  return {
+    results: results.slice(start, end),
+    count: results.length,
+  };
 }
 
 export function getArticle(id: number): Article | undefined {
