@@ -1,12 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import {
-  ref,
-  computed,
-  useSlots,
-  watch,
-  onMounted,
-  onBeforeUnmount,
-} from "vue";
+import { ref, computed, useSlots, onMounted, onBeforeUnmount, Ref } from "vue";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { objectDiff } from "@mapomodule/utils";
 import type {
