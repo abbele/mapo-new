@@ -2,6 +2,8 @@
 
 `<MapoList>` is the admin data-table shell. It wires together pagination, search, filters, tabs, bulk actions, drag reorder, and an inline quick-edit modal — all driven by the same descriptors you use elsewhere (CRUD endpoint, column definitions, `FieldDescriptor[]`).
 
+It runs in three modes — pick one with the `endpoint`, `items` and `client-side` props (see [Operating modes](#operating-modes)).
+
 ## TL;DR
 
 ```vue
@@ -61,28 +63,30 @@ That single component renders a paginated table, a search input, a filter dropdo
 
 ## Props
 
-| Prop               | Type                                                     | Default          | Description                                                                                                                                                                                                                          |
-| ------------------ | -------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `endpoint`         | `string`                                                 | —                | REST collection endpoint. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations (detail, delete, reorder) automatically use the path without the query string.        |
-| `columns`          | `ListColumn<T>[]`                                        | —                | Column definitions. Pass the model type as generic (`ListColumn<News>[]`) to enforce that `key` is a real property of `T`.                                                                                                           |
-| `lookup`           | `string`                                                 | `'id'`           | Key used as primary key (selection, links, drag)                                                                                                                                                                                     |
-| `filters`          | `FilterDescriptor[]`                                     | `[]`             | Filter dropdown items                                                                                                                                                                                                                |
-| `actions`          | `ActionDescriptor<T>[]`                                  | `[]`             | Bulk actions shown when rows are selected                                                                                                                                                                                            |
-| `tabs`             | `ListTabItem[]`                                          | `[]`             | Status / segment tab bar                                                                                                                                                                                                             |
-| `defaultTab`       | `string`                                                 | first tab        | Active tab on mount                                                                                                                                                                                                                  |
-| `tabQueryParam`    | `string`                                                 | `'tab'`          | Query param used when fetching with a tab                                                                                                                                                                                            |
-| `searchable`       | `boolean`                                                | `true`           | Show the search input                                                                                                                                                                                                                |
-| `draggable`        | `boolean`                                                | `false`          | Enable drag-reorder rows                                                                                                                                                                                                             |
-| `positionField`    | `string`                                                 | `'position'`     | Field used for ordering                                                                                                                                                                                                              |
-| `editFields`       | `FieldDescriptor<T>[]`                                   | `[]`             | Inline quick-edit modal field list                                                                                                                                                                                                   |
-| `languages`        | `string[]`                                               | —                | Languages for translatable quick-edit fields                                                                                                                                                                                         |
-| `registry`         | `Partial<FieldRegistry>`                                 | —                | Optional registry override (auto-injected otherwise)                                                                                                                                                                                 |
-| `detailBase`       | `string`                                                 | —                | If set, each row shows a link button → `${detailBase}/${row[lookup]}`                                                                                                                                                                |
-| `defaultPageSize`  | `number`                                                 | `20`             | Initial page size on mount                                                                                                                                                                                                           |
-| `pageSizeOptions`  | `number[]`                                               | `[10,20,50,100]` | Options in the per-page selector                                                                                                                                                                                                     |
-| `responseAdapter`  | `(raw: unknown) => { items: T[]; total: number }`        | —                | Custom response parser — replaces built-in DRF / flat-array detection                                                                                                                                                                |
-| `paginationParams` | `(state: { page, pageSize }) => Record<string, unknown>` | —                | Custom pagination params factory — replaces default `{ page, page_size }`                                                                                                                                                            |
-| `permissionModel`  | `string`                                                 | —                | Django model label (e.g. `"news.article"`) used to gate edit and delete row actions. When set, the pencil/trash icons are hidden if the current user lacks `change_*` / `delete_*` permissions. Omit to keep actions always visible. |
+| Prop               | Type                                                     | Default          | Description                                                                                                                                                                                                                                  |
+| ------------------ | -------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `endpoint`         | `string`                                                 | —                | REST collection endpoint. Required in **server** and **hybrid** modes; ignored when `items` is set. May include static query params (e.g. `?ordering=-date`) — they are merged into every `list()` call. CRUD operations use the clean path. |
+| `items`            | `T[]`                                                    | —                | Drives **offline** mode. Pass via `v-model:items` if you want mutations (drag, delete, quick-edit) reflected back into your local array.                                                                                                     |
+| `clientSide`       | `boolean`                                                | `false`          | Enables **hybrid** mode (only when `endpoint` is set and `items` is not). Fetches the full dataset once, runs filter/sort/page client-side. Mutations still hit the backend, then refetch.                                                   |
+| `columns`          | `ListColumn<T>[]`                                        | —                | Column definitions. Pass the model type as generic (`ListColumn<News>[]`) to enforce that `key` is a real property of `T`.                                                                                                                   |
+| `lookup`           | `string`                                                 | `'id'`           | Key used as primary key (selection, links, drag)                                                                                                                                                                                             |
+| `filters`          | `FilterDescriptor[]`                                     | `[]`             | Filter dropdown items                                                                                                                                                                                                                        |
+| `actions`          | `ActionDescriptor<T>[]`                                  | `[]`             | Bulk actions shown when rows are selected                                                                                                                                                                                                    |
+| `tabs`             | `ListTabItem[]`                                          | `[]`             | Status / segment tab bar                                                                                                                                                                                                                     |
+| `defaultTab`       | `string`                                                 | first tab        | Active tab on mount                                                                                                                                                                                                                          |
+| `tabQueryParam`    | `string`                                                 | `'tab'`          | Query param used when fetching with a tab                                                                                                                                                                                                    |
+| `searchable`       | `boolean`                                                | `true`           | Show the search input                                                                                                                                                                                                                        |
+| `draggable`        | `boolean`                                                | `false`          | Enable drag-reorder rows                                                                                                                                                                                                                     |
+| `positionField`    | `string`                                                 | `'position'`     | Field used for ordering                                                                                                                                                                                                                      |
+| `editFields`       | `FieldDescriptor<T>[]`                                   | `[]`             | Inline quick-edit modal field list                                                                                                                                                                                                           |
+| `languages`        | `string[]`                                               | —                | Languages for translatable quick-edit fields                                                                                                                                                                                                 |
+| `registry`         | `Partial<FieldRegistry>`                                 | —                | Optional registry override (auto-injected otherwise)                                                                                                                                                                                         |
+| `detailBase`       | `string`                                                 | —                | If set, each row shows a link button → `${detailBase}/${row[lookup]}`                                                                                                                                                                        |
+| `defaultPageSize`  | `number`                                                 | `20`             | Initial page size on mount                                                                                                                                                                                                                   |
+| `pageSizeOptions`  | `number[]`                                               | `[10,20,50,100]` | Options in the per-page selector                                                                                                                                                                                                             |
+| `responseAdapter`  | `(raw: unknown) => { items: T[]; total: number }`        | —                | Custom response parser — replaces built-in DRF / flat-array detection                                                                                                                                                                        |
+| `paginationParams` | `(state: { page, pageSize }) => Record<string, unknown>` | —                | Custom pagination params factory — replaces default `{ page, page_size }`                                                                                                                                                                    |
+| `permissionModel`  | `string`                                                 | —                | Django model label (e.g. `"news.article"`) used to gate edit and delete row actions. When set, the pencil/trash icons are hidden if the current user lacks `change_*` / `delete_*` permissions. Omit to keep actions always visible.         |
 
 The `registry` prop is **optional** — `<MapoList>` falls back to the global `$mapoFormRegistry` automatically.
 
@@ -423,9 +427,91 @@ If you need an always-visible inline button on every row regardless of selection
 
 ---
 
+## Operating modes
+
+`<MapoList>` supports three operating modes — the active one is decided by which props you pass:
+
+| Mode        | Trigger                                  | Network behavior                                            | Mutations (delete, drag, quick-edit)                       |
+| ----------- | ---------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------- |
+| **Server**  | `endpoint` set, no `items`               | One `list()` per change to filter/sort/page/search          | Hit the backend, then refetch the current page             |
+| **Hybrid**  | `endpoint` set, `client-side` true       | One `list()` on mount; filter/sort/page run in memory       | Hit the backend, then refetch the full dataset             |
+| **Offline** | `items` set (with or without `endpoint`) | Zero requests; everything runs in memory on the local array | Emit `update:items` so the parent owns the source of truth |
+
+When more than one is set, **`items` wins** over `clientSide`.
+
+### Server mode (default)
+
+The shape you've already been using — every interaction (page, sort, filter, search, tab) translates into request params on `crud.list()`:
+
+```vue
+<MapoList endpoint="/api/news/" :columns="columns" :filters="filters" />
+```
+
+Use this whenever the dataset is too large to load at once, or the backend already supports DRF-style filtering / ordering / pagination.
+
+### Hybrid mode (`client-side`)
+
+The backend returns the **whole** list once on mount; from then on, all filter / sort / page / search interactions run client-side without any extra requests. Mutations still call the backend (`delete`, `updateOrder`, quick-edit `partialUpdate`) and trigger a refetch so the cache stays in sync.
+
+```vue
+<MapoList
+  endpoint="/api/news/"
+  client-side
+  :columns="columns"
+  :filters="filters"
+/>
+```
+
+Use this when:
+
+- The dataset fits comfortably in memory (a few thousand rows at most).
+- You want instant UI for filter / sort / page without making the backend implement them.
+- You still want create / update / delete to be real BE operations.
+
+> **Sizing tip:** if the backend paginates by default, ask for a large page in the endpoint URL — e.g. `endpoint="/api/news/?page_size=1000"` — so the initial fetch returns everything.
+
+### Offline mode (`v-model:items`)
+
+There is no backend involvement at all. The component reads and writes a local array passed by the parent:
+
+```vue
+<script setup lang="ts">
+const tasks = ref<Task[]>([...]);
+</script>
+
+<template>
+  <MapoList
+    v-model:items="tasks"
+    :columns="columns"
+    :filters="filters"
+    :tabs="tabs"
+    :edit-fields="quickEdit"
+    searchable
+    draggable
+  />
+</template>
+```
+
+What runs in memory: **everything** — search, filters, tabs, sort, pagination, drag-reorder, row delete, and quick-edit save. Each mutation emits `update:items` with the new array; the parent is the source of truth.
+
+Use this for:
+
+- Demo / playground pages
+- Lookup tables loaded as static JSON
+- Forms with a nested list (the array is just a piece of the parent form)
+- Frontend-only prototypes before the BE exists
+
+### Multi-column sort (offline / hybrid)
+
+In server mode the sort is sent to the BE as `?ordering=`. In offline and hybrid modes, sorting is performed in JS — multi-column sort is supported, each column acting as a tiebreaker for the previous one (matches TanStack's default behavior).
+
+---
+
 ## Pitfalls
 
 - **Selection survives reload only with `lookup`** — the table keys selection by `row[lookup]`. If your model uses `slug` or a UUID instead of `id`, set `lookup` accordingly.
 - **`tabQueryParam` collides with filters** — if your backend uses the same key both as a tab segment and a filter, the tab wins. Pick a different filter `value`.
 - **Bulk actions on `selection: 'all'`** — when the user selects "all rows across pages", `selection` is `null`. Use `selectionQuery` to stream a server-side bulk endpoint, do not fetch every row client-side.
 - **`columns[].class` must be static** — Tailwind v4 requires literal class names; `:class="dynamic"` does not work in column defs.
+- **Hybrid mode + paginated BE** — `client-side` issues a single `list()` with no pagination params; if the backend paginates by default, you'll only get the first page. Bake a large page size into the endpoint URL (e.g. `?page_size=1000`) to receive the full set.
+- **Offline mode ignores `permissionModel`** — without a Django backend there are no permissions to gate against. Hide actions yourself via column slots if needed.

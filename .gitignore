@@ -36,7 +36,13 @@ UX_improve.md
 MISSING*.md
 E2E_*.md
 E2E_improve.md
+DEV_*.md
+DEV_improve.md
 
 # Stray screenshots dropped at repo root
 /Screenshot*.png
 /*.png
+/tickets
+TICKET_ROADMAP.md
+IMPROVE_ROADMAP.md
+*_ROADMAP.md

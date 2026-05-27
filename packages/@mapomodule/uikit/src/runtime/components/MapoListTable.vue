@@ -18,7 +18,14 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    endpoint: string;
+    endpoint?: string;
+    /**
+     * Offline mode: when provided, the table renders this array and applies
+     * search/filter/sort/pagination/drag/delete in memory — no API calls.
+     * Mutations (drag reorder, delete, quick-edit) emit `update:items` so the
+     * parent owns the source of truth.
+     */
+    items?: T[];
     /**
      * Clean endpoint used for detail / delete / updateOrder CRUD operations.
      * Defaults to `endpoint` with the query string stripped.
@@ -51,6 +58,13 @@ const props = withDefaults(
       page: number;
       pageSize: number;
     }) => Record<string, unknown>;
+    /**
+     * Hybrid mode: when true and `endpoint` is set, the table fetches the
+     * full dataset ONCE (no pagination/sort/filter params) and then runs
+     * search/filter/sort/pagination locally. Mutations (delete, drag, quick-edit)
+     * still hit the backend, then re-fetch. Ignored when `items` is provided.
+     */
+    clientSide?: boolean;
     columns: ListColumn<T>[];
     lookup?: string;
     searchable?: boolean;
@@ -69,6 +83,9 @@ const props = withDefaults(
     permissionModel?: string;
   }>(),
   {
+    endpoint: "",
+    items: undefined,
+    clientSide: false,
     lookup: "id",
     searchable: true,
     draggable: false,
@@ -79,9 +96,13 @@ const props = withDefaults(
   },
 );
 
+const offlineMode = computed(() => Array.isArray(props.items));
+const hybridMode = computed(() => !offlineMode.value && props.clientSide);
+
 const emit = defineEmits<{
   "update:selection": [value: T[] | "all"];
   "update:selectionQuery": [value: URLSearchParams];
+  "update:items": [value: T[]];
 }>();
 
 defineExpose({ refresh });
@@ -126,15 +147,29 @@ const canDeleteRow = computed(
 );
 
 // --- Data state ---
-const items = ref<T[]>([]) as Ref<T[]>;
+// `rows` holds the slice currently rendered (post search/filter/sort/pagination).
+// In offline mode, the parent's full array lives in `props.items` and is the
+// source of truth; this ref always holds the displayed page.
+const rows = ref<T[]>([]) as Ref<T[]>;
+// `fullDataset` caches the full server response in hybrid mode. Refilled on
+// endpoint change or after a mutation; reused for every filter/sort/page change.
+const fullDataset = ref<T[]>([]) as Ref<T[]>;
+const hybridLoaded = ref(false);
 const total = ref(0);
 const loading = ref(false);
 
+function toPositiveNumber(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 // --- Pagination (restored from URL) ---
 const pagination = ref<PaginationState>({
-  pageIndex: route.query.page ? Math.max(0, Number(route.query.page) - 1) : 0,
+  pageIndex: route.query.page
+    ? Math.max(0, toPositiveNumber(route.query.page, 1) - 1)
+    : 0,
   pageSize: route.query.page_size
-    ? Number(route.query.page_size)
+    ? toPositiveNumber(route.query.page_size, props.defaultPageSize)
     : props.defaultPageSize,
 });
 
@@ -192,16 +227,16 @@ const rowSelection = ref<Record<string, boolean>>({});
 const pkOf = (row: T) => String(row[props.lookup]);
 const isAllSelected = computed(
   () =>
-    items.value.length > 0 &&
-    items.value.every((r) => rowSelection.value[pkOf(r)]),
+    rows.value.length > 0 &&
+    rows.value.every((r) => rowSelection.value[pkOf(r)]),
 );
 const isIndeterminate = computed(() => {
-  const some = items.value.some((r) => rowSelection.value[pkOf(r)]);
+  const some = rows.value.some((r) => rowSelection.value[pkOf(r)]);
   return some && !isAllSelected.value;
 });
 
 const selectedRows = computed<T[]>(() =>
-  items.value.filter((r) => rowSelection.value[pkOf(r)]),
+  rows.value.filter((r) => rowSelection.value[pkOf(r)]),
 );
 watch(selectedRows, (rows) => {
   emit("update:selection", rows);
@@ -221,11 +256,11 @@ function buildSelectionQuery(): URLSearchParams {
 function toggleAll() {
   if (isAllSelected.value) {
     const next = { ...rowSelection.value };
-    for (const r of items.value) delete next[pkOf(r)];
+    for (const r of rows.value) delete next[pkOf(r)];
     rowSelection.value = next;
   } else {
     const next = { ...rowSelection.value };
-    for (const r of items.value) next[pkOf(r)] = true;
+    for (const r of rows.value) next[pkOf(r)] = true;
     rowSelection.value = next;
   }
 }
@@ -246,9 +281,30 @@ function openQuickEdit(id: string | number) {
   quickEditOpen.value = true;
 }
 
-function onQuickEditSaved() {
+// In offline mode, the quick-edit modal emits the locally edited item; we
+// splice it back into the parent's array and emit `update:items` (no BE call).
+function onQuickEditSaved(updated: T) {
+  if (offlineMode.value) {
+    const lk = props.lookup;
+    const next = (props.items ?? []).map((r) =>
+      String(r[lk]) === String(updated[lk]) ? updated : r,
+    );
+    emit("update:items", next);
+    return;
+  }
+  if (hybridMode.value) hybridLoaded.value = false;
   refresh();
 }
+
+// Look up the item currently being edited in the source array (offline mode only).
+const quickEditLocalItem = computed<T | null>(() => {
+  if (!offlineMode.value || quickEditId.value == null) return null;
+  return (
+    (props.items ?? []).find(
+      (r) => String(r[props.lookup]) === String(quickEditId.value),
+    ) ?? null
+  );
+});
 
 // --- Delete ---
 async function deleteRow(item: T) {
@@ -258,9 +314,18 @@ async function deleteRow(item: T) {
     approveButton: { text: "Delete", attrs: { color: "error" } },
   });
   if (!ok) return;
+  if (offlineMode.value) {
+    const next = (props.items ?? []).filter(
+      (r) => String(r[props.lookup]) !== String(item[props.lookup]),
+    );
+    emit("update:items", next);
+    snack.show("Item deleted", "success");
+    return;
+  }
   try {
     await crud.delete(item[props.lookup] as string | number);
     snack.show("Item deleted", "success");
+    if (hybridMode.value) hybridLoaded.value = false;
     refresh();
   } catch {
     snack.show("Failed to delete item", "error");
@@ -279,13 +344,26 @@ function onDragOver(e: DragEvent) {
 async function onDrop(toIdx: number) {
   if (dragFrom.value === null || dragFrom.value === toIdx) return;
   const fromIdx = dragFrom.value;
-  const arr = [...items.value];
+  const arr = [...rows.value];
   const moved = arr[fromIdx]!;
   const target = arr[toIdx]!;
   arr.splice(fromIdx, 1);
   arr.splice(toIdx, 0, moved);
-  items.value = arr as T[];
+  rows.value = arr as T[];
   dragFrom.value = null;
+  if (offlineMode.value) {
+    // Reorder against the parent's full array (rows is only the current page).
+    const lk = props.lookup;
+    const full = [...(props.items ?? [])];
+    const fIdx = full.findIndex((r) => String(r[lk]) === String(moved[lk]));
+    const tIdx = full.findIndex((r) => String(r[lk]) === String(target[lk]));
+    if (fIdx >= 0 && tIdx >= 0) {
+      const [m] = full.splice(fIdx, 1);
+      full.splice(tIdx, 0, m!);
+      emit("update:items", full);
+    }
+    return;
+  }
   // Persist the new order in a single request: the backend (Camomilla updateOrder)
   // recalculates positions server-side, avoiding N parallel PATCHes and race conditions.
   try {
@@ -294,14 +372,127 @@ async function onDrop(toIdx: number) {
       target[props.lookup] as string | number,
     );
     snack.show("Order saved", "success");
+    if (hybridMode.value) {
+      hybridLoaded.value = false;
+      refresh();
+    }
   } catch {
     snack.show("Failed to save order", "error");
     refresh();
   }
 }
 
+// --- Offline pipeline: apply search/filter/sort/pagination in memory. ---
+function applyOffline(source: T[]) {
+  let arr = [...source];
+
+  // Search: case-insensitive substring across all declared column keys.
+  if (search.value) {
+    const q = search.value.toLowerCase();
+    arr = arr.filter((row) =>
+      props.columns.some((c) =>
+        String(row[c.key] ?? "")
+          .toLowerCase()
+          .includes(q),
+      ),
+    );
+  }
+
+  // Filters + tab (filterParams): supports __gte / __lte ranges, arrays
+  // (multi-value → includes), and plain equality.
+  for (const [rawKey, rawVal] of Object.entries(props.filterParams ?? {})) {
+    if (rawVal == null || rawVal === "") continue;
+    const rangeMatch = rawKey.match(/^(.+)__(gte|lte)$/);
+    if (rangeMatch) {
+      const [, field, op] = rangeMatch;
+      arr = arr.filter((row) => {
+        const v = row[field!];
+        if (v == null) return false;
+        return op === "gte"
+          ? (v as unknown as number | string) >=
+              (rawVal as unknown as number | string)
+          : (v as unknown as number | string) <=
+              (rawVal as unknown as number | string);
+      });
+    } else if (Array.isArray(rawVal)) {
+      const set = new Set(rawVal.map(String));
+      arr = arr.filter((row) => set.has(String(row[rawKey])));
+    } else {
+      arr = arr.filter((row) => String(row[rawKey]) === String(rawVal));
+    }
+  }
+
+  // Sort: multi-column. Sorting columns are applied in order, each acting as
+  // a tiebreaker for the previous one (matches TanStack's default behavior).
+  if (sorting.value.length) {
+    const sortDefs = sorting.value;
+    arr.sort((a, b) => {
+      for (const s of sortDefs) {
+        const av = a[s.id];
+        const bv = b[s.id];
+        if (av == null && bv == null) continue;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (av < bv) return s.desc ? 1 : -1;
+        if (av > bv) return s.desc ? -1 : 1;
+      }
+      return 0;
+    });
+  }
+
+  total.value = arr.length;
+
+  // Recover from a stale page index (e.g. URL ?page=99 on a 3-row dataset).
+  const start = pagination.value.pageIndex * pagination.value.pageSize;
+  if (arr.length > 0 && start >= arr.length) {
+    pagination.value = { ...pagination.value, pageIndex: 0 };
+    rows.value = arr.slice(0, pagination.value.pageSize) as T[];
+    return;
+  }
+
+  rows.value = arr.slice(start, start + pagination.value.pageSize) as T[];
+}
+
+// --- Hybrid: fetch the full dataset once, then run applyOffline on it. ---
+async function fetchAll() {
+  loading.value = true;
+  try {
+    const qIdx = props.endpoint.indexOf("?");
+    const endpointParams =
+      qIdx >= 0
+        ? Object.fromEntries(
+            new URLSearchParams(props.endpoint.slice(qIdx + 1)),
+          )
+        : {};
+    const res = await crud.list(endpointParams as Record<string, string>);
+    let nextItems: T[] = [];
+    if (props.responseAdapter) {
+      nextItems = props.responseAdapter(res).items;
+    } else if (res && typeof res === "object" && "results" in res) {
+      nextItems = (res as { results: T[] }).results;
+    } else {
+      nextItems = res as unknown as T[];
+    }
+    fullDataset.value = nextItems;
+    hybridLoaded.value = true;
+  } catch {
+    snack.show("Failed to load data", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
 // --- Fetch ---
 async function refresh() {
+  if (offlineMode.value) {
+    applyOffline(props.items ?? []);
+    return;
+  }
+  if (hybridMode.value) {
+    if (!hybridLoaded.value) await fetchAll();
+    applyOffline(fullDataset.value);
+    return;
+  }
   loading.value = true;
   try {
     // Extract any query params the caller baked into the endpoint (e.g. ?fields=id,title).
@@ -334,23 +525,45 @@ async function refresh() {
 
     const res = await crud.list(params as Record<string, string>);
 
+    let nextItems: T[] = [];
+    let nextTotal = 0;
+
     if (props.responseAdapter) {
       const adapted = props.responseAdapter(res);
-      items.value = adapted.items;
-      total.value = adapted.total;
+      nextItems = adapted.items;
+      nextTotal = adapted.total;
     } else if (res && typeof res === "object" && "results" in res) {
-      items.value = (res as { results: T[]; count: number }).results;
-      total.value = (res as { results: T[]; count: number }).count;
+      nextItems = (res as { results: T[]; count: number }).results;
+      nextTotal = (res as { results: T[]; count: number }).count;
     } else {
-      items.value = res as unknown as T[];
-      total.value = (res as unknown as T[]).length;
+      nextItems = res as unknown as T[];
+      nextTotal = (res as unknown as T[]).length;
     }
+
+    // Recover from stale URL pagination (e.g. page=99) that yields an empty
+    // page while the dataset still has rows. Reset to first page and re-fetch.
+    if (
+      nextItems.length === 0 &&
+      nextTotal > 0 &&
+      pagination.value.pageIndex > 0
+    ) {
+      pagination.value = { ...pagination.value, pageIndex: 0 };
+      return;
+    }
+
+    rows.value = nextItems;
+    total.value = nextTotal;
   } catch {
     snack.show("Failed to load data", "error");
   } finally {
     loading.value = false;
   }
 }
+
+// Invalidate the hybrid cache whenever the endpoint or mode changes.
+watch([() => props.endpoint, () => props.clientSide], () => {
+  hybridLoaded.value = false;
+});
 
 // Serialize filterParams to detect deep changes without a deep watcher on the array.
 const filterParamsKey = computed(() =>
@@ -362,13 +575,14 @@ const filterParamsKey = computed(() =>
 watch(
   [
     () => props.endpoint,
+    () => props.items,
     filterParamsKey,
     () => pagination.value.pageIndex,
     () => pagination.value.pageSize,
     sorting,
     search,
   ],
-  ([newEndpoint, newFilters], [oldEndpoint, oldFilters]) => {
+  ([newEndpoint, , newFilters], [oldEndpoint, , oldFilters]) => {
     const contextChanged =
       newEndpoint !== oldEndpoint || newFilters !== oldFilters;
     if (contextChanged && pagination.value.pageIndex !== 0) {
@@ -377,7 +591,7 @@ watch(
       refresh();
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 // --- TanStack column defs ---
@@ -532,7 +746,7 @@ const sortingOptions = computed(() => ({
 
     <!-- Table -->
     <UTable
-      :data="items"
+      :data="rows"
       :columns="tableColumns"
       :loading="loading"
       :pagination="pagination"
@@ -602,6 +816,8 @@ const sortingOptions = computed(() => ({
       :lookup="lookup"
       :languages="languages"
       :registry="registry"
+      :offline="offlineMode"
+      :local-item="quickEditLocalItem"
       @saved="onQuickEditSaved"
     >
       <template
