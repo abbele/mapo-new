@@ -142,7 +142,10 @@ export function useMapoForm<T extends Record<string, unknown>>(
   }
 
   function setFieldValue(descriptor: FieldDescriptor<T>, val: unknown) {
-    const accessor = resolveFieldAccessor(descriptor, registry);
+    const accessor = resolveFieldAccessor(
+      descriptor as FieldDescriptor,
+      registry,
+    );
     const setVal = accessor.set
       ? accessor.set({ model: model.value, val, lang: currentLang.value })
       : val;
@@ -184,7 +187,10 @@ export function useMapoForm<T extends Record<string, unknown>>(
 
   function getFieldValue(descriptor: FieldDescriptor<T>): unknown {
     const raw = getNestedValue(model.value, resolvePath(descriptor));
-    const accessor = resolveFieldAccessor(descriptor, registry);
+    const accessor = resolveFieldAccessor(
+      descriptor as FieldDescriptor,
+      registry,
+    );
     return accessor.get
       ? accessor.get({ model: model.value, val: raw, lang: currentLang.value })
       : raw;

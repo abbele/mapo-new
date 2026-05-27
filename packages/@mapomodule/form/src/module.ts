@@ -58,6 +58,7 @@ export default defineNuxtModule<MapoFormOptions>({
 
       // Registra il tab via hook nativo di Nuxt DevTools (no dipendenza @nuxt/devtools-kit)
       nuxt.hook(
+        // @ts-expect-error — devtools:customTabs non è in NuxtHooks typings
         "devtools:customTabs",
         (tabs: Array<Record<string, unknown>>) => {
           tabs.push({

@@ -2,7 +2,10 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "#app": ["./node_modules/nuxt/dist/app/index.d.ts"]
+    }
   },
   "include": ["src/**/*"]
 }
