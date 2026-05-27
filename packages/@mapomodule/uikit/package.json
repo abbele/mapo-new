@@ -14,7 +14,7 @@
   "scripts": {
     "build": "nuxt-module-build build",
     "dev": "nuxt-module-build build --stub --watch",
-    "prepare": "nuxt-module-build build --stub",
+    "prepare": "nuxt-module-build build",
     "dev:prepare": "nuxt-module-build build --stub",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"

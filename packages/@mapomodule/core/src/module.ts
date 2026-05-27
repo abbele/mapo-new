@@ -27,9 +27,7 @@ export type {
 } from "./runtime/types";
 export { MultipartPolicyEnum, CoreCookieEnum } from "./runtime/types";
 export type { MapoFacade, MapoApiLayer } from "./runtime/composables/useMapo";
-export { useCanAccessRoute } from "./runtime/auth/useCanAccessRoute";
 export type { RoutePermissions } from "./runtime/auth/useCanAccessRoute";
-export { useMapoFetch } from "./runtime/utils/useMapoFetch";
 
 export default defineNuxtModule<MapoOptions>({
   meta: {
