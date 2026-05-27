@@ -87,7 +87,18 @@ export default defineNuxtModule<MapoUikitOptions>({
       "MapoSidebar",
       "MapoSidebarList",
       "MapoSidebarListItem",
+      "MapoLogoutButton",
+      "MapoSidebarProfile",
       "MapoTopbar",
+      "MapoDetail",
+      "MapoDetailLangSwitch",
+      "MapoList",
+      "MapoListHead",
+      "MapoListTabs",
+      "MapoListFilters",
+      "MapoListActions",
+      "MapoListQuickEdit",
+      "MapoListTable",
     ];
 
     for (const name of components) {

@@ -1,0 +1,186 @@
+# Form slots
+
+`<MapoForm>` exposes slots to customize every aspect of rendering without rewriting components.
+
+## TL;DR
+
+```vue
+<MapoForm v-model="article" :fields="fields">
+  <template #field.slug.append>
+    <UButton size="xs" @click="generateSlug">Auto</UButton>
+  </template>
+</MapoForm>
+```
+
+Slots are addressed by field key. They propagate automatically through `MapoForm → MapoFormGroup → MapoFormField`.
+
+---
+
+## Per-field slots
+
+For every field with `key: 'myField'`, the following slots are available:
+
+| Slot                     | Position                                                   |
+| ------------------------ | ---------------------------------------------------------- |
+| `#field.myField`         | Replaces the entire field component (last-resort override) |
+| `#field.myField.label`   | Replaces the label                                         |
+| `#field.myField.before`  | Before the field (outside the wrapper)                     |
+| `#field.myField.after`   | After the field (outside the wrapper)                      |
+| `#field.myField.prepend` | Inside the field, leading (NUI `leading` slot)             |
+| `#field.myField.append`  | Inside the field, trailing (NUI `trailing` slot)           |
+| `#field.myField.hint`    | Helper text under the field                                |
+
+```vue
+<MapoForm v-model="article" :fields="fields">
+  <!-- Custom label for the slug field -->
+  <template #field.slug.label>
+    <span class="flex items-center gap-1">
+      <UIcon name="i-heroicons-link" />
+      Slug URL
+    </span>
+  </template>
+
+  <!-- Inline auto-generate button -->
+  <template #field.slug.append>
+    <UButton size="xs" @click="generateSlug">Auto</UButton>
+  </template>
+
+  <!-- Helper text under the title -->
+  <template #field.title.hint>
+    <span class="text-xs text-gray-400">
+      Visible in the browser tab and in search results.
+    </span>
+  </template>
+
+  <!-- Section after the price field -->
+  <template #field.price.after>
+    <p class="text-xs text-amber-600 mt-1">
+      Price includes 22% VAT.
+    </p>
+  </template>
+</MapoForm>
+```
+
+## Global slots
+
+Beyond per-field slots, `<MapoForm>` exposes:
+
+| Slot       | Position                                   |
+| ---------- | ------------------------------------------ |
+| `#header`  | Above the tabs / first group               |
+| `#footer`  | Below the last group                       |
+| `#actions` | Action area below the form (Save / Cancel) |
+
+```vue
+<MapoForm v-model="article" :fields="fields">
+  <template #header>
+    <div class="mb-4 p-3 bg-amber-50 rounded border border-amber-200 text-sm">
+      You are editing a published article.
+    </div>
+  </template>
+
+  <template #actions="{ isDirty, isLoading }">
+    <div class="flex justify-end gap-2">
+      <UButton variant="ghost" :disabled="!isDirty">Cancel</UButton>
+      <UButton :loading="isLoading" @click="save">Save</UButton>
+    </div>
+  </template>
+</MapoForm>
+```
+
+## Slot props
+
+Slots expose the form context through `slotProps`:
+
+```ts
+// #actions slotProps:
+{
+  isDirty: boolean;
+  isLoading: boolean;
+  currentLang: string;
+  model: T;
+}
+```
+
+Use them to wire interactive UI without re-implementing state tracking:
+
+```vue
+<template #field.title.hint="{ model }">
+  <span>{{ model.title.length }}/200 characters</span>
+</template>
+```
+
+## How to: add a copy-to-clipboard button next to a field
+
+```vue
+<template #field.public_url.append="{ model }">
+  <UButton
+    size="xs"
+    variant="ghost"
+    icon="i-lucide-copy"
+    @click="copyToClipboard(model.public_url)"
+  />
+</template>
+```
+
+## How to: render a complex helper in `hint`
+
+```vue
+<template #field.password.hint>
+  <ul class="text-xs text-gray-400 list-disc pl-4">
+    <li>At least 8 characters</li>
+    <li>One uppercase letter</li>
+    <li>One number</li>
+  </ul>
+</template>
+```
+
+## How to: replace an entire field with a custom block
+
+`#field.<key>` (no suffix) overrides the field component itself. Use it as a last resort — `descriptor.is` is usually cleaner because it preserves error/label rendering automatically.
+
+```vue
+<template #field.location="{ model }">
+  <div class="rounded border p-4">
+    <p class="text-sm font-medium">Pick a location on the map below</p>
+    <MyCustomMap v-model="model.location" />
+  </div>
+</template>
+```
+
+## How to: place content above or below a single field
+
+Use `before` / `after` (rendered outside the field wrapper):
+
+```vue
+<template #field.tags.before>
+  <p class="text-xs text-gray-500">Press Enter to add a tag.</p>
+</template>
+<template #field.tags.after>
+  <UAlert v-if="tagsCount > 10" color="warning" title="Too many tags?" />
+</template>
+```
+
+## Automatic propagation
+
+Slots cascade through the hierarchy `MapoForm → MapoFormGroup → MapoFormField`. You **do not** need to redeclare them at each level — drop them on `<MapoForm>` and they reach the right field.
+
+The propagation is whitelisted to `field.*` slots only, so host slots (`#header`, `#footer`, `#actions`) are never injected into intermediate layers.
+
+## How to: combine slots with `descriptor.is`
+
+For full control over the field component:
+
+```ts
+import MyCustomEditor from "~/components/MyCustomEditor.vue";
+
+const fields = [{ key: "body", type: "editor", is: MyCustomEditor }];
+```
+
+The custom component receives the standard field props: `modelValue`, `descriptor`, `errors`, `readonly`. See [Custom fields](./custom-fields) for the full interface.
+
+## Pitfalls
+
+- **Slot names use the descriptor `key`, not the label** — always reference `#field.<key>` exactly.
+- **Dotted keys** (`'meta.title'`) — Vue treats the dot as part of the slot name. Always use the bracket form: `#[\`field.${'meta.title'}.append\`]`.
+- **Slots inside `MapoRepeater` items** — the per-item slots are scoped to the inner sub-form, not the outer one. Pass slots through the repeater item only when you need to.

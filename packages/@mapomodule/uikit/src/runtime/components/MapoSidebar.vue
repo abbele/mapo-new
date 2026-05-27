@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useSidebarStore } from "@mapomodule/store/runtime/stores/sidebar";
-import { useAuthStore } from "@mapomodule/store/runtime/stores/auth";
-import { useMapoAuth } from "@mapomodule/core/runtime/auth/useMapoAuth";
 
 defineSlots<{
   logo(): unknown;
@@ -12,8 +10,6 @@ defineSlots<{
 }>();
 
 const sidebar = useSidebarStore();
-const auth = useAuthStore();
-const { logout } = useMapoAuth();
 
 const sidebarWidth = computed(() => (sidebar.mini ? "w-[60px]" : "w-60"));
 </script>
@@ -84,55 +80,7 @@ const sidebarWidth = computed(() => (sidebar.mini ? "w-[60px]" : "w-60"));
         style="border-top: 1px solid var(--ui-border)"
       >
         <slot name="footer">
-          <template v-if="auth.isAuthenticated">
-            <div
-              class="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-default/60 transition-colors cursor-default"
-              :class="sidebar.mini ? 'justify-center' : ''"
-            >
-              <UTooltip
-                v-if="sidebar.mini"
-                :text="auth.username ?? 'User'"
-                :side="'right'"
-              >
-                <UAvatar
-                  :alt="auth.username ?? 'User'"
-                  size="xs"
-                  class="shrink-0 cursor-pointer"
-                  @click="logout()"
-                />
-              </UTooltip>
-              <template v-else>
-                <UAvatar
-                  :alt="auth.username ?? 'User'"
-                  size="xs"
-                  class="shrink-0"
-                />
-                <span class="flex-1 text-xs truncate text-muted font-medium">{{
-                  auth.username
-                }}</span>
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  icon="i-lucide-log-out"
-                  size="xs"
-                  aria-label="Logout"
-                  @click="logout()"
-                />
-              </template>
-            </div>
-          </template>
-          <template v-else>
-            <NuxtLink
-              to="/login"
-              class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-muted hover:bg-default/60 transition-colors"
-              :class="{ 'justify-center': sidebar.mini }"
-            >
-              <UIcon name="i-lucide-log-in" class="size-4 shrink-0" />
-              <span v-if="!sidebar.mini" class="text-xs font-medium"
-                >Sign in</span
-              >
-            </NuxtLink>
-          </template>
+          <MapoSidebarProfile :mini="sidebar.mini" />
         </slot>
       </div>
     </aside>

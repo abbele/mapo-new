@@ -40,4 +40,12 @@ export default tseslint.config(
       'no-undef': 'off',
     },
   },
+  {
+    // Package runtime components rely on Nuxt auto-imports (useNuxtApp, useCrud,
+    // useSnackStore, etc.) that are not resolvable at lint time outside an app context.
+    files: ['packages/@mapomodule/*/src/runtime/**/*.{vue,ts}'],
+    rules: {
+      'no-undef': 'off',
+    },
+  },
 )
