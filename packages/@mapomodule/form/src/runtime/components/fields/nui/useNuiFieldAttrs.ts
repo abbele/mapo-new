@@ -14,6 +14,7 @@ export function useNuiFieldAttrs(): ComputedRef<Record<string, unknown>> {
   const rawAttrs = useAttrs();
   return computed(() => {
     const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       descriptor: _d,
       errors,
       color,

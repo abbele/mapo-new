@@ -75,7 +75,7 @@ describe("setFieldValue", () => {
   });
 
   it("writes nested path (dotted key)", () => {
-    const { model, form } = makeForm();
+    const { model } = makeForm();
     const extendedFields = ref([{ key: "meta.slug", type: "text" as const }]);
     const extForm = useMapoForm({
       model,
